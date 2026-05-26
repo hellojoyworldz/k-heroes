@@ -60,7 +60,7 @@ def main():
     
     # 지도 UI 기반 시도명 누락 행 전면 필터링
     df_clean_sido = df.dropna(subset=['ctprvn_nm']).reset_index(drop=True)
-    print(f"🧹 필터링 완료: {len(df)}행 ➔ {len(df_clean_sido)}행 가용 (누락 {len(df) - len(df_clean_sido)}개 제거)")
+    print(f"필터링 완료: {len(df)}행 ➔ {len(df_clean_sido)}행 가용 (누락 {len(df) - len(df_clean_sido)}개 제거)")
 
     rag_dataset = []
 
