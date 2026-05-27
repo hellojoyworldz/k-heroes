@@ -3,24 +3,24 @@
 # =========================================================================
 
 # Dependencies (라이브러리 및 패키지)
-/front/node_modules/
-/front/.pnp
+/frontend/node_modules/
+/frontend/.pnp
 .pnp.*
-/front/.yarn/*
-!/front/.yarn/patches
-!/front/.yarn/plugins
-!/front/.yarn/releases
-!/front/.yarn/versions
+/frontend/.yarn/*
+!/frontend/.yarn/patches
+!/frontend/.yarn/plugins
+!/frontend/.yarn/releases
+!/frontend/.yarn/versions
 
 # Next.js 빌드 및 산출물
-/front/.next/
-/front/out/
-/front/build/
-/front/*.tsbuildinfo
-/front/next-env.d.ts
+/frontend/.next/
+/frontend/out/
+/frontend/build/
+/frontend/*.tsbuildinfo
+/frontend/next-env.d.ts
 
 # Testing (테스트 결과 리포트)
-/front/coverage/
+/frontend/coverage/
 
 # Debug Logs (디버그 로그)
 npm-debug.log*
@@ -29,7 +29,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Vercel 배포 관련 임시 파일
-/front/.vercel/
+/frontend/.vercel/
 
 
 # =========================================================================
