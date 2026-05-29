@@ -1,7 +1,7 @@
 import os
 import json
 from fastapi import APIRouter, HTTPException
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/regions", tags=["Regions"])
@@ -14,11 +14,28 @@ class RegionSidoSigungu(BaseModel):
     region_sido: str
     region_sigungu: str
 
+class ScenarioClueMetadata(BaseModel):
+    source_id: Optional[int] = None
+    domain_type: Optional[str] = None
+    theme: Optional[str] = None
+    category: Optional[str] = None
+    subject: Optional[str] = None
+    region_sido: Optional[str] = None
+    region_sigungu: Optional[str] = None
+    related_person: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class ScenarioClue(BaseModel):
+    text: str
+    metadata: ScenarioClueMetadata
+
 cached_sido: List[str] = []
 cached_sido_sigungu: List[Dict[str, str]] = []
+cached_rag_data: List[Dict[str, Any]] = []
 
 def load_regions_to_memory():
-    global cached_sido, cached_sido_sigungu
+    global cached_sido, cached_sido_sigungu, cached_rag_data
     if not os.path.exists(RAG_DATA_PATH):
         print(f"[WARNING] RAG 데이터 파일을 찾을 수 없습니다: {RAG_DATA_PATH}")
         return
@@ -27,6 +44,7 @@ def load_regions_to_memory():
         with open(RAG_DATA_PATH, "r", encoding="utf-8") as f:
             rag_data = json.load(f)
             
+        cached_rag_data = rag_data
         sido_set = set()
         pair_set = set()
         
@@ -45,7 +63,7 @@ def load_regions_to_memory():
             {"region_sido": sido, "region_sigungu": sigungu}
             for sido, sigungu in sorted(list(pair_set))
         ]
-        print(f"[SUCCESS] 총 {len(cached_sido)}개의 시도, {len(cached_sido_sigungu)}개의 시도-시군구 데이터.")
+        print(f"[SUCCESS] 총 {len(cached_sido)}개의 시도, {len(cached_sido_sigungu)}개의 시도-시군구 데이터, {len(cached_rag_data)}개의 RAG 단서 데이터.")
     except Exception as e:
         print(f"[ERROR] 지역 데이터 로드 중 오류 발생: {str(e)}")
 
@@ -65,3 +83,30 @@ async def get_sido_sigungu_list():
         if not cached_sido_sigungu:
             raise HTTPException(status_code=500, detail="지역 데이터가 초기화되지 않았습니다.")
     return cached_sido_sigungu
+
+@router.get("/by-sido", response_model=List[ScenarioClue])
+async def get_clues_by_sido(region_sido: str):
+    if not cached_rag_data:
+        load_regions_to_memory()
+        if not cached_rag_data:
+            raise HTTPException(status_code=500, detail="지역 데이터가 초기화되지 않았습니다.")
+            
+    results = [
+        item for item in cached_rag_data
+        if item.get("metadata", {}).get("region_sido") == region_sido
+    ]
+    return results
+
+@router.get("/by-sigungu", response_model=List[ScenarioClue])
+async def get_clues_by_sigungu(region_sido: str, region_sigungu: str):
+    if not cached_rag_data:
+        load_regions_to_memory()
+        if not cached_rag_data:
+            raise HTTPException(status_code=500, detail="지역 데이터가 초기화되지 않았습니다.")
+            
+    results = [
+        item for item in cached_rag_data
+        if item.get("metadata", {}).get("region_sido") == region_sido
+        and item.get("metadata", {}).get("region_sigungu") == region_sigungu
+    ]
+    return results
