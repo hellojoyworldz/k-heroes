@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import region 
+from router import region, history
+import data_manager
 
 app = FastAPI()
 
@@ -15,12 +16,13 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(region.router)
+app.include_router(history.router)
 
 # 서버 가동 시점에 전역 캐시 로드 가동
 @app.on_event("startup")
 async def startup_event():
-    region.load_regions_to_memory()
+    data_manager.load_regions_to_memory()
 
 @app.get("/")
 def root():
-    return {"status": "running", "message": "역사 교육 시뮬레이터 백엔드 정상 구동 중"}
+    return {"status": "running", "message": "백엔드 정상 구동 중"}
