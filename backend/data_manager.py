@@ -4,7 +4,7 @@ import time
 from typing import List, Dict, Any, Optional
 from collections import Counter
 from dotenv import load_dotenv
-import google.generativeai as genai
+from openai import OpenAI
 
 # models/character.py에서 분리된 Pydantic 모델을 import
 from models.character import MBTIDetails, StatItem, CharacterCard
@@ -14,12 +14,15 @@ load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 RAG_DATA_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_rag_data.json")
 PROFILES_JSON_PATH = os.path.join(BASE_DIR, "data", "profiles.json")
 
-# Gemini API 설정
-gemini_api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-if gemini_api_key:
-    genai.configure(api_key=gemini_api_key)
+# OpenAI API 설정
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+openai_client = None
+if openai_api_key:
+    openai_client = OpenAI(api_key=openai_api_key)
 else:
-    print("[WARNING] GEMINI_API_KEY or GOOGLE_API_KEY environment variable not found.")
+    print("[WARNING] OPENAI_API_KEY environment variable not found.")
+
+DEFAULT_FALLBACK_PROFILES = {}  # Latent NameError 방지를 위한 폴백 정의
 
 # 메모리에 올라가는 전역 캐시 데이터
 cached_sido: List[str] = []
@@ -43,9 +46,9 @@ def get_retrieved_clues(character_name: str) -> List[Dict[str, Any]]:
     return retrieved_clues
 
 
-def generate_character_card_via_gemini(character_name: str) -> CharacterCard:
+def generate_character_card_via_openai(character_name: str) -> CharacterCard:
     """
-    RAG 단서 컨텍스트들을 활용하여 Gemini API를 통해 특정 인물의 상세 프로필 카드 정보를 JSON 형식으로 생성.
+    RAG 단서 컨텍스트들을 활용하여 OpenAI API를 통해 특정 인물의 상세 프로필 카드 정보를 JSON 형식으로 생성.
     """
     retrieved_clues = get_retrieved_clues(character_name)
     context_str = ""
@@ -90,32 +93,44 @@ def generate_character_card_via_gemini(character_name: str) -> CharacterCard:
     "intro_desc": "인물이 이 거사를 치르게 된 계기와 시대 상황 설명 2~3줄"
 }}
 """
-    if not gemini_api_key:
-        raise Exception("Gemini API Key가 설정되지 않았습니다.")
+    if not openai_client:
+        raise Exception("OpenAI API Client가 설정되지 않았습니다. (.env에 OPENAI_API_KEY를 확인하세요)")
 
-    try:
-        model_json = genai.GenerativeModel(
-            "gemini-2.5-flash",
-            generation_config={"response_mime_type": "application/json"}
-        )
-        response_card = model_json.generate_content(character_card_prompt)
-        card_data = json.loads(response_card.text)
-        return CharacterCard(**card_data)
-    except Exception as e:
-        raise Exception(f"Gemini 프로필 생성 API 에러: {str(e)}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": character_card_prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            card_data = json.loads(response.choices[0].message.content)
+            return CharacterCard(**card_data)
+        except Exception as e:
+            err_msg = str(e)
+            # 429 Rate Limit (Quota Exceeded) 또는 OpenAI의 RateLimitError 감지 시 대기 후 재시도
+            if "429" in err_msg or "rate_limit" in err_msg.lower() or "rate limit" in err_msg.lower() or "RateLimitError" in type(e).__name__:
+                if attempt < max_retries - 1:
+                    wait_sec = 25 * (attempt + 1)
+                    print(f"\n[WARNING] OpenAI 429 Rate Limit 감지. {wait_sec}초 대기 후 재시도합니다... (시도 {attempt+1}/{max_retries})")
+                    time.sleep(wait_sec)
+                    continue
+            raise Exception(f"OpenAI 프로필 생성 API 에러: {err_msg}")
 
 
 def get_character_card(character_name: str) -> CharacterCard:
     """
     1. 메모리 캐시에서 해당 캐릭터 카드를 먼저 탐색하고,
-    2. 없으면 Gemini API를 통해 프로필 정보를 생성하고 연고 시도(associated_sidos)를 맵핑한 후 profiles.json 및 캐시에 갱신하여 반환.
+    # 2. 없으면 OpenAI API를 통해 프로필 정보를 생성하고 연고 시도(associated_sidos)를 맵핑한 후 profiles.json 및 캐시에 갱신하여 반환.
     """
     # 1. 메모리 캐시에서 조회
     if character_name in cached_profiles:
         return CharacterCard(**cached_profiles[character_name])
         
-    # 2. 없으면 Gemini로 프로필 카드 생성
-    card = generate_character_card_via_gemini(character_name)
+    # 2. 없으면 OpenAI로 프로필 카드 생성
+    card = generate_character_card_via_openai(character_name)
     
     # 3. 이 인물이 출연하는 Sido 목록을 RAG에서 찾아 채워줌
     sidos = set()
@@ -143,7 +158,7 @@ def get_character_card(character_name: str) -> CharacterCard:
 def sync_profiles_cache(min_clues: int = 50):
     """
     RAG 데이터를 집계하여 단서가 min_clues개(기본 50개) 이상인 캐릭터 후보 중
-    profiles.json 파일에 로드되어 있지 않은 누락된 신규 캐릭터 카드를 Gemini를 통해 생성하고 동기화.
+    profiles.json 파일에 로드되어 있지 않은 누락된 신규 캐릭터 카드를 OpenAI를 통해 생성하고 동기화.
     """
     global cached_profiles, cached_rag_data
     if not cached_rag_data:
@@ -168,7 +183,7 @@ def sync_profiles_cache(min_clues: int = 50):
         print("[SUCCESS] profiles.json 캐시가 최신 상태입니다. 추가로 생성할 캐릭터가 없습니다.")
         return
 
-    print(f"[INFO] 누락된 캐릭터 {len(missing_chars)}명 발견: {missing_chars}. Gemini API를 호출하여 생성을 시작합니다.")
+    print(f"[INFO] 누락된 캐릭터 {len(missing_chars)}명 발견: {missing_chars}. OpenAI API를 호출하여 생성을 시작합니다.")
 
     # 4. 루프를 돌며 신규 프로필 카드 생성 및 저장
     success_count = 0
@@ -180,7 +195,7 @@ def sync_profiles_cache(min_clues: int = 50):
             
             # API Rate limit을 피하기 위해 딜레이 추가 (단, 1개 이상 남았을 때만)
             if i < len(missing_chars) - 1:
-                time.sleep(2)
+                time.sleep(3)  # 안전을 위해 3초 대기
         except Exception as e:
             print(f"[ERROR] '{char}' 프로필 생성 실패: {str(e)}")
             continue
