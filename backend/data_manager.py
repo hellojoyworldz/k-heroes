@@ -22,7 +22,7 @@ if openai_api_key:
 else:
     print("[WARNING] OPENAI_API_KEY environment variable not found.")
 
-DEFAULT_FALLBACK_PROFILES = {}  # Latent NameError 방지를 위한 폴백 정의
+DEFAULT_FALLBACK_PROFILES = {}
 
 # 메모리에 올라가는 전역 캐시 데이터
 cached_sido: List[str] = []
@@ -65,6 +65,16 @@ def generate_character_card_via_openai(character_name: str) -> CharacterCard:
 
 [RAG 데이터 컨텍스트]
 {context_str}
+
+[MBTI 부여 원칙 - 매우 중요!]
+역사적 인물들의 MBTI가 INFJ, INTJ, INFP 등 특정 유형에 지나치게 편중되지 않도록 16가지 MBTI 유형을 골고루 다양하게 부여해 주세요.
+인물의 실제 역사적 행적, 성격, 예술/학문 스타일을 분석하여 다음과 같이 다양하게 차별화된 MBTI를 설정해 주세요:
+- 실용적이고 체계적인 학자/정치가/행정가: ISTJ, ESTJ
+- 행동력이 강하고 모험적인 의병장/전사/개혁가: ESTP, ISTP, ENTJ
+- 감수성이 풍부하고 독창적인 예술가/문학가: ISFP, ENFP, ESFP, INFP
+- 논리적이고 사색적인 사상가/이론가/실학자: INTP, ENTP
+- 대중과 깊이 소통하며 가르침을 준 교육자/지도자: ENFJ, ESFJ, ISFJ, ESFJ
+인물 고유의 개성과 행적이 잘 묻어나도록 MBTI 4글자와 그 닉네임을 독창적이고 차별화되게 설정해 주세요.
 
 반드시 아래 JSON 형식으로만 출력해:
 {{
@@ -123,7 +133,7 @@ def generate_character_card_via_openai(character_name: str) -> CharacterCard:
 def get_character_card(character_name: str) -> CharacterCard:
     """
     1. 메모리 캐시에서 해당 캐릭터 카드를 먼저 탐색하고,
-    # 2. 없으면 OpenAI API를 통해 프로필 정보를 생성하고 연고 시도(associated_sidos)를 맵핑한 후 profiles.json 및 캐시에 갱신하여 반환.
+    2. 없으면 OpenAI API를 통해 프로필 정보를 생성하고 연고 시도(associated_sidos)를 맵핑한 후 profiles.json 및 캐시에 갱신하여 반환.
     """
     # 1. 메모리 캐시에서 조회
     if character_name in cached_profiles:
@@ -132,13 +142,16 @@ def get_character_card(character_name: str) -> CharacterCard:
     # 2. 없으면 OpenAI로 프로필 카드 생성
     card = generate_character_card_via_openai(character_name)
     
-    # 3. 이 인물이 출연하는 Sido 목록을 RAG에서 찾아 채워줌
+    # 3. 이 인물이 출연하는 Sido 목록을 RAG에서 찾아 채워줌 (위/경도가 존재하고 관련 인물 필드 매칭)
     sidos = set()
-    retrieved_clues = get_retrieved_clues(character_name)
-    for clue in retrieved_clues:
-        sido = clue.get("metadata", {}).get("region_sido")
-        if sido:
-            sidos.add(sido)
+    for item in cached_rag_data:
+        metadata = item.get("metadata", {})
+        related_person = metadata.get("related_person") or ""
+        if character_name in related_person:
+            if metadata.get("latitude") is not None and metadata.get("longitude") is not None:
+                sido = metadata.get("region_sido")
+                if sido:
+                    sidos.add(sido)
     card.associated_sidos = sorted(list(sidos))
     
     # 4. 메모리 캐시에 탑재하고 profiles.json 파일 업데이트
@@ -254,7 +267,7 @@ def load_regions_to_memory(force_sync: bool = False):
     else:
         print(f"[WARNING] 프로필 데이터 파일이 존재하지 않습니다: {PROFILES_JSON_PATH}. 기본 템플릿으로 복원합니다.")
         cached_profiles = dict(DEFAULT_FALLBACK_PROFILES)
-        # 자가 치유(Self-healing): profiles.json이 없을 때 기본 프로필 템플릿으로 복원해 생성
+        # profiles.json이 없을 때 기본 프로필 템플릿으로 복원해 생성
         try:
             os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
             with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
@@ -309,8 +322,9 @@ def load_regions_to_memory(force_sync: bool = False):
 
 def map_profiles_to_sidos():
     """
-    메모리 프로필 캐시에 탑재된 캐릭터들과 RAG 데이터 텍스트를 조사하여
+    메모리 프로필 캐시에 탑재된 캐릭터들과 RAG 데이터를 조사하여
     캐릭터가 출연하는 행정구역(Sido) 목록을 associated_sidos에 실시간으로 매핑 및 채워넣어줌.
+    (메타데이터의 related_person에 캐릭터명이 매칭되고 위도/경도가 유효한 경우만 수집)
     """
     global cached_profiles, cached_rag_data
     if not cached_profiles or not cached_rag_data:
@@ -323,17 +337,26 @@ def map_profiles_to_sidos():
         for item in cached_rag_data:
             metadata = item.get("metadata", {})
             related_person = metadata.get("related_person") or ""
-            text = item.get("text") or ""
             
-            if char_key in related_person or char_key in text:
-                sido = metadata.get("region_sido")
-                if sido:
-                    sidos.add(sido)
+            if char_key in related_person:
+                if metadata.get("latitude") is not None and metadata.get("longitude") is not None:
+                    sido = metadata.get("region_sido")
+                    if sido:
+                        sidos.add(sido)
                     
         profile["associated_sidos"] = sorted(list(sidos))
         mapped_count += 1
         print(f"   - {char_key}: {len(sidos)}개 시도와 매핑됨 ({', '.join(sorted(list(sidos)))[:80]}...)")
         
+    # 업데이트된 매핑 내용을 profiles.json 파일에도 반영하여 영구 저장
+    try:
+        os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
+        with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(cached_profiles, f, ensure_ascii=False, indent=4)
+        print(f"[SUCCESS] 업데이트된 연고 지역 매핑 정보를 {PROFILES_JSON_PATH}에 영구 저장했습니다.")
+    except Exception as e:
+        print(f"[WARNING] profiles.json 저장 중 실패: {str(e)}")
+
     print(f"[SUCCESS] 총 {mapped_count}개 캐릭터의 연고 지역 매핑 완료.")
 
 
