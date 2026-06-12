@@ -1,364 +1,274 @@
 import os
 import json
 import time
-from typing import List, Dict, Any, Optional
-from collections import Counter
+from typing import Dict, Any, List, Optional
+import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# models/character.py에서 분리된 Pydantic 모델을 import
-from models.character import MBTIDetails, StatItem, CharacterCard
+from models.character import CharacterCard
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
-RAG_DATA_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_rag_data.json")
-PROFILES_JSON_PATH = os.path.join(BASE_DIR, "data", "profiles.json")
 
-# OpenAI API 설정
+CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
+CSV_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_total_merged.csv")
+
+# OpenAI API 클라이언트 초기화
 openai_api_key = os.environ.get("OPENAI_API_KEY")
-openai_client = None
-if openai_api_key:
-    openai_client = OpenAI(api_key=openai_api_key)
+if not openai_api_key:
+    print("[WARNING] OPENAI_API_KEY 환경변수가 존재하지 않습니다. .env를 확인하십시오.")
+    openai_client = None
 else:
-    print("[WARNING] OPENAI_API_KEY environment variable not found.")
+    openai_client = OpenAI(api_key=openai_api_key)
 
-DEFAULT_FALLBACK_PROFILES = {}
+# 메모리에 적재되는 전역 캐릭터 사전 캐시
+cached_characters: Dict[str, Any] = {}
 
-# 메모리에 올라가는 전역 캐시 데이터
-cached_sido: List[str] = []
-cached_sido_sigungu: List[Dict[str, str]] = []
-cached_rag_data: List[Dict[str, Any]] = []
-cached_profiles: Dict[str, Any] = {}
-
-
-def get_retrieved_clues(character_name: str) -> List[Dict[str, Any]]:
+def load_regions_to_memory():
     """
-    RAG 데이터셋에서 캐릭터 이름이 관련 인물(related_person) 혹은 본문에 매칭되는 단서 리스트를 찾아 반환.
+    서버 초기 기동 시 데이터와 캐시를 로딩하는 메인 함수.
+    characters.json 파일을 읽어서 cached_characters에 적재.
     """
-    retrieved_clues = []
-    for item in cached_rag_data:
-        metadata = item.get("metadata", {})
-        related_person = metadata.get("related_person") or ""
-        text = item.get("text") or ""
+    global cached_characters
+    if os.path.exists(CHARACTERS_JSON_PATH):
+        try:
+            with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+                cached_characters = json.load(f)
+            print(f"[SUCCESS] {len(cached_characters)}개의 캐릭터 프로필을 성공적으로 로드했습니다. ({CHARACTERS_JSON_PATH})")
+        except Exception as e:
+            print(f"[ERROR] 캐릭터 프로필 로드 중 오류 발생: {str(e)}")
+    else:
+        print(f"[WARNING] 캐릭터 프로필 파일을 찾을 수 없습니다: {CHARACTERS_JSON_PATH}")
+
+def get_character_card(character_name: str) -> CharacterCard:
+    """
+    메모리에 로드된 캐시에서 특정 캐릭터의 카드를 찾아 Pydantic 모델로 반환.
+    """
+    if character_name not in cached_characters:
+        raise KeyError(f"Character '{character_name}' not found in profiles.")
+    return CharacterCard(**cached_characters[character_name])
+
+def get_retrieved_clues(character_name: str, sido: Optional[str] = None, sigungu: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    캐릭터 카드의 연관 스토리들(associated_stories)을 RAG 단서 리스트 포맷으로 변환하여 반환.
+    (simulation.py와의 호환성을 유지하기 위한 헬퍼 함수)
+    """
+    if not cached_characters:
+        # 캐시가 로드되지 않은 경우 강제 로드 시도
+        load_regions_to_memory()
         
-        if character_name in related_person or character_name in text:
-            retrieved_clues.append(item)
-    return retrieved_clues
+    if character_name not in cached_characters:
+        return []
+        
+    stories = cached_characters[character_name].get("associated_stories", [])
+    clues = []
+    for s in stories:
+        if sido and s.get("sido") != sido:
+            continue
+        if sigungu and s.get("sigungu") != sigungu:
+            continue
+            
+        clues.append({
+            "text": f"제목: {s.get('title', '')}\n요약: {s.get('summary', '')}",
+            "metadata": {
+                "id": s.get("id"),
+                "domain": s.get("domain"),
+                "region_sido": s.get("sido"),
+                "region_sigungu": s.get("sigungu")
+            }
+        })
+    return clues
 
+# --- characters.json 생성을 위한 데이터 파이프라인 함수들 ---
 
-def generate_character_card_via_openai(character_name: str) -> CharacterCard:
+def get_associated_stories_for_char(df_clean: pd.DataFrame, character_name: str, max_stories: int = 50) -> List[Dict[str, Any]]:
     """
-    RAG 단서 컨텍스트들을 활용하여 OpenAI API를 통해 특정 인물의 상세 프로필 카드 정보를 JSON 형식으로 생성.
+    CSV에서 특정 인물과 관련성이 높은 이야기(스토리) 목록을 추출하여
+    프론트엔드 렌더링에 적합한 메타데이터 구조로 가공.
     """
-    retrieved_clues = get_retrieved_clues(character_name)
+    char_rows = df_clean[df_clean["relate_prsn_nm"].astype(str).str.contains(character_name)].copy()
+    char_rows = char_rows.drop_duplicates(subset=["data_title_nm"]).head(max_stories)
+    
+    stories = []
+    for _, row in char_rows.iterrows():
+        domain = str(row["data_manage_keyword"]).strip()
+        no = int(row["data_manage_no"])
+        
+        stories.append({
+            "id": no,
+            "domain": domain,
+            "title": row["data_title_nm"],
+            "summary": row["sumry_cn"] if pd.notna(row["sumry_cn"]) else "",
+            "sido": row["ctprvn_nm"] if pd.notna(row["ctprvn_nm"]) else "",
+            "sigungu": row["signgu_nm"] if pd.notna(row["signgu_nm"]) else ""
+        })
+    return stories
+
+def generate_character_profile_via_openai(character_name: str, stories: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    OpenAI GPT-4o-mini 모델을 사용하여 캐릭터의 역사적 행적 RAG 컨텍스트를 분석하고,
+    게임 플레이를 위한 카테고리, MBTI와 캐릭터 스탯 등 상세 정보를 JSON 형식으로 생성.
+    """
+    if not openai_client:
+        raise ValueError("OpenAI API 클라이언트가 존재하지 않아 생성을 진행할 수 없습니다.")
+        
     context_str = ""
-    for i, clue in enumerate(retrieved_clues[:50]):
-        context_str += f"[단서 {i+1}] {clue['text']}\n\n"
-        
-    character_card_prompt = f"""
+    for i, s in enumerate(stories[:15]):
+        context_str += f"[스토리 {i+1}] 제목: {s['title']}, 요약: {s['summary']}\n\n"
+
+    prompt = f"""
 너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 인물 카드 설계자야.
 제공된 RAG 백그라운드 지식을 기반으로 대상 인물에 대한 정보를 추출하여 재미있는 인물 카드 데이터로 생성해 줘.
 어려운 한자어는 피하고 초등학생도 쉽게 읽을 수 있는 단어를 써줘.
 
 [대상 인물]
-{character_name}
+이름: {character_name}
 
 [RAG 데이터 컨텍스트]
 {context_str}
 
-[MBTI 부여 원칙 - 매우 중요!]
-역사적 인물들의 MBTI가 INFJ, INTJ, INFP 등 특정 유형에 지나치게 편중되지 않도록 16가지 MBTI 유형을 골고루 다양하게 부여해 주세요.
-인물의 실제 역사적 행적, 성격, 예술/학문 스타일을 분석하여 다음과 같이 다양하게 차별화된 MBTI를 설정해 주세요:
-- 실용적이고 체계적인 학자/정치가/행정가: ISTJ, ESTJ
-- 행동력이 강하고 모험적인 의병장/전사/개혁가: ESTP, ISTP, ENTJ
-- 감수성이 풍부하고 독창적인 예술가/문학가: ISFP, ENFP, ESFP, INFP
-- 논리적이고 사색적인 사상가/이론가/실학자: INTP, ENTP
-- 대중과 깊이 소통하며 가르침을 준 교육자/지도자: ENFJ, ESFJ, ISFJ, ESFJ
-인물 고유의 개성과 행적이 잘 묻어나도록 MBTI 4글자와 그 닉네임을 독창적이고 차별화되게 설정해 주세요.
+[캐릭터 분류 카테고리 판별 원칙 - 매우 중요!]
+RAG 데이터 컨텍스트에 담긴 인물의 주된 업적과 행적을 분석하여 다음 4가지 테마 중 하나를 엄격히 부여하세요:
+- 정치 / 외교: 왕, 대통령, 재상, 정치가로서 국가 제도 개혁, 외교 협상, 권력 투쟁 등을 주로 펼친 경우.
+- 독립 / 호국: 국난 극복, 왜구 방어, 의병 활동, 독립운동, 군사적 전투 등을 주로 이끈 장군, 의사, 열사 등.
+- 예술 / 문학: 판소리, 서양화, 풍속화, 무용, 시, 소설, 음악 등 문화예술 창작 활동을 한 예인, 작가, 화가 등.
+- 실학 / 학문: 성리학, 실학, 고증학, 과학 기술 연구 및 학술 교육에 헌신한 학자, 사상가 등.
+
+[캐릭터 설계 절대 원칙 - MBTI 자동 판별]
+★ [매우 중요] 특정 MBTI를 미리 정해두고 인물의 행적을 억지로 짜맞추지 마세요. 반드시 제공된 [RAG 데이터 컨텍스트]를 먼저 철저히 분석한 뒤, 인물이 역사 속에서 보여준 가장 주된 업적과 성향에 가장 잘 어울리는 MBTI를 16가지 유형 중 하나로 '스스로 판별'하여 부여하세요.
+역사적 사실을 다 집어넣으려고 한 문장 안에 반대되는 성향을 섞어 쓰는 순간 너의 임무는 실패입니다. 설정한 MBTI 알파벳 성향 하나에만 100% 집중하여 선명한 캐릭터 카드를 만드세요.
+
+[MBTI 부여 및 작성 원칙 - 매우 중요!]
+★ MBTI 알파벳별 역사적 행동 매칭 기준 (오류 방지 이분법 기준):
+AI는 인물의 수많은 업적 중, 본인이 판별하여 선택한 알파벳의 '생각과 행동 목적'에 100% 부합하는 사례만 남기고 반대 성향의 사실은 반드시 삭제해야 합니다.
+
+[E vs I : 에너지를 쓰고 결단을 내리는 방식]
+- E (외향 - 외부 교류 중심): 여러 사람 앞에 나서서 대중을 이끌거나 외부에 에너지를 쏟은 행적입니다.
+  * 키워드: 대중 연설, 적극적인 동료/군사 규합, 격렬한 끝장 토론, 활발한 대외 외교 활동.
+- I (내향 - 내부 집중 중심): 남들의 시선에서 벗어나 혼자 사색하거나 소수의 측근과 은밀하게 움직인 행적입니다.
+  * 키워드: 독자적인 책/일기 저술, 홀로 밤새 고민함, 밀실 정치, 비밀 편지(어찰)를 통한 고독한 결단.
+
+[S vs N : 정보를 바라보고 목적을 세우는 방식] ★가장 오차가 크니 주의할 것★
+- S (감각 - 현실과 과거 중심): "이미 증명된 과거의 기록, 선대의 관습, 눈앞의 실제 데이터와 현장 경험"을 기반으로 움직인 행적입니다.
+  * 키워드: 과거 역사 기록 참고, 전통문화와 관습 수호, 지형과 날씨 데이터 활용, 실제 농사/실측 경험 중시.
+- N (직관 - 미래와 혁신 중심): "당장 눈앞에 없는 미래의 가능성, 기존 역사를 깨부수는 독창적인 비전과 발명"을 기반으로 움직인 행적입니다.
+  * 키워드: 세상에 없던 새로운 문자 창제(한글), 신분제 폐지 구상, 서양의 첨단 신기술/문물 전격 도입, 미래를 내다본 수도 천도.
+
+[T vs F : 판단과 의사결정을 내리는 기준]
+- T (사고 - 논리와 실리 중심): 개인적인 감정이나 도덕적 명분보다 "철저한 인과관계 분석과 실리적 이익"을 우선시한 행적입니다.
+  * 키워드: 냉철한 정세/리스크 분석, 국가적 실리(이익) 저울질, 법과 원칙에 따른 엄격한 처벌과 집행.
+- F (감정 - 인간미와 명분 중심): 이익 계산보다 "사람 중심의 가치, 백성에 대한 사랑, 도덕적 명분과 유대감"을 우선시한 행적입니다.
+  * 키워드: 백성을 가엽게 여김(애민정신), 동료들과의 끈끈한 의리, 나라를 향한 뜨거운 충성심, 눈물의 호소.
+
+[J vs P : 목표를 계획하고 실행하는 방식]
+- J (판단 - 체계와 통제 중심): 변수를 줄이기 위해 "사전에 치밀한 계획을 세우고 체계적인 시스템"을 정비한 행적입니다.
+  * 키워드: 치밀한 사전 계획 수립, 국가 제도 및 법전 완성, 매뉴얼화, 엄격한 군율과 규칙 확립.
+- P (인식 - 유연과 기동 중심): 틀에 얽매이지 않고 "상황의 변화에 따라 자유롭고 임기응변식으로 대응"한 행적입니다.
+  * 키워드: 예상치 못한 위기에서의 기발한 임기응변, 고정관념에서 벗어난 자유로운 탐색, 신출귀몰한 게릴라 전술(의병 활동).
 
 반드시 아래 JSON 형식으로만 출력해:
 {{
-    "name": "인물 이름 (예: 윤봉길 의사, 이순신 장군, 세종대왕)",
-    "era": "시대 명칭 (예: 조선 시대(1545-1598), 일제강점기(1908-1932))",
-    "era_tag": "시대 태그 (예: 일제강점기, 조선 시대)",
-    "role": "직업/역할 명칭 (예: 독립운동가, 삼도수군통제사, 조선 4대 왕)",
-    "keywords": ["해시태그 키워드 1", "키워드 2", "키워드 3"],
-    "years": "생몰년도 또는 활동기간 (예: 1908-1932, 1545-1598, 1397-1450)",
+    "name": "인물 이름 (예: 고종, 이순신, 세종대왕)",
+    "category": "RAG 컨텍스트를 분석하여 부여한 카테고리. 반드시 다음 4가지 문자열 중 하나여야 함: ['정치 / 외교', '독립 / 호국', '예술 / 문학', '실학 / 학문']",
+    "era": "시대 명칭 (예: 조선 후기(1863-1907), 조선 시대(1545-1598))",
+    "era_tag": "시대 태그 (예: 조선 후기, 조선 시대, 일제강점기, 근대)",
+    "role": "대표 직업/역할 (예: 왕, 독립운동가, 서양화가)",
+    "keywords": ["대표 해시태그 1", "태그 2", "태그 3"],
+    "years": "생몰년도 또는 활동 기간 (예: 1863-1907, 1545-1598)",
     "situation": "당시 시대 상황 설명 (쉽게 2~3줄)",
     "one_line_summary": "히어로물 느낌의 직관적인 수식어 한줄 요약",
-    "mbti": "인물 성향에 맞는 MBTI 4글자",
-    "mbti_nickname": "MBTI에 따른 캐릭터 별명 (예: 선의의 옹호자 / 독립운동계의 철두철미한 계획러)",
+    "mbti": "RAG 분석을 통해 인물에게 가장 잘 어울린다고 판별한 MBTI 4글자",
+    "mbti_nickname": "부여한 MBTI에 따른 캐릭터 별명",
     "mbti_details": {{
-        "E_I": "외향/내향형 특성 한줄 설명",
-        "S_N": "감각/직관형 특성 한줄 설명",
-        "T_F": "사고/감정형 특성 한줄 설명",
-        "J_P": "판단/인식형 특성 한줄 설명"
+        "E_I": "최종 선택한 글자가 'E'라면 [활발한 대외 활동/토론] 행적을 쓰고, 'I'라면 [혼자 사색/독자적 저술/고독한 결단] 행적만 쓰세요. (두 성향 절대 섞지 말 것)",
+        "S_N": "최종 선택한 글자가 'S'라면 [전통 수호/기존 기록 참고]를 적고, 'N'이라면 [첨단 기술 도입/새로운 비전 창조] 행적만 적으세요. (두 성향 절대 섞지 말 것)",
+        "T_F": "최종 선택한 글자가 'T'라면 [냉철한 인과 분석/실리 계산] 행적을 쓰고, 'F'라면 [백성을 향한 사랑(애민)/의리와 인간미] 행적만 쓰세요. (두 성향 절대 섞지 말 것)",
+        "J_P": "최종 선택한 글자가 'J'라면 [치밀한 사전 계획/체계적 시스템 정비] 행적을 쓰고, 'P'라면 [유연한 임기응변/기동성 있는 전술] 행적만 쓰세요. (두 성향 절대 섞지 말 것)"
     }},
     "stats": [
-        {{"name": "스탯 1 이름 (예: 계획과 선택력)", "value": 90, "desc": "설명"}},
-        {{"name": "스탯 2 이름 (예: 용기와 결단력)", "value": 95, "desc": "설명"}},
-        {{"name": "스탯 3 이름 (예: 사명과 책임감)", "value": 92, "desc": "설명"}}
+        {{"name": "스탯 1 이름 (예: 외교력)", "value": 88, "desc": "설명"}},
+        {{"name": "스탯 2 이름 (예: 개혁 추진력)", "value": 90, "desc": "설명"}},
+        {{"name": "스탯 3 이름 (예: 애민정신)", "value": 85, "desc": "설명"}}
     ],
     "intro_quote": "인물의 유명한 명언이나 다짐 한 줄",
-    "intro_desc": "인물이 이 거사를 치르게 된 계기와 시대 상황 설명 2~3줄"
+    "intro_desc": "인물이 활약하게 된 주요 계기와 행적 설명 2~3줄"
 }}
 """
-    if not openai_client:
-        raise Exception("OpenAI API Client가 설정되지 않았습니다. (.env에 OPENAI_API_KEY를 확인하세요)")
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+    
+    card_data = json.loads(response.choices[0].message.content)
+    return card_data
 
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "user", "content": character_card_prompt}
-                ],
-                response_format={"type": "json_object"}
-            )
-            card_data = json.loads(response.choices[0].message.content)
-            return CharacterCard(**card_data)
-        except Exception as e:
-            err_msg = str(e)
-            # 429 Rate Limit (Quota Exceeded) 또는 OpenAI의 RateLimitError 감지 시 대기 후 재시도
-            if "429" in err_msg or "rate_limit" in err_msg.lower() or "rate limit" in err_msg.lower() or "RateLimitError" in type(e).__name__:
-                if attempt < max_retries - 1:
-                    wait_sec = 25 * (attempt + 1)
-                    print(f"\n[WARNING] OpenAI 429 Rate Limit 감지. {wait_sec}초 대기 후 재시도합니다... (시도 {attempt+1}/{max_retries})")
-                    time.sleep(wait_sec)
-                    continue
-            raise Exception(f"OpenAI 프로필 생성 API 에러: {err_msg}")
-
-
-def get_character_card(character_name: str) -> CharacterCard:
+def generate_characters_json():
     """
-    1. 메모리 캐시에서 해당 캐릭터 카드를 먼저 탐색하고,
-    2. 없으면 OpenAI API를 통해 프로필 정보를 생성하고 연고 시도(associated_sidos)를 맵핑한 후 profiles.json 및 캐시에 갱신하여 반환.
+    kf_area_total_merged.csv 파일로부터 캐릭터 목록을 필터링하고
+    OpenAI API를 통해 프로필을 추출한 후 characters.json을 생성하여 저장.
     """
-    # 1. 메모리 캐시에서 조회
-    if character_name in cached_profiles:
-        return CharacterCard(**cached_profiles[character_name])
+    print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
+    if not os.path.exists(CSV_PATH):
+        raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
         
-    # 2. 없으면 OpenAI로 프로필 카드 생성
-    card = generate_character_card_via_openai(character_name)
+    df = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
+    print(f"[SUCCESS] CSV 로드 완료: {len(df):,}행")
     
-    # 3. 이 인물이 출연하는 Sido 목록을 RAG에서 찾아 채워줌 (위/경도가 존재하고 관련 인물 필드 매칭)
-    sidos = set()
-    for item in cached_rag_data:
-        metadata = item.get("metadata", {})
-        related_person = metadata.get("related_person") or ""
-        if character_name in related_person:
-            if metadata.get("latitude") is not None and metadata.get("longitude") is not None:
-                sido = metadata.get("region_sido")
-                if sido:
-                    sidos.add(sido)
-    card.associated_sidos = sorted(list(sidos))
+    df_clean = df.dropna(subset=["relate_prsn_nm"]).copy()
+    df_clean["relate_prsn_nm"] = df_clean["relate_prsn_nm"].astype(str).str.strip()
+    df_clean = df_clean[df_clean["relate_prsn_nm"] != ""]
     
-    # 4. 메모리 캐시에 탑재하고 profiles.json 파일 업데이트
-    cached_profiles[character_name] = card.model_dump()
-    try:
-        # data 디렉토리 존재 확인
-        os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
-        with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
-            json.dump(cached_profiles, f, ensure_ascii=False, indent=4)
-        print(f"[SUCCESS] {character_name} 프로필 생성 및 통합 캐시({PROFILES_JSON_PATH}) 저장 완료.")
-    except Exception as e:
-        print(f"[WARNING] 프로필 통합 캐시 파일 저장 실패 ({character_name}): {str(e)}")
+    person_counts = df_clean["relate_prsn_nm"].value_counts()
+    
+    min_stories_threshold = 60
+    selected_characters = [name for name, count in person_counts.items() if count >= min_stories_threshold]
+    
+    # 이순신 예외 추가
+    special_characters = ["이순신"]
+    for name in special_characters:
+        if name not in selected_characters and name in person_counts:
+            selected_characters.append(name)
+            
+    selected_characters = sorted(selected_characters)
+    
+    print(f"[INFO] 생성 대상 인물 리스트 ({len(selected_characters)}명): {selected_characters}")
+    
+    character_database = {}
+    start_time = time.time()
+    
+    for idx, char_name in enumerate(selected_characters):
+        print(f"\n[{idx+1}/{len(selected_characters)}] '{char_name}' 생성 진행 중...")
+        associated_stories = get_associated_stories_for_char(df_clean, char_name)
         
-    return card
-
-
-def sync_profiles_cache(min_clues: int = 50):
-    """
-    RAG 데이터를 집계하여 단서가 min_clues개(기본 50개) 이상인 캐릭터 후보 중
-    profiles.json 파일에 로드되어 있지 않은 누락된 신규 캐릭터 카드를 OpenAI를 통해 생성하고 동기화.
-    """
-    global cached_profiles, cached_rag_data
-    if not cached_rag_data:
-        print("[WARNING] RAG 데이터가 로드되지 않아 동기화를 진행할 수 없습니다.")
-        return
-
-    # 1. RAG 데이터에서 related_person별 단서 개수 집계
-    counts = Counter()
-    for item in cached_rag_data:
-        person = item.get("metadata", {}).get("related_person")
-        if person:
-            counts[person] += 1
-
-    # 2. 단서가 min_clues개 이상인 캐릭터 후보 필터링
-    playable_candidates = [person for person, cnt in counts.items() if cnt >= min_clues]
-    print(f"[INFO] 단서 {min_clues}개 이상인 인물 후보군: {len(playable_candidates)}명")
-
-    # 3. profiles.json 캐시에 누락된 신규 캐릭터 찾기
-    missing_chars = [char for char in playable_candidates if char not in cached_profiles]
-
-    if not missing_chars:
-        print("[SUCCESS] profiles.json 캐시가 최신 상태입니다. 추가로 생성할 캐릭터가 없습니다.")
-        return
-
-    print(f"[INFO] 누락된 캐릭터 {len(missing_chars)}명 발견: {missing_chars}. OpenAI API를 호출하여 생성을 시작합니다.")
-
-    # 4. 루프를 돌며 신규 프로필 카드 생성 및 저장
-    success_count = 0
-    for i, char in enumerate(missing_chars):
-        print(f"[{i+1}/{len(missing_chars)}] '{char}'의 프로필 카드를 생성 중...")
-        try:
-            get_character_card(char)
-            success_count += 1
-            
-            # API Rate limit을 피하기 위해 딜레이 추가 (단, 1개 이상 남았을 때만)
-            if i < len(missing_chars) - 1:
-                time.sleep(3)  # 안전을 위해 3초 대기
-        except Exception as e:
-            print(f"[ERROR] '{char}' 프로필 생성 실패: {str(e)}")
-            continue
-
-    # 1개 이상의 새로운 카드가 완벽히 성공한 경우에만 최종 profiles.json 파일 캐시를 갱신
-    if success_count > 0:
-        try:
-            os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
-            with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(cached_profiles, f, ensure_ascii=False, indent=4)
-            print(f"[SUCCESS] 신규 프로필 {success_count}개 생성 완료로 profiles.json 파일 최종 갱신 완료: {PROFILES_JSON_PATH}")
-        except Exception as e:
-            print(f"[WARNING] profiles.json 최종 저장 중 실패: {str(e)}")
-    else:
-        print("[INFO] 신규 캐릭터 생성에 실패했거나 추가된 캐릭터가 없어 profiles.json 쓰기를 건너뛰고 기존 데이터를 안전하게 유지합니다.")
-
-
-def load_regions_to_memory(force_sync: bool = False):
-    """
-    서버 초기 기동 또는 데이터 매니저 직접 실행 시 데이터와 캐시를 로딩하는 메인 함수.
-    1. profiles.json 캐시를 로딩.
-    2. RAG 데이터를 로딩하고 고유 시도 및 시도-시군구 관계 목록을 메모리에 구축.
-    3. 캐시가 비어있거나 force_sync=True인 경우 sync_profiles_cache를 작동시켜 누락 프로필을 순차 생성.
-    4. 로드된 캐릭터들을 RAG clues를 토대로 연고 지역(associated_sidos)과 실시간 매핑.
-    """
-    global cached_sido, cached_sido_sigungu, cached_rag_data, cached_profiles
-    
-    # 1. 프로필 카드 데이터 로드
-    if os.path.exists(PROFILES_JSON_PATH):
-        try:
-            with open(PROFILES_JSON_PATH, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-            
-            # 파일이 비어있는 {} 인 경우 기본 템플릿으로 채워넣어 복원합니다.
-            if not loaded:
-                print(f"[WARNING] 프로필 데이터 파일이 비어있습니다. 기본 템플릿({len(DEFAULT_FALLBACK_PROFILES)}명)으로 자가 복원합니다.")
-                cached_profiles = dict(DEFAULT_FALLBACK_PROFILES)
-                try:
-                    with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f_write:
-                        json.dump(cached_profiles, f_write, ensure_ascii=False, indent=4)
-                    print(f"[SUCCESS] 기본 프로필 템플릿을 {PROFILES_JSON_PATH}에 저장 완료.")
-                except Exception as e_write:
-                    print(f"[ERROR] 기본 프로필 파일 쓰기 실패: {str(e_write)}")
-            else:
-                cached_profiles = loaded
-                print(f"[SUCCESS] {len(cached_profiles)}개의 캐릭터 프로필을 로드했습니다. ({PROFILES_JSON_PATH})")
-        except Exception as e:
-            print(f"[WARNING] 프로필 데이터 파일 로드 실패: {str(e)}. 기본 템플릿으로 메모리 및 파일을 복원합니다.")
-            cached_profiles = dict(DEFAULT_FALLBACK_PROFILES)
+        retries = 3
+        for attempt in range(retries):
             try:
-                os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
-                with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f_write:
-                    json.dump(cached_profiles, f_write, ensure_ascii=False, indent=4)
-            except Exception as e_write:
-                print(f"[ERROR] 기본 프로필 파일 재생성 실패: {str(e_write)}")
-    else:
-        print(f"[WARNING] 프로필 데이터 파일이 존재하지 않습니다: {PROFILES_JSON_PATH}. 기본 템플릿으로 복원합니다.")
-        cached_profiles = dict(DEFAULT_FALLBACK_PROFILES)
-        # profiles.json이 없을 때 기본 프로필 템플릿으로 복원해 생성
-        try:
-            os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
-            with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(cached_profiles, f, ensure_ascii=False, indent=4)
-            print(f"[SUCCESS] 기본 프로필 템플릿으로 새 캐시 파일({PROFILES_JSON_PATH})을 안전하게 생성했습니다.")
-        except Exception as e:
-            print(f"[ERROR] 기본 프로필 파일 생성 실패: {str(e)}")
-
-    # 2. RAG 데이터 로드
-    if not os.path.exists(RAG_DATA_PATH):
-        print(f"[WARNING] RAG 데이터 파일을 찾을 수 없습니다: {RAG_DATA_PATH}")
-        return
-
-    try:
-        with open(RAG_DATA_PATH, "r", encoding="utf-8") as f:
-            rag_data = json.load(f)
-            
-        cached_rag_data = rag_data
-        sido_set = set()
-        pair_set = set()
-        
-        for item in rag_data:
-            metadata = item.get("metadata", {})
-            sido = metadata.get("region_sido")
-            sigungu = metadata.get("region_sigungu")
-            
-            if sido:
-                sido_set.add(sido)
-                if sigungu:
-                    pair_set.add((sido, sigungu))
-
-        cached_sido = sorted(list(sido_set))
-        cached_sido_sigungu = [
-            {"region_sido": sido, "region_sigungu": sigungu}
-            for sido, sigungu in sorted(list(pair_set))
-        ]
-        print(f"[SUCCESS] 총 {len(cached_sido)}개의 시도, {len(cached_sido_sigungu)}개의 시도-시군구 데이터, {len(cached_rag_data)}개의 RAG 단서 데이터.")
-        
-        # 3. 캐릭터 프로필 캐시와 RAG 데이터 자동 동기화 (신규 캐릭터 자동 생성)
-        # profiles.json 캐시가 비어있거나 force_sync가 True일 때만 동기화 진행
-        if not cached_profiles or force_sync:
-            print("[INFO] 프로필 캐시가 비어있거나 강제 동기화가 활성화되었습니다. 동기화를 진행합니다...")
-            sync_profiles_cache(min_clues=50)
-        else:
-            print("[INFO] 기존 프로필 캐시가 존재합니다. 동기화를 건너뜁니다.")
-
-        # 4. 캐릭터별 연고 시도(associated_sidos) 자동 매핑
-        map_profiles_to_sidos()
-    except Exception as e:
-        print(f"[ERROR] 데이터 로드 중 오류 발생: {str(e)}")
-
-
-def map_profiles_to_sidos():
-    """
-    메모리 프로필 캐시에 탑재된 캐릭터들과 RAG 데이터를 조사하여
-    캐릭터가 출연하는 행정구역(Sido) 목록을 associated_sidos에 실시간으로 매핑 및 채워넣어줌.
-    (메타데이터의 related_person에 캐릭터명이 매칭되고 위도/경도가 유효한 경우만 수집)
-    """
-    global cached_profiles, cached_rag_data
-    if not cached_profiles or not cached_rag_data:
-        return
-        
-    print("[INFO] 캐릭터와 연고 지역(시도) 자동 매핑 작업 진행 중...")
-    mapped_count = 0
-    for char_key, profile in cached_profiles.items():
-        sidos = set()
-        for item in cached_rag_data:
-            metadata = item.get("metadata", {})
-            related_person = metadata.get("related_person") or ""
-            
-            if char_key in related_person:
-                if metadata.get("latitude") is not None and metadata.get("longitude") is not None:
-                    sido = metadata.get("region_sido")
-                    if sido:
-                        sidos.add(sido)
+                profile_data = generate_character_profile_via_openai(char_name, associated_stories)
+                profile_data["associated_stories"] = associated_stories
+                character_database[char_name] = profile_data
+                print(f" ➔ '{char_name}' 프로필 생성 완료 (카테고리: {profile_data.get('category')}, MBTI: {profile_data.get('mbti')})")
+                break
+            except Exception as e:
+                print(f" ➔ '{char_name}' 생성 시도 {attempt+1} 실패: {e}")
+                if attempt < retries - 1:
+                    time.sleep(10 * (attempt + 1))
+                else:
+                    print(f"[CRITICAL] '{char_name}' 생성 최종 실패. 생략합니다.")
                     
-        profile["associated_sidos"] = sorted(list(sidos))
-        mapped_count += 1
-        print(f"   - {char_key}: {len(sidos)}개 시도와 매핑됨 ({', '.join(sorted(list(sidos)))[:80]}...)")
+        # OpenAI API Rate limit 방지를 위해 딜레이
+        time.sleep(2)
         
-    # 업데이트된 매핑 내용을 profiles.json 파일에도 반영하여 영구 저장
-    try:
-        os.makedirs(os.path.dirname(PROFILES_JSON_PATH), exist_ok=True)
-        with open(PROFILES_JSON_PATH, "w", encoding="utf-8") as f:
-            json.dump(cached_profiles, f, ensure_ascii=False, indent=4)
-        print(f"[SUCCESS] 업데이트된 연고 지역 매핑 정보를 {PROFILES_JSON_PATH}에 영구 저장했습니다.")
-    except Exception as e:
-        print(f"[WARNING] profiles.json 저장 중 실패: {str(e)}")
-
-    print(f"[SUCCESS] 총 {mapped_count}개 캐릭터의 연고 지역 매핑 완료.")
-
+    os.makedirs(os.path.dirname(CHARACTERS_JSON_PATH), exist_ok=True)
+    with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
+        json.dump(character_database, f, ensure_ascii=False, indent=4)
+        
+    end_time = time.time()
+    print(f"\n[SUCCESS] {len(character_database)}명의 캐릭터 데이터베이스 저장 완료: {CHARACTERS_JSON_PATH}")
+    print(f"총 소요 시간: {end_time - start_time:.2f}초")
 
 if __name__ == "__main__":
-    load_regions_to_memory(force_sync=True)
+    generate_characters_json()
