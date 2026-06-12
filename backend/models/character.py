@@ -9,16 +9,25 @@ class MBTIDetails(BaseModel):
 
 class StatItem(BaseModel):
     name: str
-    value: int  # e.g., 92, 98
+    value: int  # 92, 98
     desc: str
+
+class StoryItem(BaseModel):
+    id: int
+    domain: str
+    title: str
+    summary: str
+    sido: str
+    sigungu: str
 
 class CharacterCard(BaseModel):
     name: str
+    category: str        # "정치 / 외교", "독립 / 호국", "예술 / 문학", "실학 / 학문"
     era: str
-    era_tag: str         # e.g., "일제강점기", "조선 시대"
-    role: str            # e.g., "독립운동가", "조선 4대 왕"
-    keywords: List[str]  # e.g., ["독립운동", "3.1운동", "한인애국단"]
-    years: str           # e.g., "1908-1932"
+    era_tag: str         # "조선 후기", "일제강점기"
+    role: str            # "왕", "독립운동가"
+    keywords: List[str]  # ["왕", "개혁", "외교"]
+    years: str           # "1863-1907"
     situation: str
     one_line_summary: str
     mbti: str
@@ -27,4 +36,4 @@ class CharacterCard(BaseModel):
     stats: List[StatItem]
     intro_quote: str
     intro_desc: str
-    associated_sidos: List[str] = []
+    associated_stories: List[StoryItem] = []
