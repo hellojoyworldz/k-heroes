@@ -80,6 +80,37 @@ def get_retrieved_clues(character_name: str, sido: Optional[str] = None, sigungu
         })
     return clues
 
+# 마스터 CSV 데이터 프레임 전역 캐시
+_df_master: Optional[pd.DataFrame] = None
+
+def get_master_df() -> pd.DataFrame:
+    """
+    마스터 CSV 파일을 최초 1회 로드하여 메모리에 캐싱하고 반환.
+    """
+    global _df_master
+    if _df_master is None:
+        if not os.path.exists(CSV_PATH):
+            raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
+        _df_master = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
+    return _df_master
+
+def get_story_context(story_id: int, story_domain: str) -> str:
+    """
+    story_id와 story_domain에 해당하는 특정 RAG 단서 행을 찾아 타이틀과 요약문 반환.
+    """
+    try:
+        df = get_master_df()
+        rows = df[(df["data_manage_no"] == story_id) & (df["data_manage_keyword"] == story_domain)]
+        if rows.empty:
+            return ""
+        row = rows.iloc[0]
+        title = row.get("data_title_nm", "")
+        summary = row.get("sumry_cn", "")
+        return f"제목: {title}\n요약: {summary}"
+    except Exception as e:
+        print(f"[WARNING] 스토리 컨텍스트 조회 중 오류 발생: {e}")
+        return ""
+
 # --- characters.json 생성을 위한 데이터 파이프라인 함수들 ---
 
 def get_associated_stories_for_char(df_clean: pd.DataFrame, character_name: str, max_stories: int = 50) -> List[Dict[str, Any]]:

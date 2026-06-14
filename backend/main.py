@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import character
+from router import character, simulation
 import data_manager
 
 app = FastAPI()
@@ -16,6 +16,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(character.router)
+app.include_router(simulation.router)
 
 # 서버 가동 시점에 전역 캐시 로드 가동
 @app.on_event("startup")
