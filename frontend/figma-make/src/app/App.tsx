@@ -42,7 +42,7 @@ export default function App() {
       <CharacterDetailPage
         charId={selectedCharId}
         onBack={() => setPage("landing")}
-        onStart={goToSimulation}
+        onStartScenario={goToSimulation}
       />
     );
   }

@@ -1,3 +1,5 @@
+import { BrandLogo } from "./BrandLogo";
+
 const FOOTER_LINKS = {
   서비스: ["서비스 소개", "지역 선택", "역사 아카이브", "이용 가이드"],
   지원: ["교육기관 문의", "공지사항", "자주 묻는 질문", "개인정보처리방침"],
@@ -12,22 +14,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{
-                  background: "rgba(253,250,244,0.95)",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                }}
-              >
-                <img src="/logo.svg" alt="K-Heroes 로고" className="h-6 w-auto" />
-              </div>
-              <span
-                style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 600, fontSize: "15px", color: "#2A4232" }}
-              >
-                K-Heroes
-              </span>
-            </div>
+            <BrandLogo dark className="mb-5" />
             <p
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",

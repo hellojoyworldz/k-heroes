@@ -16,7 +16,9 @@ export default function CharacterDetailRoutePage() {
     <CharacterDetailPage
       charId={charId}
       onBack={() => router.push("/select")}
-      onStart={() => router.push(`/simulation/${charId}`)}
+      onStartScenario={(scenarioIdx) =>
+        router.push(`/simulation/${charId}?scenario=${scenarioIdx}`)
+      }
     />
   );
 }

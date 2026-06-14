@@ -1,301 +1,73 @@
-import { useState } from "react";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { ArrowLeft, ChevronRight, Search, X, ChevronLeft } from "lucide-react";
 import mapBg from "../../imports/image-15.png";
 import { CHARACTERS } from "../data/characters";
-
-const FEATURED_CHARS = ["yunbongil", "sejong", "yi_sunsin"] as const;
+import { BrandLogo } from "./BrandLogo";
 
 /* ──────────────────────────────────────────
-   지역 & 인물 데이터
+   키워드 데이터
 ────────────────────────────────────────── */
-interface Character {
+interface Keyword {
   id: string;
-  name: string;
-  role: string;
-  era: string;
-  desc: string;
-  img: string;
+  label: string;
+  sublabel: string;
+  hanja: string;
+  accent: string;
+  charIds: string[];
 }
 
-interface Province {
-  id: string;
-  name: string;
-  tag: string;
-  path: string;        // polygon points
-  labelX: number;
-  labelY: number;
-  pinX: number;
-  pinY: number;
-  available: boolean;
-  characters: Character[];
-}
-
-const PROVINCES: Province[] = [
+const KEYWORDS: Keyword[] = [
   {
-    id: "seoul-gyeonggi",
-    name: "서울·경기",
-    tag: "왕권 · 조선",
-    labelX: 108, labelY: 102,
-    pinX: 120,   pinY:  84,
-    available: true,
-    path: "78,60 143,45 162,95 158,126 128,136 80,128 78,95",
-    characters: [
-      {
-        id: "sejong",
-        name: "세종대왕",
-        role: "조선 4대 왕",
-        era: "1397–1450",
-        desc: "한글을 창제하고 과학·예술·외교를 집대성한 성군. 백성을 위한 선택이 역사를 바꿉니다.",
-        img: "https://images.unsplash.com/photo-1746911062158-7e15deb1d2f1?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "yi-sunsin",
-        name: "이순신 장군",
-        role: "삼도수군통제사",
-        era: "1545–1598",
-        desc: "13척의 배로 나라의 위기를 지켜낸 위대한 장군. 당신이라면 어떤 전술을 선택하겠습니까?",
-        img: "https://images.unsplash.com/photo-1755359494724-7d9f74874275?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "sinsaimdang",
-        name: "신사임당",
-        role: "예술가 · 학자",
-        era: "1504–1551",
-        desc: "조선 최고의 여성 예술가이자 학자. 제도의 벽 앞에서 그녀는 어떤 선택을 했을까요?",
-        img: "https://images.unsplash.com/photo-1751612428402-d66ea21380a8?w=300&q=85&fit=crop&crop=top",
-      },
-    ],
+    id: "all",
+    label: "전체 보기",
+    sublabel: "모든 역사 인물",
+    hanja: "全",
+    accent: "#5A4A32",
+    charIds: ["yunbongil", "yi_sunsin", "sejong"],
   },
   {
-    id: "gangwon",
-    name: "강원도",
-    tag: "자연 · 개척",
-    labelX: 228, labelY: 112,
-    pinX: 238,   pinY:  98,
-    available: false,
-    path: "143,45 268,42 308,115 260,170 188,152 162,126 162,95",
-    characters: [],
+    id: "politics",
+    label: "정치 / 외교",
+    sublabel: "나라를 이끄는 결단",
+    hanja: "政",
+    accent: "#2A4232",
+    charIds: ["yunbongil", "yi_sunsin", "sejong"],
   },
   {
-    id: "chungcheong",
-    name: "충청도",
-    tag: "실학 · 의병",
-    labelX: 132, labelY: 168,
-    pinX: 145,   pinY: 158,
-    available: false,
-    path: "80,128 128,136 158,126 162,126 188,152 188,176 162,192 138,200 105,196 80,176",
-    characters: [],
+    id: "independence",
+    label: "독립 / 호국",
+    sublabel: "조국을 지킨 영혼들",
+    hanja: "義",
+    accent: "#7A3020",
+    charIds: ["yunbongil", "yi_sunsin"],
   },
   {
-    id: "jeolla",
-    name: "전라도",
-    tag: "독립 · 예술",
-    labelX: 96,  labelY: 248,
-    pinX: 110,   pinY: 230,
-    available: true,
-    path: "80,176 105,196 138,200 145,235 140,265 125,292 95,300 70,280 64,246 72,216",
-    characters: [
-      {
-        id: "jeon-bong-jun",
-        name: "전봉준",
-        role: "동학농민군 지도자",
-        era: "1854–1895",
-        desc: "녹두장군 전봉준. 농민의 손으로 역사를 바꾸려 했던 그의 선택은 무엇을 남겼을까요?",
-        img: "https://images.unsplash.com/photo-1774979301181-bbbfbcebda8b?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "yu-gwan-sun",
-        name: "유관순",
-        role: "독립운동가",
-        era: "1902–1920",
-        desc: "3.1 운동의 상징. 17세 청년이 선택한 길 위에 현재의 전주가 있습니다.",
-        img: "https://images.unsplash.com/photo-1665562227617-93b89b3be218?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "choe-chi-won",
-        name: "최치원",
-        role: "문장가 · 유학자",
-        era: "857–?",
-        desc: "신라 말 천재 문장가. 당나라와 신라 사이에서 정체성의 갈림길에 선 지식인의 이야기.",
-        img: "https://images.unsplash.com/photo-1750926013438-57fc3124bfa6?w=300&q=85&fit=crop&crop=top",
-      },
-    ],
+    id: "art",
+    label: "예술 / 문학",
+    sublabel: "시대를 수놓은 아름다움",
+    hanja: "藝",
+    accent: "#50407A",
+    charIds: ["sejong"],
   },
   {
-    id: "gyeongsang",
-    name: "경상도",
-    tag: "선비 · 호국",
-    labelX: 232, labelY: 232,
-    pinX: 248,   pinY: 200,
-    available: true,
-    path: "308,115 310,206 305,252 285,276 250,300 215,312 175,316 140,312 125,292 140,265 145,235 138,200 162,192 188,176 188,152 260,170",
-    characters: [
-      {
-        id: "ryu-seong-ryong",
-        name: "류성룡",
-        role: "영의정 · 문신",
-        era: "1542–1607",
-        desc: "징비록을 남긴 조선의 전략가. 임진왜란의 혼란 속 결단이 조선을 구했습니다.",
-        img: "https://images.unsplash.com/photo-1766169776630-7f2a3708b283?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "yi-hwang",
-        name: "이황",
-        role: "성리학자 · 교육자",
-        era: "1501–1570",
-        desc: "퇴계 이황. 조선 성리학의 정수. 학문과 현실 사이에서 선비는 무엇을 선택했을까요?",
-        img: "https://images.unsplash.com/photo-1766169776624-24399cc458ed?w=300&q=85&fit=crop&crop=top",
-      },
-      {
-        id: "kim-si-min",
-        name: "김시민",
-        role: "진주목사 · 장군",
-        era: "1554–1592",
-        desc: "3,800명으로 30,000 왜군을 막아낸 진주대첩의 영웅. 성벽 위의 선택이 역사가 됩니다.",
-        img: "https://images.unsplash.com/photo-1581365004391-d2104ff7e4fa?w=300&q=85&fit=crop&crop=top",
-      },
-    ],
+    id: "sirhak",
+    label: "실학 / 학문",
+    sublabel: "지식으로 세상을 바꾸다",
+    hanja: "學",
+    accent: "#28506E",
+    charIds: ["sejong", "yi_sunsin"],
   },
 ];
 
-const REGION_OPTIONS = [
-  { value: "전국", label: "전국" },
-  { value: "서울·경기", label: "서울·경기" },
-  { value: "전라도", label: "전라도" },
-  { value: "경상도", label: "경상도" },
+const ALL_CHAR_IDS = ["yunbongil", "yi_sunsin", "sejong"];
+
+/* MBTI 유형 그룹 */
+const MBTI_GROUPS = [
+  { label: "분석가형", types: ["INTJ", "INTP", "ENTJ", "ENTP"], color: "#4A3A6A" },
+  { label: "외교관형", types: ["INFJ", "INFP", "ENFJ", "ENFP"], color: "#2A5A4A" },
+  { label: "관리자형", types: ["ISTJ", "ISFJ", "ESTJ", "ESFJ"], color: "#3A4A6A" },
+  { label: "탐험가형", types: ["ISTP", "ISFP", "ESTP", "ESFP"], color: "#6A3A2A" },
 ];
-
-/* ──────────────────────────────────────────
-   남한 SVG 지도
-────────────────────────────────────────── */
-function KoreaMap({
-  selected,
-  onSelect,
-}: {
-  selected: string | null;
-  onSelect: (id: string) => void;
-}) {
-  const [hovered, setHovered] = useState<string | null>(null);
-
-  const getFill = (p: Province) => {
-    if (selected === p.id) return "rgba(60,100,72,0.72)";
-    if (hovered === p.id && p.available) return "rgba(80,120,90,0.55)";
-    if (!p.available) return "rgba(180,165,138,0.32)";
-    return "rgba(200,178,138,0.45)";
-  };
-
-  const getStroke = (p: Province) => {
-    if (selected === p.id) return "#2A4232";
-    return "rgba(110,90,60,0.55)";
-  };
-
-  return (
-    <svg
-      viewBox="0 0 350 430"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-full"
-    >
-      {/* 지도 외곽 그림자 */}
-      <filter id="mapShadow">
-        <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.15" />
-      </filter>
-
-      {/* 각 행정구역 */}
-      <g filter="url(#mapShadow)">
-        {PROVINCES.map((p) => (
-          <polygon
-            key={p.id}
-            points={p.path}
-            fill={getFill(p)}
-            stroke={getStroke(p)}
-            strokeWidth={selected === p.id ? "1.5" : "1"}
-            strokeLinejoin="round"
-            style={{
-              cursor: p.available ? "pointer" : "default",
-              transition: "fill 0.18s ease",
-            }}
-            onClick={() => p.available && onSelect(p.id)}
-            onMouseEnter={() => p.available && setHovered(p.id)}
-            onMouseLeave={() => setHovered(null)}
-          />
-        ))}
-        {/* 제주도 */}
-        <ellipse
-          cx="135" cy="394" rx="46" ry="21"
-          fill="#D8D0C4" stroke="#A89E8C" strokeWidth="1"
-        />
-      </g>
-
-      {/* 행정구역 라벨 + 핀 */}
-      {PROVINCES.map((p) => (
-        <g key={`label-${p.id}`}>
-          {/* 핀 마커 */}
-          {p.available && (
-            <>
-              <circle
-                cx={p.pinX} cy={p.pinY} r={selected === p.id ? 7 : 5.5}
-                fill={selected === p.id ? "#2A4232" : "rgba(248,242,228,0.9)"}
-                stroke={selected === p.id ? "rgba(248,242,228,0.9)" : "#5A3E2B"}
-                strokeWidth="1.5"
-                style={{ cursor: "pointer", transition: "all 0.18s" }}
-                onClick={() => onSelect(p.id)}
-                onMouseEnter={() => setHovered(p.id)}
-                onMouseLeave={() => setHovered(null)}
-              />
-              {selected === p.id && (
-                <text
-                  x={p.pinX} y={p.pinY + 4.5}
-                  textAnchor="middle"
-                  fontSize="7"
-                  fill="white"
-                  style={{ pointerEvents: "none", fontWeight: "bold" }}
-                >✓</text>
-              )}
-            </>
-          )}
-          {/* 지역명 라벨 */}
-          <text
-            x={p.labelX}
-            y={p.labelY}
-            textAnchor="middle"
-            fontSize={selected === p.id ? "10" : "9"}
-            fontWeight={selected === p.id ? "700" : "500"}
-            fill={
-              !p.available
-                ? "#A89E8C"
-                : selected === p.id
-                ? "white"
-                : "#3A3028"
-            }
-            style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              pointerEvents: "none",
-              transition: "all 0.18s",
-            }}
-          >
-            {p.name}
-          </text>
-          {!p.available && (
-            <text
-              x={p.labelX} y={p.labelY + 11}
-              textAnchor="middle" fontSize="7"
-              fill="#B8AE9C"
-              style={{ fontFamily: "'Noto Sans KR', sans-serif", pointerEvents: "none" }}
-            >
-              준비 중
-            </text>
-          )}
-        </g>
-      ))}
-
-      {/* 제주도 라벨 */}
-      <text x="135" y="397" textAnchor="middle" fontSize="8" fill="#A89E8C"
-        style={{ fontFamily: "'Noto Sans KR', sans-serif", pointerEvents: "none" }}>
-        제주도
-      </text>
-    </svg>
-  );
-}
 
 /* ──────────────────────────────────────────
    인물 카드
@@ -303,28 +75,31 @@ function KoreaMap({
 function CharacterCard({
   charId,
   onDetail,
+  mbtiMatch,
 }: {
   charId: string;
   onDetail: (id: string) => void;
+  mbtiMatch?: boolean;
 }) {
   const char = CHARACTERS[charId];
   if (!char) return null;
 
   return (
     <div
-      className="flex overflow-hidden rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      className="flex overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer"
       style={{
-        background: "rgba(252,248,238,0.9)",
-        border: "1.5px solid rgba(110,80,40,0.14)",
-        boxShadow: "0 2px 14px rgba(90,60,20,0.1)",
-        minHeight: "148px",
+        background: "rgba(252,248,238,0.98)",
+        border: "1.5px solid rgba(110,80,40,0.22)",
+        boxShadow: "0 4px 20px rgba(90,60,20,0.1)",
+        minHeight: "136px",
       }}
+      onClick={() => onDetail(charId)}
     >
-      {/* 왼쪽: 초상화 — PNG 꽉 채움 */}
+      {/* 왼쪽: 초상화 */}
       <div
         className="flex-shrink-0 relative overflow-hidden"
         style={{
-          width: "120px",
+          width: "108px",
           background: "linear-gradient(170deg, #EDE0C4 0%, #D9C99A 100%)",
           alignSelf: "stretch",
         }}
@@ -345,39 +120,114 @@ function CharacterCard({
             display: "block",
           }}
         />
-        {/* 오른쪽 페이드 */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to right, transparent 50%, rgba(252,248,238,0.72) 100%)",
+            background:
+              "linear-gradient(to right, transparent 50%, rgba(252,248,238,0.72) 100%)",
             pointerEvents: "none",
           }}
         />
+        {/* MBTI 일치 뱃지 */}
+        {mbtiMatch && (
+          <div
+            className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full"
+            style={{
+              background: "#C9931A",
+              fontSize: "0.58rem",
+              color: "white",
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontWeight: 700,
+              letterSpacing: "0.02em",
+            }}
+          >
+            MBTI 일치
+          </div>
+        )}
       </div>
 
       {/* 오른쪽: 정보 */}
-      <div className="flex-1 px-4 py-4 flex flex-col justify-between min-w-0">
+      <div className="flex-1 px-4 py-3.5 flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex gap-1.5 mb-2 flex-wrap">
-            <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.6rem", background: "rgba(42,66,50,0.08)", color: "#4A6040", borderRadius: "99px", padding: "1px 7px" }}>{char.era}</span>
-            <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.6rem", background: "rgba(201,147,58,0.1)", color: "#A06C1A", borderRadius: "99px", padding: "1px 7px", fontWeight: 600 }}>{char.mbti}</span>
+          <div className="flex gap-1.5 mb-1.5 flex-wrap">
+            <span
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontSize: "0.6rem",
+                background: "rgba(42,66,50,0.08)",
+                color: "#4A6040",
+                borderRadius: "99px",
+                padding: "1px 7px",
+              }}
+            >
+              {char.era}
+            </span>
+            <span
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontSize: "0.6rem",
+                background: mbtiMatch ? "rgba(201,147,58,0.2)" : "rgba(201,147,58,0.1)",
+                color: "#A06C1A",
+                borderRadius: "99px",
+                padding: "1px 7px",
+                fontWeight: 700,
+                border: mbtiMatch ? "1px solid rgba(201,147,58,0.3)" : "none",
+              }}
+            >
+              {char.mbti}
+            </span>
           </div>
-          <h3 style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 700, fontSize: "1rem", color: "#1A1714", marginBottom: "2px", lineHeight: 1.3 }}>
+          <h3
+            style={{
+              fontFamily: "'Noto Serif KR', serif",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              color: "#1A1714",
+              marginBottom: "2px",
+              lineHeight: 1.3,
+            }}
+          >
             {char.name}
           </h3>
-          <p style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.7rem", color: "#7A7060", marginBottom: "6px" }}>
+          <p
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: "0.68rem",
+              color: "#7A7060",
+              marginBottom: "5px",
+            }}
+          >
             {char.role.split(" · ")[0]}
           </p>
-          <p style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.75rem", color: "#5A5248", lineHeight: 1.6 }}>
+          <p
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: "0.72rem",
+              color: "#5A5248",
+              lineHeight: 1.6,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {char.tagline}
           </p>
         </div>
 
         <button
-          className="mt-3 flex items-center gap-1 transition-opacity hover:opacity-70 self-start"
-          style={{ color: "#2A4232", fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 700, fontSize: "0.82rem" }}
-          onClick={() => onDetail(charId)}
+          className="mt-2.5 flex items-center gap-1 transition-opacity hover:opacity-70 self-start"
+          style={{
+            color: "#2A4232",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            fontWeight: 700,
+            fontSize: "0.78rem",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDetail(charId);
+          }}
         >
           체험하기
           <ChevronRight className="w-3.5 h-3.5" />
@@ -388,34 +238,481 @@ function CharacterCard({
 }
 
 /* ──────────────────────────────────────────
+   키워드 버튼
+────────────────────────────────────────── */
+function KeywordButton({
+  kw,
+  selected,
+  onClick,
+}: {
+  kw: Keyword;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const accentRgb =
+    kw.accent === "#2A4232" ? "42,66,50"
+    : kw.accent === "#7A3020" ? "122,48,32"
+    : kw.accent === "#50407A" ? "80,64,122"
+    : kw.accent === "#28506E" ? "40,80,110"
+    : "90,74,50";
+
+  return (
+    <button
+      onClick={onClick}
+      className="relative flex items-center gap-3 w-full text-left transition-all duration-200"
+      style={{
+        background: selected
+          ? `rgba(${accentRgb},0.11)`
+          : "rgba(248,242,228,0.5)",
+        border: selected
+          ? `1.5px solid ${kw.accent}40`
+          : "1.5px solid rgba(110,80,40,0.10)",
+        borderRadius: "14px",
+        padding: "11px 14px",
+        backdropFilter: "blur(4px)",
+        boxShadow: selected
+          ? `0 3px 14px ${kw.accent}1A`
+          : "0 1px 6px rgba(90,60,20,0.05)",
+        transform: selected ? "translateX(3px)" : "translateX(0)",
+      }}
+    >
+      {/* 좌측 선택 인디케이터 */}
+      {selected && (
+        <div
+          className="absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full"
+          style={{ background: kw.accent }}
+        />
+      )}
+
+      {/* 한자 배지 */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center rounded-full"
+        style={{
+          width: "40px",
+          height: "40px",
+          background: selected ? kw.accent : "rgba(220,205,178,0.55)",
+          border: `1px solid ${selected ? "transparent" : "rgba(110,80,40,0.15)"}`,
+          transition: "all 0.2s",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'Noto Serif KR', serif",
+            fontSize: "1.15rem",
+            fontWeight: 700,
+            color: selected ? "white" : kw.accent,
+            lineHeight: 1,
+          }}
+        >
+          {kw.hanja}
+        </span>
+      </div>
+
+      {/* 텍스트 */}
+      <div className="flex-1 min-w-0">
+        <div
+          style={{
+            fontFamily: "'Noto Serif KR', serif",
+            fontWeight: 700,
+            fontSize: "0.88rem",
+            color: selected ? kw.accent : "#2A2420",
+            lineHeight: 1.2,
+            marginBottom: "2px",
+          }}
+        >
+          {kw.label}
+        </div>
+        <div
+          style={{
+            fontFamily: "'Noto Sans KR', sans-serif",
+            fontSize: "0.68rem",
+            color: selected ? kw.accent + "BB" : "#8A7E6E",
+          }}
+        >
+          {kw.sublabel}
+        </div>
+      </div>
+
+      {/* 인물 수 + 화살표 */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: "22px",
+            height: "22px",
+            background: selected ? kw.accent + "22" : "rgba(200,185,158,0.35)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              color: selected ? kw.accent : "#7A7060",
+            }}
+          >
+            {kw.charIds.length}
+          </span>
+        </div>
+        <ChevronRight
+          className="w-3.5 h-3.5 transition-transform duration-200"
+          style={{
+            color: selected ? kw.accent : "#B0A090",
+            transform: selected ? "translateX(2px)" : "none",
+          }}
+        />
+      </div>
+    </button>
+  );
+}
+
+/* ──────────────────────────────────────────
+   장식 구분선
+────────────────────────────────────────── */
+function InkDivider() {
+  return (
+    <div className="flex items-center gap-2.5 my-4">
+      <div
+        className="flex-1 h-px"
+        style={{
+          background: "linear-gradient(to right, transparent, rgba(110,80,40,0.22))",
+        }}
+      />
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-full"
+          style={{
+            width: i === 1 ? "4px" : "2.5px",
+            height: i === 1 ? "4px" : "2.5px",
+            background: "rgba(110,80,40,0.28)",
+          }}
+        />
+      ))}
+      <div
+        className="flex-1 h-px"
+        style={{
+          background: "linear-gradient(to left, transparent, rgba(110,80,40,0.22))",
+        }}
+      />
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   MBTI 선택 팝오버
+────────────────────────────────────────── */
+function MbtiPicker({
+  selected,
+  onSelect,
+}: {
+  selected: string | null;
+  onSelect: (mbti: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all"
+        style={{
+          background: selected
+            ? "rgba(42,66,50,0.12)"
+            : "rgba(248,242,228,0.8)",
+          border: selected
+            ? "1.5px solid rgba(42,66,50,0.28)"
+            : "1.5px solid rgba(110,80,40,0.18)",
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontSize: "0.78rem",
+          color: selected ? "#2A4232" : "#6A6050",
+          fontWeight: selected ? 700 : 400,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {selected ? (
+          <>
+            <span style={{ fontWeight: 800 }}>{selected}</span>
+            <span style={{ fontSize: "0.65rem", opacity: 0.7 }}>일치</span>
+            <X
+              className="w-3 h-3 ml-0.5 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(null);
+                setOpen(false);
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <span>MBTI</span>
+            <ChevronRight
+              className="w-3.5 h-3.5"
+              style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}
+            />
+          </>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className="absolute top-full mt-1.5 right-0 z-50 rounded-2xl overflow-hidden"
+          style={{
+            background: "rgba(248,244,234,0.98)",
+            border: "1.5px solid rgba(110,80,40,0.2)",
+            boxShadow: "0 8px 32px rgba(60,40,10,0.18)",
+            backdropFilter: "blur(12px)",
+            minWidth: "280px",
+          }}
+        >
+          {/* 헤더 */}
+          <div
+            className="px-4 py-3 border-b"
+            style={{ borderColor: "rgba(110,80,40,0.12)" }}
+          >
+            <p
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: "#1A1714",
+                marginBottom: "2px",
+              }}
+            >
+              나의 MBTI로 인물 찾기
+            </p>
+            <p
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontSize: "0.68rem",
+                color: "#8A7E6E",
+              }}
+            >
+              유형을 선택하면 성격이 비슷한 역사 인물을 강조합니다
+            </p>
+          </div>
+
+          {/* MBTI 그룹별 목록 */}
+          <div className="p-3 flex flex-col gap-2.5">
+            {MBTI_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p
+                  className="mb-1.5"
+                  style={{
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    fontSize: "0.62rem",
+                    color: group.color,
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {group.label}
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {group.types.map((type) => {
+                    const isSelected = selected === type;
+                    const hasMatch = ALL_CHAR_IDS.some(
+                      (id) => CHARACTERS[id]?.mbti === type
+                    );
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          onSelect(isSelected ? null : type);
+                          setOpen(false);
+                        }}
+                        className="px-2.5 py-1 rounded-lg transition-all"
+                        style={{
+                          fontFamily: "'Noto Sans KR', sans-serif",
+                          fontSize: "0.72rem",
+                          fontWeight: isSelected ? 700 : 500,
+                          background: isSelected
+                            ? group.color
+                            : hasMatch
+                            ? `${group.color}14`
+                            : "rgba(220,210,195,0.4)",
+                          color: isSelected
+                            ? "white"
+                            : hasMatch
+                            ? group.color
+                            : "#B0A090",
+                          border: `1px solid ${isSelected ? "transparent" : hasMatch ? `${group.color}30` : "transparent"}`,
+                          position: "relative",
+                        }}
+                      >
+                        {type}
+                        {hasMatch && !isSelected && (
+                          <span
+                            className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full"
+                            style={{ background: "#C9931A" }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 바깥 클릭 닫기 */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   페이지네이션 (PC)
+────────────────────────────────────────── */
+const PAGE_SIZE_DESKTOP = 6;
+
+function Pagination({
+  total,
+  page,
+  pageSize,
+  onChange,
+  accent,
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  onChange: (p: number) => void;
+  accent: string;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 pt-4">
+      <button
+        onClick={() => onChange(page - 1)}
+        disabled={page === 0}
+        className="flex items-center justify-center rounded-lg transition-all"
+        style={{
+          width: "32px",
+          height: "32px",
+          background: page === 0 ? "rgba(200,190,175,0.3)" : "rgba(248,242,228,0.9)",
+          border: "1.5px solid rgba(110,80,40,0.15)",
+          color: page === 0 ? "#C0B0A0" : "#4A4035",
+          cursor: page === 0 ? "not-allowed" : "pointer",
+        }}
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+
+      {Array.from({ length: totalPages }).map((_, i) => (
+        <button
+          key={i}
+          onClick={() => onChange(i)}
+          className="flex items-center justify-center rounded-lg transition-all"
+          style={{
+            width: "32px",
+            height: "32px",
+            background: i === page ? accent : "rgba(248,242,228,0.9)",
+            border: i === page ? `1.5px solid ${accent}` : "1.5px solid rgba(110,80,40,0.15)",
+            color: i === page ? "white" : "#4A4035",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            fontSize: "0.78rem",
+            fontWeight: i === page ? 700 : 400,
+          }}
+        >
+          {i + 1}
+        </button>
+      ))}
+
+      <button
+        onClick={() => onChange(page + 1)}
+        disabled={page === totalPages - 1}
+        className="flex items-center justify-center rounded-lg transition-all"
+        style={{
+          width: "32px",
+          height: "32px",
+          background: page === totalPages - 1 ? "rgba(200,190,175,0.3)" : "rgba(248,242,228,0.9)",
+          border: "1.5px solid rgba(110,80,40,0.15)",
+          color: page === totalPages - 1 ? "#C0B0A0" : "#4A4035",
+          cursor: page === totalPages - 1 ? "not-allowed" : "pointer",
+        }}
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
    메인 컴포넌트
 ────────────────────────────────────────── */
-export function RegionMapPage({ onBack, onDetail }: { onBack: () => void; onDetail: (id: string) => void }) {
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
-  const [regionFilter, setRegionFilter] = useState("전국");
-  const [mobileTab, setMobileTab] = useState<"map" | "chars">("map");
+const PAGE_SIZE_MOBILE = 4;
 
-  const province = PROVINCES.find((p) => p.id === selectedProvince) ?? null;
+export function RegionMapPage({
+  onBack,
+  onDetail,
+}: {
+  onBack: () => void;
+  onDetail: (id: string) => void;
+}) {
+  const [selectedKeyword, setSelectedKeyword] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mbtiFilter, setMbtiFilter] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<"keywords" | "chars">("keywords");
+  const [desktopPage, setDesktopPage] = useState(0);
+  const [mobileShown, setMobileShown] = useState(PAGE_SIZE_MOBILE);
 
-  const handleProvinceSelect = (id: string) => {
-    setSelectedProvince(id);
-    const p = PROVINCES.find((x) => x.id === id);
-    if (p) setRegionFilter(p.name);
-    setMobileTab("chars");
-  };
+  const activeKw = KEYWORDS.find((k) => k.id === selectedKeyword) ?? KEYWORDS[0];
 
-  const handleDropdownChange = (val: string) => {
-    setRegionFilter(val);
-    if (val === "전국") {
-      setSelectedProvince(null);
-    } else {
-      const p = PROVINCES.find((x) => x.name === val);
-      if (p && p.available) {
-        setSelectedProvince(p.id);
-        setMobileTab("chars");
+  /* 필터링: 키워드 + 검색 + MBTI 모두 통과해야 표시 */
+  const filteredChars = useMemo(() => {
+    return ALL_CHAR_IDS.filter((id) => {
+      const char = CHARACTERS[id];
+      if (!char) return false;
+
+      // 키워드 필터
+      if (!activeKw.charIds.includes(id)) return false;
+
+      // 검색어 필터
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const match =
+          char.name.includes(q) ||
+          char.role.toLowerCase().includes(q) ||
+          char.mbti.toLowerCase().includes(q) ||
+          char.era.includes(q) ||
+          char.tagline.includes(q);
+        if (!match) return false;
       }
-    }
-  };
+
+      // MBTI 필터
+      if (mbtiFilter && char.mbti !== mbtiFilter) return false;
+
+      return true;
+    });
+  }, [activeKw, searchQuery, mbtiFilter]);
+
+  const isMbtiMatch = (id: string) =>
+    mbtiFilter ? CHARACTERS[id]?.mbti === mbtiFilter : false;
+
+  /* 필터 바뀌면 페이지 리셋 */
+  useEffect(() => {
+    setDesktopPage(0);
+    setMobileShown(PAGE_SIZE_MOBILE);
+  }, [selectedKeyword, searchQuery, mbtiFilter]);
+
+  /* PC 페이지네이션 */
+  const desktopChars = filteredChars.slice(
+    desktopPage * PAGE_SIZE_DESKTOP,
+    (desktopPage + 1) * PAGE_SIZE_DESKTOP
+  );
+
+  /* 모바일 더보기 */
+  const mobileChars = filteredChars.slice(0, mobileShown);
+  const hasMobileMore = mobileShown < filteredChars.length;
 
   const panelBase = {
     background: "rgba(236,224,198,0.38)",
@@ -423,57 +720,91 @@ export function RegionMapPage({ onBack, onDetail }: { onBack: () => void; onDeta
   } as const;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+      style={{ fontFamily: "'Noto Sans KR', sans-serif" }}
+    >
       <style>{`
         @media (min-width: 768px) {
-          .kh-map-panel {
-            width: 56% !important;
+          .kh-kw-panel {
+            width: 40% !important;
             border-right: 1px solid rgba(110,80,40,0.15) !important;
             border-bottom: none !important;
           }
+          .kh-char-panel {
+            width: 60% !important;
+          }
+        }
+        .kh-search-input:focus {
+          outline: none;
         }
       `}</style>
 
       {/* ── 배경 고지도 ── */}
       <div className="absolute inset-0">
-        <img src={mapBg.src} alt="한국 고지도" className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0" style={{ background: "rgba(232,218,190,0.08)" }} />
+        <img
+          src={mapBg.src}
+          alt="한국 고지도"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0" style={{ background: "rgba(232,218,190,0.06)" }} />
       </div>
 
       {/* ── 헤더 ── */}
       <header
         className="relative flex-shrink-0 flex items-center justify-between px-5 h-14 border-b"
-        style={{ background: "rgba(240,230,208,0.60)", borderColor: "rgba(110,80,40,0.18)", backdropFilter: "blur(8px)" }}
+        style={{
+          background: "rgba(240,230,208,0.62)",
+          borderColor: "rgba(110,80,40,0.18)",
+          backdropFilter: "blur(8px)",
+        }}
       >
-        <button onClick={onBack} className="flex items-center gap-2 transition-opacity hover:opacity-60" style={{ color: "#4A4035", fontSize: "13px" }}>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 transition-opacity hover:opacity-60"
+          style={{ color: "#4A4035", fontSize: "13px" }}
+        >
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">돌아가기</span>
         </button>
-        <div className="flex items-center gap-2" style={{ fontSize: "13px" }}>
-          <span style={{ color: province ? "#2A4232" : "#9A8E7E", fontWeight: province ? 600 : 400 }}>
-            {province ? province.name : "지역 선택"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
+        <div
+          className="flex items-center gap-2 px-3 py-1 rounded-full"
+          style={{ background: "rgba(42,66,50,0.1)" }}
+        >
+          <span
             style={{
-              background: "rgba(253,250,244,0.72)",
-              border: "1px solid rgba(42,66,50,0.18)",
+              fontFamily: "'Noto Serif KR', serif",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              color: activeKw.accent,
             }}
           >
-            <img src="/logo.svg" alt="K-Heroes 로고" className="h-5 w-auto" />
-          </div>
-          <span className="hidden sm:block" style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 600, fontSize: "14px", color: "#2A4232" }}>K-Heroes</span>
+            {activeKw.hanja}
+          </span>
+          <span
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: "0.75rem",
+              color: "#2A4232",
+              fontWeight: 600,
+            }}
+          >
+            {activeKw.label}
+          </span>
         </div>
+        <BrandLogo compact />
       </header>
 
       {/* ── 모바일 탭 바 ── */}
       <div
         className="relative md:hidden flex-shrink-0 flex border-b"
-        style={{ background: "rgba(240,230,208,0.72)", backdropFilter: "blur(8px)", borderColor: "rgba(110,80,40,0.15)" }}
+        style={{
+          background: "rgba(240,230,208,0.72)",
+          backdropFilter: "blur(8px)",
+          borderColor: "rgba(110,80,40,0.15)",
+        }}
       >
-        {(["map", "chars"] as const).map((tab) => {
+        {(["keywords", "chars"] as const).map((tab) => {
           const active = mobileTab === tab;
           return (
             <button
@@ -487,7 +818,7 @@ export function RegionMapPage({ onBack, onDetail }: { onBack: () => void; onDeta
                 borderBottom: active ? "2px solid #3D6B52" : "2px solid transparent",
               }}
             >
-              {tab === "map" ? "🗺 지도 선택" : `👤 인물 선택${province ? ` · ${province.name}` : ""}`}
+              {tab === "keywords" ? "🪷 주제 선택" : `👤 인물 선택`}
             </button>
           );
         })}
@@ -496,88 +827,342 @@ export function RegionMapPage({ onBack, onDetail }: { onBack: () => void; onDeta
       {/* ── 본문 ── */}
       <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden">
 
-        {/* ══ 지도 패널 ══ */}
+        {/* ══ 키워드 패널 (40%) ══ */}
         <div
-          className={`kh-map-panel ${mobileTab === "map" ? "flex" : "hidden"} md:flex flex-col overflow-y-auto md:overflow-hidden px-5 py-5 md:px-10 md:py-8`}
+          className={`kh-kw-panel ${mobileTab === "keywords" ? "flex" : "hidden"} md:flex flex-col overflow-y-auto px-5 py-5 md:px-8 md:py-7`}
           style={{
             ...panelBase,
             width: "100%",
             borderBottom: "1px solid rgba(110,80,40,0.12)",
           }}
         >
-          <div className="flex flex-col flex-1 h-full">
-            {/* 제목 */}
-            <div className="mb-5">
-              <p style={{ fontSize: "11px", color: "#9A8E7E", letterSpacing: "0.1em", marginBottom: "8px" }}>STEP 1 · 지역 선택</p>
-              <h2 style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 700, fontSize: "clamp(1.4rem, 2.6vw, 2rem)", color: "#1A1714", lineHeight: 1.3, marginBottom: "8px" }}>
-                어느 지역의 이야기를<br />체험하시겠어요?
-              </h2>
-              <p style={{ fontSize: "13px", color: "#8A7E6E", lineHeight: 1.7 }}>지도에서 지역을 선택하면 해당 지역의 인물 목록이 나타납니다.</p>
-            </div>
-
-            {/* 지도 SVG */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden py-2" style={{ minHeight: "260px" }}>
-              <div style={{ width: "100%", maxWidth: "380px", maxHeight: "460px" }}>
-                <KoreaMap selected={selectedProvince} onSelect={handleProvinceSelect} />
-              </div>
-            </div>
-
-            {/* 드롭다운 + 다음 단계 */}
-            <div className="mt-4 flex flex-col gap-2.5">
-              <div className="flex gap-2.5 items-end">
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <label style={{ fontSize: "11px", color: "#9A8E7E", letterSpacing: "0.04em" }}>지역 선택</label>
-                  <select
-                    value={regionFilter}
-                    onChange={(e) => handleDropdownChange(e.target.value)}
-                    className="w-full rounded-xl px-4 py-3 text-sm outline-none appearance-none cursor-pointer"
-                    style={{ background: "rgba(248,242,228,0.92)", border: "1.5px solid rgba(110,80,40,0.22)", color: "#2A2420", fontFamily: "'Noto Sans KR', sans-serif" }}
-                  >
-                    {REGION_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </select>
-                </div>
-                <button
-                  onClick={() => setMobileTab("chars")}
-                  className="hidden md:flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium flex-shrink-0 transition-all hover:opacity-90"
-                  style={{
-                    background: "linear-gradient(135deg,#2A4232 0%,#3D6B52 100%)",
-                    color: "white",
-                    fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 700, whiteSpace: "nowrap",
-                    boxShadow: "0 3px 12px rgba(42,66,50,0.28)",
-                  }}
-                >
-                  인물 선택 <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <p style={{ fontSize: "11px", color: "#9A8E7E", lineHeight: 1.6 }}>💡 TIP: 스테이지를 완료할 때마다 현재 지역의 문화재 변화가 반영됩니다.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ══ 인물 카드 패널 ══ */}
-        <div
-          className={`${mobileTab === "chars" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden px-5 py-5 md:px-8 md:py-7`}
-          style={{ background: "rgba(248,242,230,0.36)", backdropFilter: "blur(6px)" }}
-        >
-          {/* 패널 타이틀 */}
-          <div className="mb-4">
-            <p style={{ fontSize: "11px", color: "#9A8E7E", letterSpacing: "0.08em", marginBottom: "4px" }}>대표 인물</p>
-            <h2 style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 600, fontSize: "clamp(1rem,2vw,1.35rem)", color: "#1A1714", lineHeight: 1.35 }}>
-              체험할 인물을 선택하세요
+          {/* 제목 */}
+          <div className="mb-1">
+            <p
+              style={{
+                fontSize: "10px",
+                color: "#9A8E7E",
+                letterSpacing: "0.12em",
+                marginBottom: "8px",
+                fontWeight: 500,
+              }}
+            >
+              STEP 1 · 주제 선택
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 700,
+                fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)",
+                color: "#1A1714",
+                lineHeight: 1.3,
+                marginBottom: "6px",
+              }}
+            >
+              어떤 이야기를<br />체험하시겠어요?
             </h2>
-            <p style={{ fontSize: "12px", color: "#8A7E6E", lineHeight: 1.6, marginTop: "4px" }}>
-              인물을 선택하고 결정적 순간을 직접 체험해보세요.
+            <p style={{ fontSize: "12px", color: "#8A7E6E", lineHeight: 1.7 }}>
+              관심 주제를 선택해 역사 인물을 만나보세요.
             </p>
           </div>
 
-          {/* 인물 카드 목록 (항상 3인물 고정) */}
-          <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
-            {FEATURED_CHARS.map((id) => (
-              <CharacterCard key={id} charId={id} onDetail={onDetail} />
+          <InkDivider />
+
+          {/* 키워드 목록 */}
+          <div className="flex flex-col gap-2">
+            {KEYWORDS.map((kw) => (
+              <KeywordButton
+                key={kw.id}
+                kw={kw}
+                selected={selectedKeyword === kw.id}
+                onClick={() => {
+                  setSelectedKeyword(kw.id);
+                  setMobileTab("chars");
+                }}
+              />
             ))}
+          </div>
+
+          <InkDivider />
+
+          {/* 하단 안내 */}
+          <div
+            className="rounded-xl px-3.5 py-2.5"
+            style={{
+              background: "rgba(248,242,228,0.6)",
+              border: "1px solid rgba(110,80,40,0.1)",
+            }}
+          >
+            <p style={{ fontSize: "11px", color: "#8A7E6E", lineHeight: 1.7 }}>
+              💡 각 인물은 실제 역사적 결정의 순간을 담고 있습니다. 주제를 선택해 당신만의 역사 체험을 시작하세요.
+            </p>
+          </div>
+
+          {/* 모바일 – 다음 버튼 */}
+          <button
+            onClick={() => setMobileTab("chars")}
+            className="md:hidden mt-4 flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-medium transition-all hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg,#2A4232 0%,#3D6B52 100%)",
+              color: "white",
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontWeight: 700,
+              boxShadow: "0 3px 12px rgba(42,66,50,0.28)",
+            }}
+          >
+            인물 선택하기 <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* ══ 인물 패널 (60%) ══ */}
+        <div
+          className={`kh-char-panel ${mobileTab === "chars" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden px-5 py-5 md:px-7 md:py-6`}
+          style={{ background: "rgba(248,242,230,0.32)", backdropFilter: "blur(6px)" }}
+        >
+          {/* 패널 타이틀 + 검색 영역 */}
+          <div className="mb-4">
+            {/* 선택 키워드 배지 */}
+            <div className="flex items-center gap-2 mb-2.5">
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full"
+                style={{
+                  background: activeKw.accent + "18",
+                  border: `1px solid ${activeKw.accent}28`,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Noto Serif KR', serif",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    color: activeKw.accent,
+                  }}
+                >
+                  {activeKw.hanja}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    fontSize: "0.68rem",
+                    color: activeKw.accent,
+                    fontWeight: 600,
+                  }}
+                >
+                  {activeKw.label}
+                </span>
+              </div>
+              {mbtiFilter && (
+                <div
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "rgba(201,147,58,0.12)",
+                    border: "1px solid rgba(201,147,58,0.28)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      color: "#A06C1A",
+                    }}
+                  >
+                    {mbtiFilter} 일치
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <p
+              style={{
+                fontSize: "10px",
+                color: "#9A8E7E",
+                letterSpacing: "0.08em",
+                marginBottom: "3px",
+              }}
+            >
+              STEP 2 · 인물 선택
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 600,
+                fontSize: "clamp(0.95rem, 1.8vw, 1.25rem)",
+                color: "#1A1714",
+                lineHeight: 1.35,
+                marginBottom: "12px",
+              }}
+            >
+              체험할 인물을 선택하세요
+            </h2>
+
+            {/* 검색 + MBTI 필터 행 */}
+            <div className="flex gap-2">
+              {/* 검색 인풋 */}
+              <div
+                className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
+                style={{
+                  background: "rgba(248,242,228,0.88)",
+                  border: "1.5px solid rgba(110,80,40,0.18)",
+                }}
+              >
+                <Search className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9A8E7E" }} />
+                <input
+                  type="text"
+                  placeholder="이름, 시대, 역할로 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="kh-search-input flex-1 bg-transparent border-none text-sm"
+                  style={{
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    fontSize: "0.78rem",
+                    color: "#2A2420",
+                    caretColor: "#2A4232",
+                  }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")}>
+                    <X className="w-3.5 h-3.5" style={{ color: "#9A8E7E" }} />
+                  </button>
+                )}
+              </div>
+
+              {/* MBTI 선택 */}
+              <MbtiPicker selected={mbtiFilter} onSelect={setMbtiFilter} />
+            </div>
+
+            {/* 활성 필터 요약 */}
+            {(searchQuery || mbtiFilter) && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <span style={{ fontSize: "0.68rem", color: "#9A8E7E" }}>필터:</span>
+                {searchQuery && (
+                  <span
+                    className="px-2 py-0.5 rounded-full"
+                    style={{
+                      fontSize: "0.68rem",
+                      background: "rgba(42,66,50,0.08)",
+                      color: "#2A4232",
+                      fontWeight: 600,
+                    }}
+                  >
+                    "{searchQuery}"
+                  </span>
+                )}
+                {mbtiFilter && (
+                  <span
+                    className="px-2 py-0.5 rounded-full"
+                    style={{
+                      fontSize: "0.68rem",
+                      background: "rgba(201,147,58,0.1)",
+                      color: "#A06C1A",
+                      fontWeight: 600,
+                    }}
+                  >
+                    MBTI {mbtiFilter}
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setMbtiFilter(null);
+                  }}
+                  style={{ fontSize: "0.68rem", color: "#9A8E7E", textDecoration: "underline" }}
+                >
+                  초기화
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── PC: 카드 목록 + 페이지네이션 ── */}
+          <div className="hidden md:flex flex-1 flex-col overflow-hidden">
+            {filteredChars.length === 0 ? (
+              <EmptyState onReset={() => { setSearchQuery(""); setMbtiFilter(null); setSelectedKeyword("all"); }} />
+            ) : (
+              <>
+                {/* 결과 수 */}
+                <p className="mb-3" style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.72rem", color: "#9A8E7E" }}>
+                  총 <strong style={{ color: activeKw.accent }}>{filteredChars.length}</strong>명의 인물
+                </p>
+                <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-0.5">
+                  {desktopChars.map((id, idx) => (
+                    <div key={id}>
+                      <CharacterCard charId={id} onDetail={onDetail} mbtiMatch={isMbtiMatch(id)} />
+                    </div>
+                  ))}
+                </div>
+                <Pagination
+                  total={filteredChars.length}
+                  page={desktopPage}
+                  pageSize={PAGE_SIZE_DESKTOP}
+                  onChange={setDesktopPage}
+                  accent={activeKw.accent}
+                />
+              </>
+            )}
+          </div>
+
+          {/* ── 모바일: 카드 목록 + 더보기 ── */}
+          <div className="md:hidden flex-1 flex flex-col overflow-y-auto gap-3 pr-0.5">
+            {filteredChars.length === 0 ? (
+              <EmptyState onReset={() => { setSearchQuery(""); setMbtiFilter(null); setSelectedKeyword("all"); }} />
+            ) : (
+              <>
+                <p style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.72rem", color: "#9A8E7E" }}>
+                  총 <strong style={{ color: activeKw.accent }}>{filteredChars.length}</strong>명의 인물
+                </p>
+                {mobileChars.map((id, idx) => (
+                  <div key={id}>
+                    <CharacterCard charId={id} onDetail={onDetail} mbtiMatch={isMbtiMatch(id)} />
+                  </div>
+                ))}
+                {hasMobileMore && (
+                  <button
+                    onClick={() => setMobileShown((v) => v + PAGE_SIZE_MOBILE)}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl transition-all"
+                    style={{
+                      background: "rgba(248,242,228,0.85)",
+                      border: "1.5px solid rgba(110,80,40,0.18)",
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      fontSize: "0.82rem",
+                      color: "#4A4035",
+                      fontWeight: 600,
+                    }}
+                  >
+                    더보기 ({filteredChars.length - mobileShown}명 더)
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────
+   빈 결과 상태
+────────────────────────────────────────── */
+function EmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center py-10 rounded-2xl"
+      style={{
+        background: "rgba(248,242,228,0.5)",
+        border: "1px dashed rgba(110,80,40,0.2)",
+      }}
+    >
+      <p style={{ fontFamily: "'Noto Serif KR', serif", fontSize: "1.5rem", marginBottom: "8px" }}>
+        🔍
+      </p>
+      <p style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.82rem", color: "#8A7E6E", textAlign: "center" }}>
+        조건에 맞는 인물이 없습니다.<br />
+        <button className="underline mt-1" style={{ color: "#2A4232" }} onClick={onReset}>
+          필터 초기화하기
+        </button>
+      </p>
     </div>
   );
 }

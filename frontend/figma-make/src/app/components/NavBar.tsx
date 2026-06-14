@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Play, Menu, X } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 
 const NAV_LINKS = ["서비스 소개", "지역 선택", "역사 아카이브", "공지사항"];
 
@@ -26,31 +27,7 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{
-              background: "rgba(253,250,244,0.72)",
-              border: "1px solid rgba(42,66,50,0.18)",
-            }}
-          >
-            <img src="/logo.svg" alt="K-Heroes 로고" className="h-6 w-auto" />
-          </div>
-          <span style={{ fontFamily: "'Noto Serif KR', serif", fontWeight: 600, fontSize: "15px", color: "#2A4232" }}>
-            K-Heroes
-          </span>
-          <span
-            className="text-[10px] px-1.5 py-0.5 rounded-full"
-            style={{
-              background: "rgba(42,66,50,0.09)",
-              color: "#3D6B52",
-              border: "1px solid rgba(42,66,50,0.22)",
-              fontFamily: "'Noto Sans KR', sans-serif",
-            }}
-          >
-            BETA
-          </span>
-        </div>
+        <BrandLogo showBeta />
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
