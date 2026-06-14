@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Share2, ChevronRight, MapPin } from "lucide-react";
 import { CHARACTERS } from "../data/characters";
+import { BrandLogo } from "./BrandLogo";
 
 /* ─── 타입 ─── */
 interface ResultData {
@@ -289,34 +290,32 @@ export function ResultPage({
     >
       {/* ── 헤더 ── */}
       <header
-        className="sticky top-0 z-10 px-5 py-3 border-b"
+        className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
         style={{
           background: "rgba(244,239,228,0.94)",
           backdropFilter: "blur(12px)",
           borderColor: "rgba(42,66,50,0.09)",
         }}
       >
-        <div className="max-w-[820px] mx-auto flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
-            style={{ color: "#5A5248", fontSize: "13px" }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            시뮬레이션으로
-          </button>
-          <span
-            style={{
-              fontFamily: "'Noto Serif KR', serif",
-              fontWeight: 700,
-              fontSize: "0.85rem",
-              color: "#2A4232",
-            }}
-          >
-            최종 결과
-          </span>
-          <div style={{ width: "80px" }} />
-        </div>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
+          style={{ color: "#5A5248", fontSize: "13px", fontFamily: "'Noto Sans KR', sans-serif" }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">돌아가기</span>
+        </button>
+        <span
+          style={{
+            fontFamily: "'Noto Serif KR', serif",
+            fontWeight: 600,
+            fontSize: "0.88rem",
+            color: "#2A4232",
+          }}
+        >
+          최종 결과
+        </span>
+        <BrandLogo compact />
       </header>
 
       {/* ── 히어로 (다크) ── */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Check } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 
 /* ────────────────────────────
    타입
@@ -608,7 +609,7 @@ export function SimulationPage({
     >
       {/* ── 헤더 ── */}
       <header
-        className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b"
+        className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
         style={{
           background: "rgba(244,239,228,0.94)",
           backdropFilter: "blur(12px)",
@@ -618,28 +619,15 @@ export function SimulationPage({
         <button
           onClick={handleBack}
           className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
-          style={{ color: "#5A5248", fontSize: "13px" }}
+          style={{ color: "#5A5248", fontSize: "13px", fontFamily: "'Noto Sans KR', sans-serif" }}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">뒤로</span>
+          <span className="hidden sm:inline">돌아가기</span>
         </button>
 
         <ProgressIndicator current={currentStep + 1} total={STEPS.length} />
 
-        <div
-          className="flex items-center justify-center rounded-full"
-          style={{
-            width: "28px",
-            height: "28px",
-            background: "rgba(42,66,50,0.08)",
-            color: "#5A5248",
-            fontSize: "12px",
-            fontWeight: 700,
-            cursor: "default",
-          }}
-        >
-          ?
-        </div>
+        <BrandLogo compact />
       </header>
 
       {/* ── 본문 ── */}
