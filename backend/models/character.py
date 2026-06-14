@@ -36,4 +36,6 @@ class CharacterCard(BaseModel):
     stats: List[StatItem]
     intro_quote: str
     intro_desc: str
+    image_url: str = ""
     associated_stories: List[StoryItem] = []
+

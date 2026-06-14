@@ -1,12 +1,17 @@
 import os
 import json
 import time
+import sys
+import io
 from typing import Dict, Any, List, Optional
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
+from google.cloud import storage
 
 from models.character import CharacterCard
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
@@ -280,8 +285,10 @@ def generate_characters_json():
             try:
                 profile_data = generate_character_profile_via_openai(char_name, associated_stories)
                 profile_data["associated_stories"] = associated_stories
+                profile_data["image_url"] = ""
                 character_database[char_name] = profile_data
                 print(f" ➔ '{char_name}' 프로필 생성 완료 (카테고리: {profile_data.get('category')}, MBTI: {profile_data.get('mbti')})")
+
                 break
             except Exception as e:
                 print(f" ➔ '{char_name}' 생성 시도 {attempt+1} 실패: {e}")
@@ -301,5 +308,140 @@ def generate_characters_json():
     print(f"\n[SUCCESS] {len(character_database)}명의 캐릭터 데이터베이스 저장 완료: {CHARACTERS_JSON_PATH}")
     print(f"총 소요 시간: {end_time - start_time:.2f}초")
 
+def generate_and_upload_character_image(character_name: str) -> str:
+    """
+    OpenAI DALL-E 3를 이용해 캐릭터 이미지를 생성하고, 
+    이를 다운받아 GCP Cloud Storage에 바로 업로드한 뒤 public URL을 반환.
+    """
+    if not openai_client:
+        print("[WARNING] OpenAI API 클라이언트가 존재하지 않아 이미지 생성을 할 수 없습니다.")
+        return ""
+        
+    gcp_project_id = os.environ.get("GCP_PROJECT_ID")
+    gcp_bucket_name = os.environ.get("GCP_BUCKET_NAME")
+    
+    if not gcp_bucket_name:
+        print("[WARNING] GCP_BUCKET_NAME 환경변수가 설정되지 않았습니다. .env를 확인하십시오.")
+        return ""
+
+    prompt = f"""Heroic portrait of {character_name}.
+K-Heroes historical character illustration.
+Depict the most iconic and historically recognizable version of the character.
+Automatically include historically accurate clothing, hairstyle, symbolic item, and representative historical elements.
+Standing confidently in the center.
+Traditional Korean watercolor illustration mixed with ink wash painting (sumukhwa).
+Character occupies approximately 75% of the composition.
+Historical elements appear only as soft watercolor accents behind the character.
+No full background scene.
+No sky, ground, horizon, or solid backdrop.
+Background must fade completely into transparency.
+Transparent PNG background.
+Clean character cutout.
+Museum-quality illustration.
+Warm beige, brown, olive green and ivory palette.
+Semi-realistic painting style.
+High detail.
+4:5 portrait composition.
+No text, logo, border, frame, or UI."""
+
+    try:
+        print(f" ➔ DALL-E 3 이미지 생성 요청 중 ({character_name})...")
+        response = openai_client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            n=1,
+            size="1024x1792",
+            quality="standard"
+        )
+
+        image_url = response.data[0].url
+        print(f" ➔ 이미지 생성 완료. URL 획득.")
+        
+        # 이미지 파일 다운로드
+        img_res = requests.get(image_url)
+        if img_res.status_code != 200:
+            raise Exception(f"OpenAI에서 이미지를 다운로드하지 못했습니다. 상태 코드: {img_res.status_code}")
+            
+        # GCS 업로드
+        storage_client = storage.Client(project=gcp_project_id)
+        bucket = storage_client.bucket(gcp_bucket_name)
+        
+        blob_name = f"characters/{character_name}.png"
+        blob = bucket.blob(blob_name)
+        
+        print(f" ➔ GCS 업로드 시작: gs://{gcp_bucket_name}/{blob_name}")
+        blob.upload_from_string(img_res.content, content_type="image/png")
+        
+        # GCS public URL 구성
+        public_url = f"https://storage.googleapis.com/{gcp_bucket_name}/{blob_name}"
+        print(f" [SUCCESS] GCS 업로드 완료: {public_url}")
+        return public_url
+        
+    except Exception as e:
+        print(f" [ERROR] '{character_name}' DALL-E/GCS 연동 중 에러 발생: {e}")
+        return ""
+
+def update_characters_with_images(target_char: Optional[str] = None):
+    """
+    기존 characters.json을 읽어와 image_url이 없는 경우 (또는 target_char가 지정된 경우 강제 갱신)
+    DALL-E 3로 이미지를 생성하여 GCS에 업로드하고 characters.json에 기록.
+    """
+    if not os.path.exists(CHARACTERS_JSON_PATH):
+        print(f"[ERROR] '{CHARACTERS_JSON_PATH}' 파일이 존재하지 않습니다. 먼저 프로필을 생성하십시오.")
+        return
+        
+    with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+        character_database = json.load(f)
+        
+    print(f"[INFO] 현재 {len(character_database)}명의 인물 데이터가 로드되었습니다.")
+    
+    updated_count = 0
+    for idx, (char_name, data) in enumerate(character_database.items()):
+        # 특정 캐릭터만 타겟팅할 때, 그 캐릭터가 아니면 스킵
+        if target_char and char_name != target_char:
+            continue
+            
+        # target_char가 지정되지 않은 상황에서, 이미 image_url이 있고 유효한 링크인 경우 스킵
+        if not target_char and data.get("image_url") and data["image_url"].startswith("http"):
+            print(f"[{idx+1}/{len(character_database)}] '{char_name}' 이미 존재함. 스킵: {data['image_url']}")
+            continue
+            
+        print(f"\n[{idx+1}/{len(character_database)}] '{char_name}' 이미지 생성 및 업로드 진행 중...")
+        gcs_url = generate_and_upload_character_image(char_name)
+        
+        if gcs_url:
+            data["image_url"] = gcs_url
+            updated_count += 1
+            
+            # 진행 상태를 바로 파일에 저장 (안전성 보장)
+            with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
+                json.dump(character_database, f, ensure_ascii=False, indent=4)
+            print(f" ➔ '{char_name}' 업데이트 저장 완료")
+            
+            if target_char:
+                # 특정 캐릭터 지정 시 즉시 루프 종료
+                break
+                
+            # API 호출 한도 방지를 위해 대기
+            time.sleep(5)
+        else:
+            print(f" ➔ [WARNING] '{char_name}' 이미지 생성 실패 (다음 루프에서 재시도 가능)")
+            
+    print(f"\n[COMPLETE] 총 {updated_count}명의 캐릭터 이미지 링크를 갱신했습니다.")
+
 if __name__ == "__main__":
-    generate_characters_json()
+    if len(sys.argv) > 1 and sys.argv[1] == "--images":
+        target = sys.argv[2] if len(sys.argv) > 2 else None
+        update_characters_with_images(target)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--profiles":
+        generate_characters_json()
+    elif len(sys.argv) > 1 and sys.argv[1] == "--all":
+        generate_characters_json()
+        update_characters_with_images()
+    else:
+        print("사용법:")
+        print("  python data_manager.py --profiles            : CSV를 기반으로 캐릭터 프로필 JSON 생성")
+        print("  python data_manager.py --images [캐릭터명]  : characters.json의 이미지 주소 갱신 (특정 캐릭터 지정 가능)")
+        print("  python data_manager.py --all                 : 프로필 생성 후 이미지 주소까지 일괄 갱신")
+
+
