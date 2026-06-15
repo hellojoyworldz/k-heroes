@@ -479,7 +479,7 @@ No frame.
 
 
 # --- Main Pipeline Builder ---
-def run_main_pipeline(target_char: Optional[str] = None):
+def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"):
     print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
     if not os.path.exists(CSV_PATH):
         raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
@@ -493,7 +493,7 @@ def run_main_pipeline(target_char: Optional[str] = None):
     
     person_counts = df_clean["relate_prsn_nm"].value_counts()
     
-    min_stories_threshold = 60
+    min_stories_threshold = 78
     selected_characters = [name for name, count in person_counts.items() if count >= min_stories_threshold]
     
     # 이순신 강제 추가
@@ -707,7 +707,9 @@ def run_main_pipeline(target_char: Optional[str] = None):
                 json.dump(character_database, f, ensure_ascii=False, indent=4)
             
         # 2. 캐릭터 전신 이미지 생성 (GCS)
-        if not db_char.get("image_url") or not db_char["image_url"].startswith("http"):
+        if image_mode == "none":
+            print(f" ➔ [INFO] 이미지 생성 스킵 모드('none')에 의해 '{char_name}' 전신 이미지 생성을 생략합니다.")
+        elif not db_char.get("image_url") or not db_char["image_url"].startswith("http"):
             print(f" ➔ '{char_name}' 전신 이미지가 없습니다. 생성 중...")
             img_url = generate_and_upload_character_image(char_name)
             if img_url:
@@ -720,6 +722,10 @@ def run_main_pipeline(target_char: Optional[str] = None):
             print(f" ➔ '{char_name}' 전신 이미지 이미 존재함: {db_char['image_url']}")
             
         # 3. 각 시나리오별 상황(턴) 및 선택지 이미지 생성 (GCS)
+        if image_mode != "all":
+            print(f" ➔ [INFO] 이미지 생성 모드('{image_mode}')에 의해 '{char_name}'의 시나리오/선택지 이미지 생성을 생략합니다.")
+            continue
+            
         scenarios = db_char.get("scenarios", [])
         for scenario in scenarios:
             s_id = scenario.get("scenario_id")
@@ -771,18 +777,21 @@ def run_main_pipeline(target_char: Optional[str] = None):
     print(f"총 소요 시간: {end_time - start_time:.2f}초")
 
 if __name__ == "__main__":
-    target = sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--images" else None
-    # 만약 --images 대신 --char 등으로 특정 인물을 받으려면 인수 확인
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--images" or sys.argv[1] == "--all":
-            # 인자가 하나 더 있다면 특정 인물 타겟
-            target = sys.argv[2] if len(sys.argv) > 2 else None
-            run_main_pipeline(target)
-        elif sys.argv[1] == "--profiles":
-            print("[INFO] 프로필만 생성 시나리오는 파이프라인 통합에 의해 --all로 처리하시거나 target 지정을 하십시오.")
-            target = sys.argv[2] if len(sys.argv) > 2 else None
-            run_main_pipeline(target)
+        cmd = sys.argv[1]
+        target = sys.argv[2] if len(sys.argv) > 2 else None
+        
+        if cmd == "--all":
+            run_main_pipeline(target, image_mode="all")
+        elif cmd == "--images":
+            run_main_pipeline(target, image_mode="all")
+        elif cmd == "--char-only":
+            run_main_pipeline(target, image_mode="char-only")
+        elif cmd == "--profiles":
+            run_main_pipeline(target, image_mode="none")
     else:
         print("사용법:")
-        print("  python data_pipeline.py --all [캐릭터명]     : 프로필, 시나리오 턴 구조 생성, GCS 이미지 빌드 일괄 처리 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --images [캐릭터명]  : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --all [캐릭터명]       : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --images [캐릭터명]    : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --char-only [캐릭터명] : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --profiles [캐릭터명]  : 이미지 생성 없이 프로필 텍스트 및 시나리오 정보만 생성 (특정 캐릭터 지정 가능)")
