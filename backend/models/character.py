@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict, Optional
 
 class MBTIDetails(BaseModel):
     E_I: str
@@ -9,8 +9,33 @@ class MBTIDetails(BaseModel):
 
 class StatItem(BaseModel):
     name: str
-    value: int  # 92, 98
+    value: int
     desc: str
+
+class ChoiceItem(BaseModel):
+    title: str
+    description: str
+    choice_image: str = ""
+    stats: Dict[str, int]  # e.g., {"독립 자금": -5, "팀워크": 5, "성공 확률": -25}
+    result_text: str
+    is_historical: bool
+
+class TurnItem(BaseModel):
+    turn_no: int
+    title: str
+    situation: str
+    turn_image: str = ""
+    tip_title: str
+    tip_desc: str
+    choices: Dict[str, ChoiceItem]  # e.g., {"A": ChoiceItem, "B": ChoiceItem}
+
+class ScenarioItem(BaseModel):
+    scenario_id: int
+    title: str
+    description: str
+    historical_facts: str
+    source_story_ids: List[int] = []
+    turns: List[TurnItem]
 
 class StoryItem(BaseModel):
     id: int
@@ -28,6 +53,7 @@ class CharacterCard(BaseModel):
     role: str            # "왕", "독립운동가"
     keywords: List[str]  # ["왕", "개혁", "외교"]
     years: str           # "1863-1907"
+    image_url: str = ""  # Located right after 'years'
     situation: str
     one_line_summary: str
     mbti: str
@@ -36,6 +62,9 @@ class CharacterCard(BaseModel):
     stats: List[StatItem]
     intro_quote: str
     intro_desc: str
-    image_url: str = ""
-    associated_stories: List[StoryItem] = []
+    associated_stories: Dict[str, List[int]] = {}
+    scenarios: List[ScenarioItem] = []
+
+
+
 
