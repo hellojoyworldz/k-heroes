@@ -4,7 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { CharacterDetailPage } from "@/figma-make/src/app/components/CharacterDetailPage";
 
 function normalizeCharId(charId: string) {
-  return charId === "yi-sunsin" ? "yi_sunsin" : charId;
+  const decodedCharId = decodeURIComponent(charId);
+  return decodedCharId === "yi-sunsin" ? "yi_sunsin" : decodedCharId;
 }
 
 export default function CharacterDetailRoutePage() {
@@ -17,7 +18,7 @@ export default function CharacterDetailRoutePage() {
       charId={charId}
       onBack={() => router.push("/select")}
       onStartScenario={(scenarioIdx) =>
-        router.push(`/simulation/${charId}?scenario=${scenarioIdx}`)
+        router.push(`/simulation/${encodeURIComponent(charId)}?scenario=${scenarioIdx}`)
       }
     />
   );

@@ -1,7 +1,221 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronRight, Clock, BarChart2 } from "lucide-react";
 import { CHARACTERS, type CharacterData } from "../data/characters";
 import { getScenariosForChar, type ScenarioMeta } from "../data/scenarios";
 import { BrandLogo } from "./BrandLogo";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+const LEGACY_API_NAMES: Record<string, string> = {
+  "yi-sunsin": "이순신",
+  yi_sunsin: "이순신",
+  yunbongil: "윤봉길",
+  sejong: "세종대왕",
+};
+
+const detailCache = new Map<string, CharacterDetailPayload>();
+const detailRequestCache = new Map<string, Promise<CharacterDetailPayload>>();
+
+type ApiMbtiDetails = Partial<Record<"E_I" | "S_N" | "T_F" | "J_P", string>>;
+
+interface ApiStat {
+  name: string;
+  value: number;
+  desc: string;
+}
+
+interface ApiScenarioTurn {
+  title?: string;
+}
+
+interface ApiScenario {
+  scenario_id?: number | string;
+  title: string;
+  description: string;
+  historical_facts?: string;
+  turns?: ApiScenarioTurn[];
+}
+
+interface ApiCharacterDetail {
+  name: string;
+  category?: string;
+  era?: string;
+  era_tag?: string;
+  role?: string;
+  keywords?: string[];
+  years?: string;
+  image_url?: string;
+  situation?: string;
+  one_line_summary?: string;
+  mbti?: string;
+  mbti_nickname?: string;
+  mbti_details?: ApiMbtiDetails;
+  stats?: ApiStat[];
+  intro_quote?: string;
+  intro_desc?: string;
+  scenarios?: ApiScenario[];
+}
+
+interface CharacterDetailPayload {
+  char: CharacterData;
+  scenarios: ScenarioMeta[];
+}
+
+const MBTI_LABELS: Record<string, string> = {
+  E: "외향형",
+  I: "내향형",
+  S: "감각형",
+  N: "직관형",
+  T: "사고형",
+  F: "감정형",
+  J: "판단형",
+  P: "인식형",
+};
+
+const MBTI_DETAIL_KEYS = ["E_I", "S_N", "T_F", "J_P"] as const;
+const DIFFICULTIES = ["입문", "중급", "심화"] as const;
+
+function getApiName(charId: string) {
+  return LEGACY_API_NAMES[charId] ?? charId;
+}
+
+function normalizeQuote(quote?: string) {
+  return quote?.replace(/^["“]|["”]$/g, "") ?? "";
+}
+
+function toTag(keyword: string) {
+  return keyword.startsWith("#") ? keyword : `#${keyword}`;
+}
+
+function toScore(value: number) {
+  return Math.max(1, Math.min(5, Math.round(value / 20)));
+}
+
+function toCharacterData(data: ApiCharacterDetail, routeCharId: string): CharacterData {
+  const mbti = data.mbti ?? "----";
+  const keywords = data.keywords?.length ? data.keywords : [data.category ?? "역사 인물"];
+  const stats = data.stats?.length
+    ? data.stats
+    : [{ name: "영향력", value: 80, desc: "역사 속에서 의미 있는 영향을 남겼습니다." }];
+
+  return {
+    id: data.name || routeCharId,
+    name: data.name || routeCharId,
+    role: data.role ?? data.category ?? "역사 인물",
+    tagline: data.one_line_summary ?? data.intro_desc ?? "역사 속 선택의 순간을 만나보세요.",
+    era: data.era_tag ?? data.era ?? "시대 정보",
+    years: data.years ?? "연대 미상",
+    situation: data.situation ?? data.intro_desc ?? "상세 상황을 준비 중입니다.",
+    summary: data.one_line_summary ?? data.intro_desc ?? "상세 요약을 준비 중입니다.",
+    mbti,
+    mbtiTitle: data.mbti_nickname ?? "역사 속 성향",
+    mbtiSubtitle: data.category ?? "K-Heroes",
+    strengths: stats.map((stat) => ({
+      name: stat.name,
+      score: toScore(stat.value),
+      max: 5,
+      value: stat.value,
+      desc: stat.desc,
+    })),
+    mbtiTypes: mbti
+      .split("")
+      .slice(0, 4)
+      .map((letter, index) => ({
+        letter,
+        label: MBTI_LABELS[letter] ?? "성향",
+        desc:
+          data.mbti_details?.[MBTI_DETAIL_KEYS[index]] ??
+          "역사적 기록과 행동을 바탕으로 해석한 성향입니다.",
+      })),
+    quote: normalizeQuote(data.intro_quote) || data.one_line_summary || "역사 속 선택의 순간",
+    storyIntro: data.intro_desc ?? data.situation ?? "",
+    img: data.image_url || "/logo.svg",
+    bgImg: data.image_url || "",
+    tags: keywords.map(toTag),
+    region: data.category ?? data.era_tag ?? data.era ?? "역사",
+  };
+}
+
+function getScenarioIcon(category: string | undefined, index: number) {
+  const categoryIcon =
+    category?.includes("호국") || category?.includes("독립")
+      ? "⚔️"
+      : category?.includes("정치") || category?.includes("외교")
+        ? "👑"
+        : category?.includes("예술") || category?.includes("문학")
+          ? "🎨"
+          : category?.includes("학문") || category?.includes("실학")
+            ? "📚"
+            : "📜";
+  const alternates = [categoryIcon, "🧭", "⚖️"];
+  return alternates[index % alternates.length];
+}
+
+function extractPeriod(scenario: ApiScenario, fallback: string) {
+  const source = [
+    scenario.title,
+    scenario.description,
+    scenario.historical_facts,
+    scenario.turns?.[0]?.title,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return source.match(/\d{3,4}년(?:\s*\d{1,2}월)?/)?.[0] ?? fallback;
+}
+
+function makeSubtitle(scenario: ApiScenario) {
+  const fact = scenario.historical_facts?.split(/[.!?。]/)[0]?.trim();
+  if (fact && fact.length <= 42) return fact;
+  return "역사적 선택의 순간";
+}
+
+function toScenarioMetas(data: ApiCharacterDetail, charId: string): ScenarioMeta[] {
+  return (data.scenarios ?? []).map((scenario, index) => ({
+    id: `${charId}-${scenario.scenario_id ?? index}`,
+    charId,
+    index,
+    title: scenario.title,
+    subtitle: makeSubtitle(scenario),
+    period: extractPeriod(scenario, data.era_tag ?? data.era ?? "역사"),
+    difficulty: DIFFICULTIES[Math.min(index, DIFFICULTIES.length - 1)],
+    desc: scenario.description,
+    themeIcon: getScenarioIcon(data.category, index),
+    stepCount: scenario.turns?.length ?? 0,
+  }));
+}
+
+async function fetchCharacterDetail(charId: string): Promise<CharacterDetailPayload> {
+  const apiName = getApiName(charId);
+  const cacheKey = apiName;
+
+  const cached = detailCache.get(cacheKey);
+  if (cached) return cached;
+
+  const pending = detailRequestCache.get(cacheKey);
+  if (pending) return pending;
+
+  const request = fetch(`${API_BASE_URL}/api/characters/${encodeURIComponent(apiName)}`)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`인물 상세 조회 실패: ${response.status}`);
+      }
+      const data = (await response.json()) as ApiCharacterDetail;
+      const payload = {
+        char: toCharacterData(data, charId),
+        scenarios: toScenarioMetas(data, data.name || charId),
+      };
+      detailCache.set(cacheKey, payload);
+      return payload;
+    })
+    .finally(() => {
+      detailRequestCache.delete(cacheKey);
+    });
+
+  detailRequestCache.set(cacheKey, request);
+  return request;
+}
 
 /* ─── 공통 헤더 ─── */
 function PageHeader({
@@ -567,10 +781,100 @@ export function CharacterDetailPage({
   onBack: () => void;
   onStartScenario?: (scenarioIdx: number) => void;
 }) {
-  const char = CHARACTERS[charId];
-  if (!char) return null;
+  const fallbackChar = CHARACTERS[charId];
+  const fallbackScenarios = useMemo(() => getScenariosForChar(charId), [charId]);
+  const [apiPayload, setApiPayload] = useState<CharacterDetailPayload | null>(() =>
+    detailCache.get(getApiName(charId)) ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(!apiPayload);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const scenarios = getScenariosForChar(charId);
+  useEffect(() => {
+    let isActive = true;
+    const cachedPayload = detailCache.get(getApiName(charId)) ?? null;
+
+    setApiPayload(cachedPayload);
+    setIsLoading(!cachedPayload);
+    setLoadError(null);
+
+    fetchCharacterDetail(charId)
+      .then((payload) => {
+        if (!isActive) return;
+        setApiPayload(payload);
+      })
+      .catch((error: unknown) => {
+        if (!isActive) return;
+        setLoadError(error instanceof Error ? error.message : "인물 정보를 불러오지 못했습니다.");
+        setApiPayload(null);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [charId]);
+
+  const char = apiPayload?.char ?? fallbackChar;
+  const scenarios = apiPayload?.scenarios.length ? apiPayload.scenarios : fallbackScenarios;
+
+  if (!char) {
+    return (
+      <div
+        className="fixed inset-0 z-50 overflow-y-auto"
+        style={{ background: "#F4EFE4", fontFamily: "'Noto Sans KR', sans-serif" }}
+      >
+        <PageHeader
+          onBack={onBack}
+          backLabel="인물 목록으로"
+          centerContent={
+            <span
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                color: "#2A4232",
+              }}
+            >
+              인물 정보
+            </span>
+          }
+        />
+        <div className="max-w-[820px] mx-auto px-6 py-16">
+          <div
+            className="rounded-2xl px-6 py-8 text-center"
+            style={{
+              background: "#FDFAF4",
+              border: "1px solid rgba(42,66,50,0.09)",
+              boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 700,
+                color: "#1A1714",
+                marginBottom: "8px",
+              }}
+            >
+              인물 정보를 찾을 수 없어요.
+            </p>
+            <p
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontSize: "0.82rem",
+                color: "#7A7060",
+              }}
+            >
+              {loadError ?? "잠시 후 다시 시도해주세요."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -627,6 +931,7 @@ export function CharacterDetailPage({
             >
               {char.name}의 생애 중 결정적인 순간 {scenarios.length}가지를 선택해
               직접 체험해보세요. 당신의 선택이 역사를 바꿀 수 있습니다.
+              {isLoading && " 인물 정보를 불러오는 중입니다."}
             </p>
 
             {/* 인용구 */}
