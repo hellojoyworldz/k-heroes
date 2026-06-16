@@ -13,7 +13,7 @@ interface Keyword {
   sublabel: string;
   hanja: string;
   accent: string;
-  charIds: string[];
+  category?: CharacterCategory;
 }
 
 const KEYWORDS: Keyword[] = [
@@ -23,7 +23,6 @@ const KEYWORDS: Keyword[] = [
     sublabel: "모든 역사 인물",
     hanja: "全",
     accent: "#5A4A32",
-    charIds: ["yunbongil", "yi_sunsin", "sejong"],
   },
   {
     id: "politics",
@@ -31,7 +30,7 @@ const KEYWORDS: Keyword[] = [
     sublabel: "나라를 이끄는 결단",
     hanja: "政",
     accent: "#2A4232",
-    charIds: ["yunbongil", "yi_sunsin", "sejong"],
+    category: "정치 / 외교",
   },
   {
     id: "independence",
@@ -39,7 +38,7 @@ const KEYWORDS: Keyword[] = [
     sublabel: "조국을 지킨 영혼들",
     hanja: "義",
     accent: "#7A3020",
-    charIds: ["yunbongil", "yi_sunsin"],
+    category: "독립 / 호국",
   },
   {
     id: "art",
@@ -47,7 +46,7 @@ const KEYWORDS: Keyword[] = [
     sublabel: "시대를 수놓은 아름다움",
     hanja: "藝",
     accent: "#50407A",
-    charIds: ["sejong"],
+    category: "예술 / 문학",
   },
   {
     id: "sirhak",
@@ -55,11 +54,106 @@ const KEYWORDS: Keyword[] = [
     sublabel: "지식으로 세상을 바꾸다",
     hanja: "學",
     accent: "#28506E",
-    charIds: ["sejong", "yi_sunsin"],
+    category: "실학 / 학문",
   },
 ];
 
-const ALL_CHAR_IDS = ["yunbongil", "yi_sunsin", "sejong"];
+type CharacterCategory = "정치 / 외교" | "독립 / 호국" | "예술 / 문학" | "실학 / 학문";
+
+interface ApiCharacter {
+  name: string;
+  category: CharacterCategory;
+  era: string;
+  era_tag: string;
+  role: string;
+  keywords: string[];
+  years: string;
+  image_url?: string;
+  situation: string;
+  one_line_summary: string;
+  mbti: string;
+  mbti_nickname: string;
+  mbti_details: {
+    E_I: string;
+    S_N: string;
+    T_F: string;
+    J_P: string;
+  };
+  stats: Array<{
+    name: string;
+    value: number;
+    desc: string;
+  }>;
+  intro_quote: string;
+  intro_desc: string;
+  associated_stories?: unknown;
+  scenarios?: unknown[];
+}
+
+interface CharacterCardData {
+  id: string;
+  name: string;
+  category: string;
+  era: string;
+  role: string;
+  tagline: string;
+  mbti: string;
+  imageUrl: string;
+  keywords: string[];
+}
+
+const STATIC_CHARACTER_CARDS: CharacterCardData[] = Object.values(CHARACTERS).map((char) => ({
+  id: char.id,
+  name: char.name,
+  category: "",
+  era: char.era,
+  role: char.role,
+  tagline: char.tagline,
+  mbti: char.mbti,
+  imageUrl: char.img,
+  keywords: char.tags,
+}));
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+let allCharactersCache: CharacterCardData[] | null = null;
+let allCharactersRequest: Promise<CharacterCardData[]> | null = null;
+
+function toCharacterCardData(char: ApiCharacter): CharacterCardData {
+  return {
+    id: char.name,
+    name: char.name,
+    category: char.category,
+    era: char.era_tag || char.era,
+    role: char.role,
+    tagline: char.one_line_summary || char.intro_desc,
+    mbti: char.mbti,
+    imageUrl: char.image_url || "/logo.svg",
+    keywords: char.keywords ?? [],
+  };
+}
+
+async function fetchAllCharacters() {
+  if (allCharactersCache) return allCharactersCache;
+  if (allCharactersRequest) return allCharactersRequest;
+
+  allCharactersRequest = fetch(`${API_BASE_URL}/api/characters`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`캐릭터 조회 실패 (${response.status})`);
+      }
+      return response.json() as Promise<ApiCharacter[]>;
+    })
+    .then((data) => {
+      const characters = data.map(toCharacterCardData);
+      allCharactersCache = characters;
+      return characters;
+    })
+    .finally(() => {
+      allCharactersRequest = null;
+    });
+
+  return allCharactersRequest;
+}
 
 /* MBTI 유형 그룹 */
 const MBTI_GROUPS = [
@@ -69,20 +163,23 @@ const MBTI_GROUPS = [
   { label: "탐험가형", types: ["ISTP", "ISFP", "ESTP", "ESFP"], color: "#6A3A2A" },
 ];
 
+function getMbtiColor(type: string | null) {
+  return MBTI_GROUPS.find((group) => type && group.types.includes(type))?.color ?? "#A06C1A";
+}
+
 /* ──────────────────────────────────────────
    인물 카드
 ────────────────────────────────────────── */
 function CharacterCard({
-  charId,
+  character,
   onDetail,
   mbtiMatch,
 }: {
-  charId: string;
+  character: CharacterCardData;
   onDetail: (id: string) => void;
   mbtiMatch?: boolean;
 }) {
-  const char = CHARACTERS[charId];
-  if (!char) return null;
+  const mbtiColor = getMbtiColor(character.mbti);
 
   return (
     <div
@@ -93,31 +190,42 @@ function CharacterCard({
         boxShadow: "0 4px 20px rgba(90,60,20,0.1)",
         minHeight: "136px",
       }}
-      onClick={() => onDetail(charId)}
+      onClick={() => onDetail(character.id)}
     >
       {/* 왼쪽: 초상화 */}
       <div
         className="flex-shrink-0 relative overflow-hidden"
         style={{
-          width: "108px",
-          background: "linear-gradient(170deg, #EDE0C4 0%, #D9C99A 100%)",
+          width: "136px",
+          minHeight: "136px",
+          background:
+            "radial-gradient(circle at 50% 28%, rgba(253,250,244,0.74), rgba(210,190,146,0.42) 58%, rgba(120,92,52,0.14)), linear-gradient(170deg, #EDE0C4 0%, #D9C99A 100%)",
           alignSelf: "stretch",
         }}
       >
         <img
-          src={char.img}
-          alt={char.name}
+          src={character.imageUrl}
+          alt={character.name}
           style={{
             position: "absolute",
-            bottom: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
+            inset: 0,
+            width: "100%",
             height: "100%",
-            width: "auto",
-            maxWidth: "none",
-            objectFit: "contain",
-            objectPosition: "bottom center",
+            objectFit: "cover",
+            objectPosition: "center 10%",
             display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: "38%",
+            background:
+              "linear-gradient(to bottom, rgba(217,201,154,0) 0%, rgba(217,201,154,0.72) 60%, rgba(217,201,154,0.98) 100%)",
+            pointerEvents: "none",
           }}
         />
         <div
@@ -125,7 +233,7 @@ function CharacterCard({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to right, transparent 50%, rgba(252,248,238,0.72) 100%)",
+              "linear-gradient(to right, transparent 58%, rgba(252,248,238,0.72) 100%)",
             pointerEvents: "none",
           }}
         />
@@ -161,21 +269,21 @@ function CharacterCard({
                 padding: "1px 7px",
               }}
             >
-              {char.era}
+              {character.era}
             </span>
             <span
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
                 fontSize: "0.6rem",
-                background: mbtiMatch ? "rgba(201,147,58,0.2)" : "rgba(201,147,58,0.1)",
-                color: "#A06C1A",
+                background: `${mbtiColor}${mbtiMatch ? "26" : "14"}`,
+                color: mbtiColor,
                 borderRadius: "99px",
                 padding: "1px 7px",
                 fontWeight: 700,
-                border: mbtiMatch ? "1px solid rgba(201,147,58,0.3)" : "none",
+                border: mbtiMatch ? `1px solid ${mbtiColor}44` : "none",
               }}
             >
-              {char.mbti}
+              {character.mbti}
             </span>
           </div>
           <h3
@@ -188,7 +296,7 @@ function CharacterCard({
               lineHeight: 1.3,
             }}
           >
-            {char.name}
+            {character.name}
           </h3>
           <p
             style={{
@@ -198,7 +306,7 @@ function CharacterCard({
               marginBottom: "5px",
             }}
           >
-            {char.role.split(" · ")[0]}
+            {character.role.split(" · ")[0]}
           </p>
           <p
             style={{
@@ -212,7 +320,7 @@ function CharacterCard({
               overflow: "hidden",
             }}
           >
-            {char.tagline}
+            {character.tagline}
           </p>
         </div>
 
@@ -226,7 +334,7 @@ function CharacterCard({
           }}
           onClick={(e) => {
             e.stopPropagation();
-            onDetail(charId);
+            onDetail(character.id);
           }}
         >
           체험하기
@@ -243,10 +351,12 @@ function CharacterCard({
 function KeywordButton({
   kw,
   selected,
+  count,
   onClick,
 }: {
   kw: Keyword;
   selected: boolean;
+  count?: number;
   onClick: () => void;
 }) {
   const accentRgb =
@@ -351,7 +461,7 @@ function KeywordButton({
               color: selected ? kw.accent : "#7A7060",
             }}
           >
-            {kw.charIds.length}
+            {count ?? "…"}
           </span>
         </div>
         <ChevronRight
@@ -404,30 +514,34 @@ function InkDivider() {
 ────────────────────────────────────────── */
 function MbtiPicker({
   selected,
+  availableMbtiTypes,
   onSelect,
 }: {
   selected: string | null;
+  availableMbtiTypes: Set<string>;
   onSelect: (mbti: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const selectedColor = getMbtiColor(selected);
 
   return (
-    <div className="relative">
+    <div className="relative w-[38%] min-w-[150px] max-w-[190px]">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all"
+        className="kh-mbti-curiosity relative flex w-full items-center justify-between gap-2 overflow-hidden px-3 py-2 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-sm"
         style={{
           background: selected
-            ? "rgba(42,66,50,0.12)"
-            : "rgba(248,242,228,0.8)",
+            ? `${selectedColor}18`
+            : "linear-gradient(135deg, rgba(42,66,50,0.14), rgba(61,107,82,0.22))",
           border: selected
-            ? "1.5px solid rgba(42,66,50,0.28)"
-            : "1.5px solid rgba(110,80,40,0.18)",
+            ? `1.5px solid ${selectedColor}44`
+            : "1.5px solid rgba(42,66,50,0.28)",
           fontFamily: "'Noto Sans KR', sans-serif",
           fontSize: "0.78rem",
-          color: selected ? "#2A4232" : "#6A6050",
+          color: selected ? selectedColor : "#2A4232",
           fontWeight: selected ? 700 : 400,
           whiteSpace: "nowrap",
+          boxShadow: selected ? "none" : "0 3px 12px rgba(42,66,50,0.1)",
         }}
       >
         {selected ? (
@@ -445,9 +559,11 @@ function MbtiPicker({
           </>
         ) : (
           <>
-            <span>MBTI</span>
+            <span className="relative z-10 min-w-0 truncate">
+              내 MBTI 영웅은?
+            </span>
             <ChevronRight
-              className="w-3.5 h-3.5"
+              className="relative z-10 w-3.5 h-3.5 flex-shrink-0"
               style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}
             />
           </>
@@ -511,9 +627,7 @@ function MbtiPicker({
                 <div className="flex gap-1.5 flex-wrap">
                   {group.types.map((type) => {
                     const isSelected = selected === type;
-                    const hasMatch = ALL_CHAR_IDS.some(
-                      (id) => CHARACTERS[id]?.mbti === type
-                    );
+                    const hasMatch = availableMbtiTypes.has(type);
                     return (
                       <button
                         key={type}
@@ -664,18 +778,73 @@ export function RegionMapPage({
   const [mobileTab, setMobileTab] = useState<"keywords" | "chars">("keywords");
   const [desktopPage, setDesktopPage] = useState(0);
   const [mobileShown, setMobileShown] = useState(PAGE_SIZE_MOBILE);
+  const [allCharacters, setAllCharacters] = useState<CharacterCardData[]>(
+    allCharactersCache ?? STATIC_CHARACTER_CARDS
+  );
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState(false);
+  const [characterError, setCharacterError] = useState<string | null>(null);
+  const [introReady, setIntroReady] = useState(false);
 
   const activeKw = KEYWORDS.find((k) => k.id === selectedKeyword) ?? KEYWORDS[0];
+  const activeCategory = activeKw.category;
+  const mbtiFilterColor = getMbtiColor(mbtiFilter);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIntroReady(true), 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (allCharactersCache) {
+      setAllCharacters(allCharactersCache);
+      setCharacterError(null);
+      setIsLoadingCharacters(false);
+      return;
+    }
+
+    setIsLoadingCharacters(true);
+    setCharacterError(null);
+
+    fetchAllCharacters()
+      .then((nextCharacters) => {
+        if (ignore) return;
+        setAllCharacters(nextCharacters);
+      })
+      .catch((error: unknown) => {
+        if (ignore) return;
+        console.error(error);
+        setAllCharacters(STATIC_CHARACTER_CARDS);
+        setCharacterError("인물 API를 불러오지 못해 임시 데이터를 표시하고 있습니다.");
+      })
+      .finally(() => {
+        if (!ignore) setIsLoadingCharacters(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const categoryCounts = useMemo(() => {
+    return KEYWORDS.reduce<Record<string, number>>((acc, kw) => {
+      acc[kw.id] = kw.category
+        ? allCharacters.filter((char) => char.category === kw.category).length
+        : allCharacters.length;
+      return acc;
+    }, {});
+  }, [allCharacters]);
+
+  const characters = useMemo(() => {
+    return activeCategory
+      ? allCharacters.filter((char) => char.category === activeCategory)
+      : allCharacters;
+  }, [activeCategory, allCharacters]);
 
   /* 필터링: 키워드 + 검색 + MBTI 모두 통과해야 표시 */
   const filteredChars = useMemo(() => {
-    return ALL_CHAR_IDS.filter((id) => {
-      const char = CHARACTERS[id];
-      if (!char) return false;
-
-      // 키워드 필터
-      if (!activeKw.charIds.includes(id)) return false;
-
+    return characters.filter((char) => {
       // 검색어 필터
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
@@ -684,7 +853,9 @@ export function RegionMapPage({
           char.role.toLowerCase().includes(q) ||
           char.mbti.toLowerCase().includes(q) ||
           char.era.includes(q) ||
-          char.tagline.includes(q);
+          char.tagline.includes(q) ||
+          char.category.includes(q) ||
+          char.keywords.some((keyword) => keyword.toLowerCase().includes(q));
         if (!match) return false;
       }
 
@@ -693,10 +864,14 @@ export function RegionMapPage({
 
       return true;
     });
-  }, [activeKw, searchQuery, mbtiFilter]);
+  }, [characters, searchQuery, mbtiFilter]);
 
-  const isMbtiMatch = (id: string) =>
-    mbtiFilter ? CHARACTERS[id]?.mbti === mbtiFilter : false;
+  const availableMbtiTypes = useMemo(() => {
+    return new Set(characters.map((char) => char.mbti));
+  }, [characters]);
+
+  const isMbtiMatch = (character: CharacterCardData) =>
+    mbtiFilter ? character.mbti === mbtiFilter : false;
 
   /* 필터 바뀌면 페이지 리셋 */
   useEffect(() => {
@@ -714,10 +889,15 @@ export function RegionMapPage({
   const mobileChars = filteredChars.slice(0, mobileShown);
   const hasMobileMore = mobileShown < filteredChars.length;
 
+  const getKeywordCount = (kw: Keyword) => {
+    return categoryCounts[kw.id] ?? 0;
+  };
+
   const panelBase = {
     background: "rgba(236,224,198,0.38)",
     backdropFilter: "blur(6px)",
   } as const;
+  const layerClass = introReady ? "kh-layer-visible" : "kh-layer-hidden";
 
   return (
     <div
@@ -738,21 +918,180 @@ export function RegionMapPage({
         .kh-search-input:focus {
           outline: none;
         }
+        @keyframes khMapReveal {
+          0% {
+            opacity: 0;
+            clip-path: circle(0% at 46% 48%);
+            filter: blur(3px) contrast(0.96) saturate(0.88);
+          }
+          35% {
+            opacity: 0.42;
+            clip-path: circle(36% at 42% 45%);
+          }
+          68% {
+            opacity: 0.78;
+            clip-path: circle(80% at 52% 50%);
+            filter: blur(1.6px) contrast(0.98) saturate(0.92);
+          }
+          88% {
+            opacity: 0.94;
+            clip-path: circle(128% at 50% 50%);
+          }
+          100% {
+            opacity: 1;
+            clip-path: circle(145% at 50% 50%);
+            filter: blur(1.2px) contrast(1) saturate(0.95);
+          }
+        }
+        @keyframes khInkBloom {
+          0% {
+            opacity: 0;
+            transform: scale(0.52);
+            filter: blur(30px) saturate(0.72);
+          }
+          28% {
+            opacity: 0.82;
+            transform: scale(0.9);
+          }
+          70% {
+            opacity: 0.42;
+            transform: scale(1.32);
+            filter: blur(28px) saturate(0.86);
+          }
+          100% {
+            opacity: 0.08;
+            transform: scale(1.68);
+            filter: blur(40px) saturate(0.78);
+          }
+        }
+        @keyframes khDarkWash {
+          0% {
+            opacity: 0.72;
+          }
+          54% {
+            opacity: 0.34;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+        @keyframes khLayerFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes khCardRise {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .kh-ink-wash {
+          animation: khInkBloom 1.5s cubic-bezier(0.19, 0.72, 0.22, 1) both;
+        }
+        .kh-map-reveal {
+          animation: khMapReveal 1.5s cubic-bezier(0.19, 0.72, 0.22, 1) both;
+        }
+        .kh-dark-wash {
+          animation: khDarkWash 1.5s ease-out both;
+        }
+        .kh-bg-ready {
+          filter: none;
+          transform: none;
+        }
+        .kh-layer-hidden {
+          opacity: 0;
+          transform: translateY(10px);
+          pointer-events: none;
+        }
+        .kh-layer-visible {
+          animation: khLayerFadeIn 0.72s ease-out both;
+        }
+        .kh-card-stagger {
+          opacity: 0;
+          animation: khCardRise 0.58s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .kh-ink-wash,
+          .kh-dark-wash,
+          .kh-map-reveal,
+          .kh-layer-visible,
+          .kh-card-stagger {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .kh-layer-hidden {
+            opacity: 1 !important;
+            transform: none !important;
+            pointer-events: auto !important;
+          }
+        }
+        .kh-mbti-curiosity::after {
+          content: "";
+          position: absolute;
+          inset: 2px;
+          border-radius: 10px;
+          background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.32) 44%, transparent 72%);
+          transform: translateX(-130%);
+          transition: transform 0.7s ease;
+          pointer-events: none;
+        }
+        .kh-mbti-curiosity:hover::after {
+          transform: translateX(130%);
+        }
+        .kh-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(90, 74, 50, 0.34) rgba(248, 242, 228, 0.34);
+        }
+        .kh-scrollbar::-webkit-scrollbar {
+          width: 9px;
+        }
+        .kh-scrollbar::-webkit-scrollbar-track {
+          background: rgba(248, 242, 228, 0.34);
+          border-radius: 999px;
+        }
+        .kh-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, rgba(90, 74, 50, 0.24), rgba(42, 66, 50, 0.34));
+          border: 2px solid rgba(248, 242, 228, 0.56);
+          border-radius: 999px;
+        }
+        .kh-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, rgba(90, 74, 50, 0.36), rgba(42, 66, 50, 0.48));
+        }
       `}</style>
 
       {/* ── 배경 고지도 ── */}
-      <div className="absolute inset-0">
+      <div className={`absolute inset-0 transition-[filter,transform] duration-700 ${introReady ? "kh-bg-ready" : ""}`}>
         <img
           src={mapBg.src}
           alt="한국 고지도"
-          className="w-full h-full object-cover object-center"
+          className="kh-map-reveal w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0" style={{ background: "rgba(232,218,190,0.06)" }} />
+        <div
+          className="kh-ink-wash absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 34% 38%, rgba(26,37,32,0.42), transparent 24%), radial-gradient(circle at 58% 50%, rgba(90,74,50,0.36), transparent 34%), radial-gradient(circle at 70% 58%, rgba(122,48,32,0.2), transparent 28%)",
+            mixBlendMode: "multiply",
+            pointerEvents: "none",
+          }}
+        />
       </div>
 
       {/* ── 헤더 ── */}
       <header
-        className="relative flex-shrink-0 flex items-center justify-between px-5 h-14 border-b"
+        className={`relative flex-shrink-0 flex items-center justify-between px-5 h-14 border-b ${layerClass}`}
         style={{
           background: "rgba(240,230,208,0.62)",
           borderColor: "rgba(110,80,40,0.18)",
@@ -797,7 +1136,7 @@ export function RegionMapPage({
 
       {/* ── 모바일 탭 바 ── */}
       <div
-        className="relative md:hidden flex-shrink-0 flex border-b"
+        className={`relative md:hidden flex-shrink-0 flex border-b ${layerClass}`}
         style={{
           background: "rgba(240,230,208,0.72)",
           backdropFilter: "blur(8px)",
@@ -825,7 +1164,7 @@ export function RegionMapPage({
       </div>
 
       {/* ── 본문 ── */}
-      <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className={`relative flex-1 flex flex-col md:flex-row overflow-hidden ${layerClass}`}>
 
         {/* ══ 키워드 패널 (40%) ══ */}
         <div
@@ -874,6 +1213,7 @@ export function RegionMapPage({
               <KeywordButton
                 key={kw.id}
                 kw={kw}
+                count={getKeywordCount(kw)}
                 selected={selectedKeyword === kw.id}
                 onClick={() => {
                   setSelectedKeyword(kw.id);
@@ -955,8 +1295,8 @@ export function RegionMapPage({
                 <div
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full"
                   style={{
-                    background: "rgba(201,147,58,0.12)",
-                    border: "1px solid rgba(201,147,58,0.28)",
+                    background: `${mbtiFilterColor}18`,
+                    border: `1px solid ${mbtiFilterColor}44`,
                   }}
                 >
                   <span
@@ -964,7 +1304,7 @@ export function RegionMapPage({
                       fontFamily: "'Noto Sans KR', sans-serif",
                       fontSize: "0.68rem",
                       fontWeight: 700,
-                      color: "#A06C1A",
+                      color: mbtiFilterColor,
                     }}
                   >
                     {mbtiFilter} 일치
@@ -1000,7 +1340,7 @@ export function RegionMapPage({
             <div className="flex gap-2">
               {/* 검색 인풋 */}
               <div
-                className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
+                className="flex min-w-0 flex-[1.65] items-center gap-2 px-3 py-2 rounded-xl"
                 style={{
                   background: "rgba(248,242,228,0.88)",
                   border: "1.5px solid rgba(110,80,40,0.18)",
@@ -1028,7 +1368,11 @@ export function RegionMapPage({
               </div>
 
               {/* MBTI 선택 */}
-              <MbtiPicker selected={mbtiFilter} onSelect={setMbtiFilter} />
+              <MbtiPicker
+                selected={mbtiFilter}
+                availableMbtiTypes={availableMbtiTypes}
+                onSelect={setMbtiFilter}
+              />
             </div>
 
             {/* 활성 필터 요약 */}
@@ -1053,8 +1397,8 @@ export function RegionMapPage({
                     className="px-2 py-0.5 rounded-full"
                     style={{
                       fontSize: "0.68rem",
-                      background: "rgba(201,147,58,0.1)",
-                      color: "#A06C1A",
+                      background: `${mbtiFilterColor}14`,
+                      color: mbtiFilterColor,
                       fontWeight: 600,
                     }}
                   >
@@ -1072,6 +1416,20 @@ export function RegionMapPage({
                 </button>
               </div>
             )}
+            {(isLoadingCharacters || characterError) && (
+              <div
+                className="mt-2 rounded-lg px-2.5 py-1.5"
+                style={{
+                  background: characterError ? "rgba(122,48,32,0.08)" : "rgba(42,66,50,0.08)",
+                  color: characterError ? "#7A3020" : "#2A4232",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  fontSize: "0.68rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {characterError ?? "인물 데이터를 불러오는 중입니다..."}
+              </div>
+            )}
           </div>
 
           {/* ── PC: 카드 목록 + 페이지네이션 ── */}
@@ -1084,10 +1442,18 @@ export function RegionMapPage({
                 <p className="mb-3" style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.72rem", color: "#9A8E7E" }}>
                   총 <strong style={{ color: activeKw.accent }}>{filteredChars.length}</strong>명의 인물
                 </p>
-                <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-0.5">
-                  {desktopChars.map((id, idx) => (
-                    <div key={id}>
-                      <CharacterCard charId={id} onDetail={onDetail} mbtiMatch={isMbtiMatch(id)} />
+                <div className="kh-scrollbar flex-1 flex flex-col gap-3 overflow-y-auto pr-2">
+                  {desktopChars.map((character, idx) => (
+                    <div
+                      key={character.id}
+                      className={introReady ? "kh-card-stagger" : ""}
+                      style={{ animationDelay: `${idx * 85}ms` }}
+                    >
+                      <CharacterCard
+                        character={character}
+                        onDetail={onDetail}
+                        mbtiMatch={isMbtiMatch(character)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1103,7 +1469,7 @@ export function RegionMapPage({
           </div>
 
           {/* ── 모바일: 카드 목록 + 더보기 ── */}
-          <div className="md:hidden flex-1 flex flex-col overflow-y-auto gap-3 pr-0.5">
+          <div className="kh-scrollbar md:hidden flex-1 flex flex-col overflow-y-auto gap-3 pr-2">
             {filteredChars.length === 0 ? (
               <EmptyState onReset={() => { setSearchQuery(""); setMbtiFilter(null); setSelectedKeyword("all"); }} />
             ) : (
@@ -1111,9 +1477,17 @@ export function RegionMapPage({
                 <p style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: "0.72rem", color: "#9A8E7E" }}>
                   총 <strong style={{ color: activeKw.accent }}>{filteredChars.length}</strong>명의 인물
                 </p>
-                {mobileChars.map((id, idx) => (
-                  <div key={id}>
-                    <CharacterCard charId={id} onDetail={onDetail} mbtiMatch={isMbtiMatch(id)} />
+                {mobileChars.map((character, idx) => (
+                  <div
+                    key={character.id}
+                    className={introReady ? "kh-card-stagger" : ""}
+                    style={{ animationDelay: `${idx * 85}ms` }}
+                  >
+                    <CharacterCard
+                      character={character}
+                      onDetail={onDetail}
+                      mbtiMatch={isMbtiMatch(character)}
+                    />
                   </div>
                 ))}
                 {hasMobileMore && (

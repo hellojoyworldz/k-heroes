@@ -9,7 +9,7 @@ export default function SelectPage() {
   return (
     <RegionMapPage
       onBack={() => router.push("/")}
-      onDetail={(id) => router.push(`/character-detail/${id}`)}
+      onDetail={(id) => router.push(`/character-detail/${encodeURIComponent(id)}`)}
     />
   );
 }
