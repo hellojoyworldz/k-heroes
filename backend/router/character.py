@@ -19,9 +19,10 @@ async def get_characters(
     characters_list = []
     for name, profile_data in data_manager.cached_characters.items():
         try:
-            # 리스트 조회 시에는 시나리오 목록을 제외하여 경량화
+            # 리스트 조회 시에는 시나리오 목록과 연관 스토리를 제외하여 경량화
             data_copy = dict(profile_data)
             data_copy["associated_stories"] = {}
+            data_copy["scenarios"] = []
             
             card = CharacterCard(**data_copy)
             # category가 제공되었고, '전체' 혹은 'all'이 아닐 때만 해당 카테고리로 필터링

@@ -30,6 +30,19 @@ else:
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 GCP_BUCKET_NAME = os.environ.get("GCP_BUCKET_NAME")
 
+# 생몰년도 및 시대 메타데이터 로드
+HISTORICAL_LIFESPANS_PATH = os.path.join(BASE_DIR, "data", "historical_lifespans.json")
+HISTORICAL_LIFESPANS = {}
+if os.path.exists(HISTORICAL_LIFESPANS_PATH):
+    try:
+        with open(HISTORICAL_LIFESPANS_PATH, "r", encoding="utf-8") as f:
+            HISTORICAL_LIFESPANS = json.load(f)
+        print(f"[INFO] 역사 메타데이터 로드 완료: {len(HISTORICAL_LIFESPANS)}명")
+    except Exception as e:
+        print(f"[WARNING] 역사 메타데이터 로드 실패: {e}")
+else:
+    print(f"[WARNING] 역사 메타데이터 파일 없음: {HISTORICAL_LIFESPANS_PATH}")
+
 # --- Helper functions ---
 def get_associated_stories_for_char(df_clean: pd.DataFrame, character_name: str, max_stories: int = 50) -> List[Dict[str, Any]]:
     """
