@@ -408,8 +408,9 @@ Character occupies approximately 75% of the composition.
 Historical elements appear only as soft watercolor accents behind the character.
 No full background scene.
 No sky, ground, horizon, or solid backdrop.
-Background must fade completely into transparency.
-Transparent PNG background.
+Background must be solid white.
+Isolated on a clean, solid white background.
+No checkered pattern, no grid, no grey and white squares.
 Clean character cutout.
 Museum-quality illustration.
 Warm beige, brown, olive green and ivory palette.
@@ -434,6 +435,35 @@ No text, logo, border, frame, or UI."""
             
         image_bytes = base64.b64decode(b64_data)
         
+        # Convert white background to transparency using PIL floodfill
+        try:
+            print(" ➔ 이미지 배경 투명화 처리 중 (Pillow)...")
+            from PIL import Image, ImageDraw
+            img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+            width, height = img.size
+            
+            # Sample border pixels (every 10 pixels along the borders)
+            border_pixels = []
+            for x in range(0, width, 10):
+                border_pixels.append((x, 0))
+                border_pixels.append((x, height - 1))
+            for y in range(0, height, 10):
+                border_pixels.append((0, y))
+                border_pixels.append((width - 1, y))
+                
+            for px, py in border_pixels:
+                r, g, b, a = img.getpixel((px, py))
+                # If pixel is light enough (R > 210, G > 210, B > 210) and not already transparent
+                if a > 0 and r > 210 and g > 210 and b > 210:
+                    ImageDraw.floodfill(img, (px, py), (0, 0, 0, 0), thresh=50)
+                    
+            output_bytes = io.BytesIO()
+            img.save(output_bytes, format="PNG")
+            image_bytes = output_bytes.getvalue()
+            print("  [SUCCESS] 배경 투명화 완료!")
+        except Exception as img_err:
+            print(f" [WARNING] 배경 투명화 처리 실패 (원본 이미지 유지): {img_err}")
+            
         storage_client = storage.Client(project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         
@@ -603,7 +633,7 @@ No frame.
 
 
 # --- Main Pipeline Builder ---
-def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"):
+def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
     print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
     if not os.path.exists(CSV_PATH):
         raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
@@ -657,36 +687,21 @@ def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"
             
     start_time = time.time()
     
+    # Normalize mode
+    norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
+    
+    # Map original/legacy commands
+    if norm_mode == "profiles":
+        norm_mode = "profiles-scenario-text"
+    elif norm_mode == "char-only":
+        norm_mode = "profiles-image"
+    
     for idx, char_name in enumerate(selected_characters):
         print(f"\n[{idx+1}/{len(selected_characters)}] '{char_name}' 처리 중...")
         
-        # 1. 캐릭터가 DB에 없으면 프로필 & 시나리오 기본 틀을 생성
         db_char = character_database.get(char_name, {})
         associated_stories = get_associated_stories_for_char(df_clean, char_name)
-        
-        # 텍스트 시나리오 및 프로필 생성 여부 체크
-        needs_profile = "mbti" not in db_char or not db_char.get("scenarios")
-        
-        # 만약 생몰년도가 메타데이터와 다르면 재생성 필요
         lifespan_info = HISTORICAL_LIFESPANS.get(char_name, {})
-        if lifespan_info and db_char.get("years") != lifespan_info.get("years"):
-            needs_profile = True
-            
-        if not needs_profile:
-            # 기존 시나리오가 새 스키마(예: turn 내에 tip_title 이나 choices 내에 stats 가 있는지)를 충족하는지 체크
-            scenarios = db_char.get("scenarios", [])
-            if not scenarios:
-                needs_profile = True
-            else:
-                first_scenario = scenarios[0]
-                turns = first_scenario.get("turns", [])
-                if not turns:
-                    needs_profile = True
-                else:
-                    first_turn = turns[0]
-                    # tip_title 또는 title 필드가 없는 경우 새로운 프롬프트 구조로 재생성 유도
-                    if "tip_title" not in first_turn or "title" not in first_turn:
-                        needs_profile = True
         
         # RAG 단서를 도메인별 ID 리스트로 압축 가공 (Dict[str, List[int]])
         stories_dict = {}
@@ -698,42 +713,83 @@ def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"
                     stories_dict[domain] = []
                 stories_dict[domain].append(story_id)
         
-        if needs_profile:
-            print(f" ➔ '{char_name}' 프로필 및 시나리오 텍스트가 부족하거나 구버전 스키마입니다. GPT 생성 진행...")
-            retries = 3
+        # Determine execution flags for text generation steps
+        curr_run_profile_text = False
+        curr_run_scenario_text = False
+        
+        if norm_mode in ["all", "profiles-scenario-text"]:
+            needs_profile = "mbti" not in db_char or not db_char.get("scenarios")
+            if lifespan_info and db_char.get("years") != lifespan_info.get("years"):
+                needs_profile = True
+            if not needs_profile:
+                scenarios = db_char.get("scenarios", [])
+                if not scenarios:
+                    needs_profile = True
+                else:
+                    first_scenario = scenarios[0]
+                    turns = first_scenario.get("turns", [])
+                    if not turns:
+                        needs_profile = True
+                    else:
+                        first_turn = turns[0]
+                        if "tip_title" not in first_turn or "title" not in first_turn:
+                            needs_profile = True
+            if needs_profile:
+                curr_run_profile_text = True
+                curr_run_scenario_text = True
+        elif norm_mode == "profiles-text":
+            curr_run_profile_text = True
+        elif norm_mode in ["scenario-text", "turn0text", "turn0-text", "turn-text"]:
+            curr_run_scenario_text = True
+            
+        # 1-1. 프로필 텍스트 생성
+        if curr_run_profile_text:
+            print(f" ➔ '{char_name}' 프로필 텍스트 생성 진행...")
             success = False
-            for attempt in range(retries):
+            for attempt in range(3):
                 try:
                     profile_data = generate_character_profile_via_openai(char_name, associated_stories)
+                    db_char["name"] = profile_data.get("name", char_name)
+                    db_char["category"] = profile_data.get("category")
+                    db_char["era"] = lifespan_info.get("era", profile_data.get("era"))
+                    db_char["era_tag"] = lifespan_info.get("era_tag", profile_data.get("era_tag"))
+                    db_char["role"] = profile_data.get("role")
+                    db_char["keywords"] = profile_data.get("keywords")
+                    db_char["years"] = lifespan_info.get("years", profile_data.get("years"))
+                    db_char["situation"] = profile_data.get("situation")
+                    db_char["one_line_summary"] = profile_data.get("one_line_summary")
+                    db_char["mbti"] = profile_data.get("mbti")
+                    db_char["mbti_nickname"] = profile_data.get("mbti_nickname")
+                    db_char["mbti_details"] = profile_data.get("mbti_details")
+                    db_char["stats"] = profile_data.get("stats")
+                    db_char["intro_quote"] = profile_data.get("intro_quote")
+                    db_char["intro_desc"] = profile_data.get("intro_desc")
+                    db_char["associated_stories"] = stories_dict
+                    
+                    if "image_url" not in db_char:
+                        db_char["image_url"] = ""
+                    if "scenarios" not in db_char:
+                        db_char["scenarios"] = []
+                        
+                    success = True
+                    print(f"  [SUCCESS] '{char_name}' 프로필 텍스트 생성 완료")
+                    break
+                except Exception as e:
+                    print(f"  [WARNING] 프로필 텍스트 생성 시도 {attempt+1} 실패: {e}")
+                    time.sleep(5)
+            if not success:
+                print(f"  [CRITICAL] '{char_name}' 프로필 텍스트 파이프라인 최종 실패.")
+                
+        # 1-2. 시나리오 텍스트 생성
+        if curr_run_scenario_text:
+            print(f" ➔ '{char_name}' 시나리오 텍스트 생성 진행...")
+            success = False
+            for attempt in range(3):
+                try:
                     scenarios = generate_scenarios_via_openai(char_name, associated_stories)
                     
-                    # Ground truth metadata override
-                    lifespan_info = HISTORICAL_LIFESPANS.get(char_name, {})
-                    
-                    # 새 모델 형태 및 키 순서 정의 (image_url을 years 다음에 배치)
-                    ordered_profile = {
-                        "name": profile_data.get("name"),
-                        "category": profile_data.get("category"),
-                        "era": lifespan_info.get("era", profile_data.get("era")),
-                        "era_tag": lifespan_info.get("era_tag", profile_data.get("era_tag")),
-                        "role": profile_data.get("role"),
-                        "keywords": profile_data.get("keywords"),
-                        "years": lifespan_info.get("years", profile_data.get("years")),
-                        "image_url": db_char.get("image_url", ""),
-                        "situation": profile_data.get("situation"),
-                        "one_line_summary": profile_data.get("one_line_summary"),
-                        "mbti": profile_data.get("mbti"),
-                        "mbti_nickname": profile_data.get("mbti_nickname"),
-                        "mbti_details": profile_data.get("mbti_details"),
-                        "stats": profile_data.get("stats"),
-                        "intro_quote": profile_data.get("intro_quote"),
-                        "intro_desc": profile_data.get("intro_desc"),
-                        "associated_stories": stories_dict,
-                        "scenarios": scenarios
-                    }
-                    
-                    # 시나리오 내부에 turn_image 및 choices 내부 choice_image 필드 보장
-                    for scenario in ordered_profile["scenarios"]:
+                    # schema fields 보장
+                    for scenario in scenarios:
                         if "scenario_image_url" in scenario:
                             del scenario["scenario_image_url"]
                         for turn in scenario.get("turns", []):
@@ -761,110 +817,124 @@ def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"
                                         choice_val["description"] = ""
                                     if "stats" not in choice_val:
                                         choice_val["stats"] = {}
-                                    
-                    character_database[char_name] = ordered_profile
-                    db_char = character_database[char_name]
+                                        
+                    db_char["scenarios"] = scenarios
+                    if "name" not in db_char:
+                        db_char["name"] = char_name
+                    if "image_url" not in db_char:
+                        db_char["image_url"] = ""
+                    db_char["associated_stories"] = stories_dict
+                    
                     success = True
-                    print(f"  [SUCCESS] '{char_name}' 프로필 및 {len(scenarios)}개 시나리오 텍스트 생성 완료")
+                    print(f"  [SUCCESS] '{char_name}' 시나리오 텍스트 생성 완료")
                     break
                 except Exception as e:
-                    print(f"  [WARNING] 시도 {attempt+1} 실패: {e}")
+                    print(f"  [WARNING] 시나리오 텍스트 생성 시도 {attempt+1} 실패: {e}")
                     time.sleep(5)
             if not success:
-                print(f"  [CRITICAL] '{char_name}' 텍스트 파이프라인 최종 실패. 다음 인물로 넘어갑니다.")
-                continue
-                
-            # 중간 저장
-            with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(character_database, f, ensure_ascii=False, indent=4)
-        else:
-            print(f" ➔ '{char_name}' 프로필 및 시나리오 텍스트 이미 존재함. 스킵 및 스키마 포맷 마이그레이션 진행...")
-            
-            # 마이그레이션: 기존 associated_stories가 list인 경우 dict로 변환
-            old_stories = db_char.get("associated_stories", [])
-            if isinstance(old_stories, list):
-                db_char["associated_stories"] = stories_dict
-            
-            # 마이그레이션: 시나리오별 불필요한 scenario_image_url 제거 및 turn_image/choice_image 보장
-            scenarios = db_char.get("scenarios", [])
-            for scenario in scenarios:
-                if "scenario_image_url" in scenario:
-                    del scenario["scenario_image_url"]
-                for turn in scenario.get("turns", []):
-                    if "turn_image_url" in turn:
-                        turn["turn_image"] = turn["turn_image_url"]
-                        del turn["turn_image_url"]
-                    if "turn_image" not in turn:
-                        turn["turn_image"] = ""
-                    if "tip_title" not in turn:
-                        turn["tip_title"] = ""
-                    if "tip_desc" not in turn:
-                        turn["tip_desc"] = ""
-                    if "title" not in turn:
-                        turn["title"] = ""
-                        
-                    choices = turn.get("choices", {})
-                    for choice_key, choice_val in choices.items():
-                        if isinstance(choice_val, dict):
-                            if "image_url" in choice_val:
-                                choice_val["choice_image"] = choice_val["image_url"]
-                                del choice_val["image_url"]
-                            if "choice_image" not in choice_val:
-                                choice_val["choice_image"] = ""
-                            if "title" not in choice_val:
-                                choice_val["title"] = choice_val.get("text", "")
-                            if "description" not in choice_val:
-                                choice_val["description"] = ""
-                            if "stats" not in choice_val:
-                                choice_val["stats"] = {}
-            
-            # 키 순서 재배치 (image_url을 years 다음으로)
-            lifespan_info = HISTORICAL_LIFESPANS.get(char_name, {})
-            ordered_profile = {
-                "name": db_char.get("name"),
-                "category": db_char.get("category"),
-                "era": lifespan_info.get("era", db_char.get("era")),
-                "era_tag": lifespan_info.get("era_tag", db_char.get("era_tag")),
-                "role": db_char.get("role"),
-                "keywords": db_char.get("keywords"),
-                "years": lifespan_info.get("years", db_char.get("years")),
-                "image_url": db_char.get("image_url", ""),
-                "situation": db_char.get("situation"),
-                "one_line_summary": db_char.get("one_line_summary"),
-                "mbti": db_char.get("mbti"),
-                "mbti_nickname": db_char.get("mbti_nickname"),
-                "mbti_details": db_char.get("mbti_details"),
-                "stats": db_char.get("stats"),
-                "intro_quote": db_char.get("intro_quote"),
-                "intro_desc": db_char.get("intro_desc"),
-                "associated_stories": db_char.get("associated_stories", {}),
-                "scenarios": scenarios
-            }
-            character_database[char_name] = ordered_profile
-            db_char = character_database[char_name]
-            
-            # 즉시 저장
-            with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(character_database, f, ensure_ascii=False, indent=4)
+                print(f"  [CRITICAL] '{char_name}' 시나리오 텍스트 파이프라인 최종 실패.")
+
+        # 마이그레이션: 기존 associated_stories가 list인 경우 dict로 변환
+        old_stories = db_char.get("associated_stories", [])
+        if isinstance(old_stories, list):
+            db_char["associated_stories"] = stories_dict
+        
+        # 마이그레이션: 시나리오별 불필요한 scenario_image_url 제거 및 turn_image/choice_image 보장
+        scenarios = db_char.get("scenarios", [])
+        for scenario in scenarios:
+            if "scenario_image_url" in scenario:
+                del scenario["scenario_image_url"]
+            for turn in scenario.get("turns", []):
+                if "turn_image_url" in turn:
+                    turn["turn_image"] = turn["turn_image_url"]
+                    del turn["turn_image_url"]
+                if "turn_image" not in turn:
+                    turn["turn_image"] = ""
+                if "tip_title" not in turn:
+                    turn["tip_title"] = ""
+                if "tip_desc" not in turn:
+                    turn["tip_desc"] = ""
+                if "title" not in turn:
+                    turn["title"] = ""
+                    
+                choices = turn.get("choices", {})
+                for choice_key, choice_val in choices.items():
+                    if isinstance(choice_val, dict):
+                        if "image_url" in choice_val:
+                            choice_val["choice_image"] = choice_val["image_url"]
+                            del choice_val["image_url"]
+                        if "choice_image" not in choice_val:
+                            choice_val["choice_image"] = ""
+                        if "title" not in choice_val:
+                            choice_val["title"] = choice_val.get("text", "")
+                        if "description" not in choice_val:
+                            choice_val["description"] = ""
+                        if "stats" not in choice_val:
+                            choice_val["stats"] = {}
+        
+        # 키 순서 재배치 및 DB 갱신
+        ordered_profile = {
+            "name": db_char.get("name", char_name),
+            "category": db_char.get("category", ""),
+            "era": lifespan_info.get("era", db_char.get("era", "")),
+            "era_tag": lifespan_info.get("era_tag", db_char.get("era_tag", "")),
+            "role": db_char.get("role", ""),
+            "keywords": db_char.get("keywords", []),
+            "years": lifespan_info.get("years", db_char.get("years", "")),
+            "image_url": db_char.get("image_url", ""),
+            "situation": db_char.get("situation", ""),
+            "one_line_summary": db_char.get("one_line_summary", ""),
+            "mbti": db_char.get("mbti", ""),
+            "mbti_nickname": db_char.get("mbti_nickname", ""),
+            "mbti_details": db_char.get("mbti_details", {}),
+            "stats": db_char.get("stats", []),
+            "intro_quote": db_char.get("intro_quote", ""),
+            "intro_desc": db_char.get("intro_desc", ""),
+            "associated_stories": db_char.get("associated_stories", {}),
+            "scenarios": scenarios
+        }
+        character_database[char_name] = ordered_profile
+        db_char = character_database[char_name]
+        
+        # 즉시 저장
+        with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(character_database, f, ensure_ascii=False, indent=4)
             
         # 2. 캐릭터 전신 이미지 생성 (GCS)
-        if image_mode == "none":
-            print(f" ➔ [INFO] 이미지 생성 스킵 모드('none')에 의해 '{char_name}' 전신 이미지 생성을 생략합니다.")
-        elif not db_char.get("image_url") or not db_char["image_url"].startswith("http"):
-            print(f" ➔ '{char_name}' 전신 이미지가 없습니다. 생성 중...")
+        curr_run_profile_image = False
+        if norm_mode in ["all", "images", "profiles-image", "profies-image"]:
+            if norm_mode in ["profiles-image", "profies-image"]:
+                curr_run_profile_image = True
+            else:
+                curr_run_profile_image = not db_char.get("image_url") or not db_char["image_url"].startswith("http")
+                
+        if curr_run_profile_image:
+            print(f" ➔ '{char_name}' 전신 이미지 생성 중...")
             img_url = generate_and_upload_character_image(char_name)
             if img_url:
                 db_char["image_url"] = img_url
+                character_database[char_name] = db_char
                 with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
                     json.dump(character_database, f, ensure_ascii=False, indent=4)
                 print(f"  [SUCCESS] 전신 이미지 업데이트 완료: {img_url}")
                 time.sleep(5)
         else:
-            print(f" ➔ '{char_name}' 전신 이미지 이미 존재함: {db_char['image_url']}")
+            print(f" ➔ '{char_name}' 전신 이미지 생성 스킵 (모드 제외 또는 이미 존재함)")
             
         # 3. 각 시나리오별 상황(턴) 및 선택지 이미지 생성 (GCS)
-        if image_mode != "all":
-            print(f" ➔ [INFO] 이미지 생성 모드('{image_mode}')에 의해 '{char_name}'의 시나리오/선택지 이미지 생성을 생략합니다.")
+        curr_run_scenario_image = False
+        curr_run_text_image = False
+        
+        if norm_mode in ["all", "images"]:
+            curr_run_scenario_image = True
+            curr_run_text_image = True
+        elif norm_mode == "scenario-image":
+            curr_run_scenario_image = True
+        elif norm_mode in ["text-image", "choice-image", "turn-image"]:
+            curr_run_text_image = True
+            
+        if not curr_run_scenario_image and not curr_run_text_image:
+            print(f" ➔ '{char_name}' 시나리오/선택지 이미지 생성을 생략합니다. (모드 제외)")
             continue
             
         scenarios = db_char.get("scenarios", [])
@@ -874,45 +944,48 @@ def run_main_pipeline(target_char: Optional[str] = None, image_mode: str = "all"
             
             for turn in scenario.get("turns", []):
                 t_no = turn.get("turn_no")
-                # 이미지 생성을 위한 묘사 텍스트. 상황(turn situation)을 기본으로 사용
                 t_situation = turn.get("situation", "")
                 t_img = turn.get("turn_image", "")
                 
                 # 상황(턴) 이미지 생성 (16:9)
-                if not t_img or not t_img.startswith("http"):
-                    print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지가 없습니다. 생성 중...")
-                    t_img_url = generate_and_upload_turn_image(char_name, t_situation, s_id, t_no)
-                    if t_img_url:
-                        turn["turn_image"] = t_img_url
-                        with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
-                            json.dump(character_database, f, ensure_ascii=False, indent=4)
-                        print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 상황 이미지 업데이트 완료: {t_img_url}")
-                        time.sleep(5)
-                else:
-                    print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지 이미 존재함: {t_img}")
-                
-                # 선택지(A/B) 이미지 생성 (4:3 -> 1:1)
-                choices = turn.get("choices", {})
-                for choice_key in ["A", "B"]:
-                    choice_val = choices.get(choice_key)
-                    if not choice_val:
-                        continue
-                    
-                    c_text = choice_val.get("title", "")
-                    c_img = choice_val.get("choice_image", "")
-                    
-                    if not c_img or not c_img.startswith("http"):
-                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지가 없습니다. 생성 중...")
-                        c_img_url = generate_and_upload_choice_image(char_name, c_text, s_id, t_no, choice_key)
-                        if c_img_url:
-                            choice_val["choice_image"] = c_img_url
+                if curr_run_scenario_image:
+                    if not t_img or not t_img.startswith("http"):
+                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지가 없습니다. 생성 중...")
+                        t_img_url = generate_and_upload_turn_image(char_name, t_situation, s_id, t_no)
+                        if t_img_url:
+                            turn["turn_image"] = t_img_url
+                            character_database[char_name] = db_char
                             with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
                                 json.dump(character_database, f, ensure_ascii=False, indent=4)
-                            print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 업데이트 완료: {c_img_url}")
+                            print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 상황 이미지 업데이트 완료: {t_img_url}")
                             time.sleep(5)
                     else:
-                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 이미 존재함: {c_img}")
+                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지 이미 존재함: {t_img}")
+                
+                # 선택지(A/B) 이미지 생성 (4:3 -> 1:1)
+                if curr_run_text_image:
+                    choices = turn.get("choices", {})
+                    for choice_key in ["A", "B"]:
+                        choice_val = choices.get(choice_key)
+                        if not choice_val:
+                            continue
                         
+                        c_text = choice_val.get("title", "")
+                        c_img = choice_val.get("choice_image", "")
+                        
+                        if not c_img or not c_img.startswith("http"):
+                            print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지가 없습니다. 생성 중...")
+                            c_img_url = generate_and_upload_choice_image(char_name, c_text, s_id, t_no, choice_key)
+                            if c_img_url:
+                                choice_val["choice_image"] = c_img_url
+                                character_database[char_name] = db_char
+                                with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
+                                    json.dump(character_database, f, ensure_ascii=False, indent=4)
+                                print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 업데이트 완료: {c_img_url}")
+                                time.sleep(5)
+                        else:
+                            print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 이미 존재함: {c_img}")
+                            
     end_time = time.time()
     print(f"\n[SUCCESS] 데이터 파이프라인 가동 완료. 저장 파일: {CHARACTERS_JSON_PATH}")
     print(f"총 소요 시간: {end_time - start_time:.2f}초")
@@ -922,17 +995,16 @@ if __name__ == "__main__":
         cmd = sys.argv[1]
         target = sys.argv[2] if len(sys.argv) > 2 else None
         
-        if cmd == "--all":
-            run_main_pipeline(target, image_mode="all")
-        elif cmd == "--images":
-            run_main_pipeline(target, image_mode="all")
-        elif cmd == "--char-only":
-            run_main_pipeline(target, image_mode="char-only")
-        elif cmd == "--profiles":
-            run_main_pipeline(target, image_mode="none")
+        mode = cmd.lstrip("-")
+        
+        run_main_pipeline(target, mode=mode)
     else:
         print("사용법:")
-        print("  python data_pipeline.py --all [캐릭터명]       : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --images [캐릭터명]    : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --char-only [캐릭터명] : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --profiles [캐릭터명]  : 이미지 생성 없이 프로필 텍스트 및 시나리오 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --all [캐릭터명]            : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --profiles-text [캐릭터명]   : 이미지 생성 없이 프로필 텍스트 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --scenario-text [캐릭터명]   : 이미지 생성 없이 시나리오 및 턴 텍스트 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --scenario-image [캐릭터명]  : 시나리오 상황(턴) 이미지(16:9)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --turn-text [캐릭터명]       : 시나리오 상황 및 턴 텍스트 정보만 생성 (scenario-text와 동일)")
+        print("  python data_pipeline.py --turn-image [캐릭터명]       : 선택지 이미지(1:1)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python data_pipeline.py --images [캐릭터명]          : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
