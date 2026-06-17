@@ -7,11 +7,85 @@ from dotenv import load_dotenv
 from models.character import CharacterCard
 from openai import OpenAI
 
+from google.cloud import storage
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
 CSV_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_total_merged.csv")
+GCP_BUCKET_NAME = os.environ.get("GCP_BUCKET_NAME")
+
+def upload_to_gcs(blob_name: str, data: Dict[str, Any]) -> bool:
+    if not GCP_BUCKET_NAME:
+        return False
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCP_BUCKET_NAME)
+        blob = bucket.blob(blob_name)
+        blob.upload_from_string(
+            data=json.dumps(data, ensure_ascii=False),
+            content_type="application/json"
+        )
+        print(f"[SUCCESS] GCS 업로드 완료: gs://{GCP_BUCKET_NAME}/{blob_name}")
+        return True
+    except Exception as e:
+        print(f"[WARNING] GCS 업로드 중 오류 발생 (로컬 fallback 사용): {e}")
+        return False
+
+def fetch_from_gcs(blob_name: str) -> Optional[Dict[str, Any]]:
+    if not GCP_BUCKET_NAME:
+        return None
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(GCP_BUCKET_NAME)
+        blob = bucket.blob(blob_name)
+        if not blob.exists():
+            return None
+        content = blob.download_as_text(encoding="utf-8")
+        return json.loads(content)
+    except Exception as e:
+        print(f"[WARNING] GCS 다운로드 중 오류 발생 (로컬 fallback 사용): {e}")
+        return None
+
+def save_simulation_result(result_id: str, data: Dict[str, Any]):
+    blob_name = f"simulation_results/{result_id}.json"
+    
+    # 1. GCS 업로드 시도
+    success = upload_to_gcs(blob_name, data)
+    if success:
+        return
+        
+    # 2. GCS 실패 시 로컬 파일 저장 fallback
+    try:
+        local_dir = os.path.join(BASE_DIR, "data", "results")
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(local_dir, f"{result_id}.json")
+        with open(local_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"[SUCCESS] 로컬 파일 백업 저장 완료: {local_path}")
+    except Exception as e:
+        print(f"[ERROR] 로컬 결과 파일 저장 실패: {e}")
+
+def get_simulation_result(result_id: str) -> Optional[Dict[str, Any]]:
+    blob_name = f"simulation_results/{result_id}.json"
+    
+    # 1. GCS 조회 시도
+    data = fetch_from_gcs(blob_name)
+    if data:
+        return data
+        
+    # 2. GCS 실패 시 로컬 파일 로드 fallback
+    try:
+        local_path = os.path.join(BASE_DIR, "data", "results", f"{result_id}.json")
+        if os.path.exists(local_path):
+            with open(local_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"[ERROR] 로컬 결과 파일 로드 실패: {e}")
+    return None
+
+
 
 # OpenAI API 클라이언트 초기화
 openai_api_key = os.environ.get("OPENAI_API_KEY")

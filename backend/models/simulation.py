@@ -41,6 +41,7 @@ class ChoiceDetail(BaseModel):
     title: str
     description: str
     stat_effects: Dict[str, int]
+    choice_image: Optional[str] = ""
 
 class TurnRequest(BaseModel):
     character_name: str
@@ -60,6 +61,7 @@ class TurnResponse(BaseModel):
     toggle_answer: str
     choice_a: ChoiceDetail
     choice_b: ChoiceDetail
+    turn_image: Optional[str] = ""
 
 class SummaryItem(BaseModel):
     title: str
@@ -69,6 +71,7 @@ class RecommendedPlace(BaseModel):
     address: str
     name: str
     description: str
+    image_url: Optional[str] = ""
 
 class EndingRequest(BaseModel):
     character_name: str
@@ -90,3 +93,4 @@ class EndingResponse(BaseModel):
     recommended_places: List[RecommendedPlace]
     ending_markdown: str
     output_file_path: str
+    uuid: Optional[str] = ""
