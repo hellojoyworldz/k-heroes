@@ -246,14 +246,25 @@ async def generate_ending(payload: EndingRequest):
             else:
                 raise ValueError(f"Character '{character_name}' does not have any scenarios.")
                 
-        # 1.5. Calculate history_score and check if all choices are historical
+        # 1.5. Calculate history_score, check historical choices, and compute final game_stats
         total_turns = len(scenario.turns)
         historical_choices_count = 0
+        current_stats = {stat.name: stat.value for stat in character_card.stats}
+        
         for idx, turn in enumerate(scenario.turns):
             user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
             user_choice = turn.choices.get(user_choice_id)
-            if user_choice and user_choice.is_historical:
+            if not user_choice:
+                user_choice = list(turn.choices.values())[0]
+                
+            if user_choice.is_historical:
                 historical_choices_count += 1
+                
+            # Apply stats modifications
+            for name, val in user_choice.stats.items():
+                if name in current_stats:
+                    current_stats[name] += val
+                    
         history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
         is_all_historical = (historical_choices_count == total_turns)
                 
@@ -304,7 +315,7 @@ async def generate_ending(payload: EndingRequest):
             context_str += f"\n[국사 교과서 RAG 단서]\n{rag_context}\n"
             
         # 5. Format stats
-        stats_str = {v.name: f"{v.value}%" for v in payload.game_stats.values()}
+        stats_str = {name: f"{val}%" for name, val in current_stats.items()}
         
         # 6. Check if all choices are historical (calculated in step 1.5)
         # is_all_historical is already computed
@@ -411,7 +422,7 @@ async def generate_ending(payload: EndingRequest):
 
         # 9. Format Markdown output
         emoji = "🔴" if ending_type == "True Ending" else "🔵"
-        stats_formatted = [f"{v.name}: {v.value}%" for v in payload.game_stats.values()]
+        stats_formatted = [f"{name}: {val}%" for name, val in current_stats.items()]
         stats_joined = ", ".join(stats_formatted)
 
         ending_markdown = f"""### 3. 최종 결과

@@ -71,7 +71,6 @@ class RecommendedPlace(BaseModel):
 class EndingRequest(BaseModel):
     character_name: str
     scenario_id: int
-    game_stats: Dict[str, GameStateStat]
     choices_path: List[str]
 
 class EndingResponse(BaseModel):
