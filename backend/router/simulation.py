@@ -3,8 +3,8 @@ import json
 import time
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Optional, Any
-import data_manager
-from data_manager import get_character_card, get_retrieved_clues, get_story_context, openai_client, save_simulation_result, get_simulation_result
+import simulation_data_manager
+from simulation_data_manager import get_character_card, get_retrieved_clues, get_story_context, openai_client, save_simulation_result, get_simulation_result
 import uuid
 from models.character import CharacterCard
 from models.simulation import (
@@ -134,7 +134,7 @@ async def play_turn(payload: TurnRequest):
 
 def get_history_rag_context(character_name: str, query: str) -> str:
     try:
-        from history_retriever import get_rag_instance
+        from history_pdf_rag_retriever import get_rag_instance
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         db_path = os.path.join(base_dir, "data", "processed", "history_db.pkl")
         rag = get_rag_instance(db_path)
@@ -186,7 +186,7 @@ def is_related_place(row, char_name: str) -> bool:
 def get_recommended_places(character_name: str) -> List[RecommendedPlace]:
     try:
         import pandas as pd
-        from data_manager import get_master_df
+        from simulation_data_manager import get_master_df
         df = get_master_df()
         
         # Filter valid address rows

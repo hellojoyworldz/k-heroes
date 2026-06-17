@@ -10,7 +10,7 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 from google.cloud import storage
-from history_retriever import get_rag_instance
+from history_pdf_rag_retriever import get_rag_instance
 
 # Setup project directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

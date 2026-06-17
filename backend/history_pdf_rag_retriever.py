@@ -27,7 +27,7 @@ class InMemoryHistoryRAG:
                             break
                             
             if os.path.exists(raw_pdf_path):
-                from build_history_db import build_db
+                from history_pdf_db_builder import build_db
                 os.makedirs(os.path.dirname(db_pickle_path), exist_ok=True)
                 build_db(raw_pdf_path, db_pickle_path)
             else:
