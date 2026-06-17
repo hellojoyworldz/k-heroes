@@ -8,8 +8,7 @@ class SearchResponse(BaseModel):
 
 class StartRequest(BaseModel):
     character_name: str
-    story_id: int
-    story_domain: str
+    scenario_id: int
 
 class GameStateStat(BaseModel):
     name: str
@@ -24,8 +23,7 @@ class GameHistoryItem(BaseModel):
 
 class GameState(BaseModel):
     character_name: str
-    story_id: int
-    story_domain: str
+    scenario_id: int
     history_score: int
     current_step: int
     game_stats: Dict[str, GameStateStat]
@@ -45,8 +43,7 @@ class ChoiceDetail(BaseModel):
 
 class TurnRequest(BaseModel):
     character_name: str
-    story_id: int
-    story_domain: str
+    scenario_id: int
     current_step: int
     game_stats: Dict[str, GameStateStat]
     game_history: List[GameHistoryItem]
@@ -75,8 +72,7 @@ class RecommendedPlace(BaseModel):
 
 class EndingRequest(BaseModel):
     character_name: str
-    story_id: int
-    story_domain: str
+    scenario_id: int
     history_score: int
     game_stats: Dict[str, GameStateStat]
     game_history: List[GameHistoryItem]

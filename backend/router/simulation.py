@@ -29,8 +29,7 @@ router = APIRouter(prefix="/api/simulation", tags=["Simulation"])
 @router.post("/start", response_model=StartResponse)
 async def start_simulation(payload: StartRequest):
     character_name = payload.character_name
-    story_id = payload.story_id
-    story_domain = payload.story_domain
+    scenario_id = payload.scenario_id
     
     try:
         character_card = get_character_card(character_name)
@@ -42,8 +41,7 @@ async def start_simulation(payload: StartRequest):
             
         initial_state = GameState(
             character_name=character_name,
-            story_id=story_id,
-            story_domain=story_domain,
+            scenario_id=scenario_id,
             history_score=0,
             current_step=1,
             game_stats=initial_stats,
@@ -59,16 +57,16 @@ async def start_simulation(payload: StartRequest):
 @router.post("/turn", response_model=TurnResponse)
 async def play_turn(payload: TurnRequest):
     character_name = payload.character_name
-    story_id = payload.story_id
+    scenario_id = payload.scenario_id
     current_step = payload.current_step
     
     try:
         character_card = get_character_card(character_name)
         
-        # 1. Find the scenario matching story_id
+        # 1. Find the scenario matching scenario_id
         scenario = None
         for s in character_card.scenarios:
-            if story_id in s.source_story_ids:
+            if s.scenario_id == scenario_id:
                 scenario = s
                 break
         if not scenario:
@@ -224,8 +222,7 @@ async def generate_ending(payload: EndingRequest):
         raise HTTPException(status_code=500, detail="OpenAI API Client가 설정되지 않았습니다. (.env에 OPENAI_API_KEY를 확인하세요)")
         
     character_name = payload.character_name
-    story_id = payload.story_id
-    story_domain = payload.story_domain
+    scenario_id = payload.scenario_id
     history_score = payload.history_score
     choices_path = payload.choices_path
     
@@ -235,7 +232,7 @@ async def generate_ending(payload: EndingRequest):
         # 1. Find scenario
         scenario = None
         for s in character_card.scenarios:
-            if story_id in s.source_story_ids:
+            if s.scenario_id == scenario_id:
                 scenario = s
                 break
         if not scenario:
@@ -282,10 +279,9 @@ async def generate_ending(payload: EndingRequest):
         rag_context = get_history_rag_context(character_name, scenario.title)
         
         # 4. Core and retrieved clues context
-        main_story_context = get_story_context(story_id, story_domain)
         other_clues = get_retrieved_clues(character_name)
         
-        context_str = f"[핵심 역사적 사건 단서]\n{main_story_context}\n\n[기타 인물 행적 배경 단서]\n"
+        context_str = "[기타 인물 행적 배경 단서]\n"
         for clue in other_clues[:5]:
             context_str += f"- {clue['text']}\n"
         if rag_context:
@@ -460,7 +456,7 @@ async def generate_ending(payload: EndingRequest):
             "uuid": result_id
         }
         
-        save_simulation_result(result_id, result_dict)
+        save_simulation_result(result_id, character_name, scenario_id, result_dict)
 
         return EndingResponse(
             result_code="-".join(choices_path),
