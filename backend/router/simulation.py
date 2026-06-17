@@ -34,6 +34,12 @@ async def start_simulation(payload: StartRequest):
     try:
         character_card = get_character_card(character_name)
         
+        # Filter scenarios
+        filtered_scenarios = [s for s in character_card.scenarios if s.scenario_id == scenario_id]
+        if not filtered_scenarios:
+            raise HTTPException(status_code=404, detail=f"시나리오 ID {scenario_id}를 인물 '{character_name}'에게서 찾을 수 없습니다.")
+        character_card.scenarios = filtered_scenarios
+        
         # 초기 스탯 딕셔너리 생성 (카드에 적힌 고유 수치로 초기화)
         initial_stats = {}
         for i, stat in enumerate(character_card.stats):
@@ -223,7 +229,6 @@ async def generate_ending(payload: EndingRequest):
         
     character_name = payload.character_name
     scenario_id = payload.scenario_id
-    history_score = payload.history_score
     choices_path = payload.choices_path
     
     try:
@@ -240,6 +245,17 @@ async def generate_ending(payload: EndingRequest):
                 scenario = character_card.scenarios[0]
             else:
                 raise ValueError(f"Character '{character_name}' does not have any scenarios.")
+                
+        # 1.5. Calculate history_score and check if all choices are historical
+        total_turns = len(scenario.turns)
+        historical_choices_count = 0
+        for idx, turn in enumerate(scenario.turns):
+            user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
+            user_choice = turn.choices.get(user_choice_id)
+            if user_choice and user_choice.is_historical:
+                historical_choices_count += 1
+        history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
+        is_all_historical = (historical_choices_count == total_turns)
                 
         # 2. Compile user and factual stories
         factual_story_parts = []
@@ -290,14 +306,8 @@ async def generate_ending(payload: EndingRequest):
         # 5. Format stats
         stats_str = {v.name: f"{v.value}%" for v in payload.game_stats.values()}
         
-        # 6. Check if all choices are historical
-        is_all_historical = True
-        for idx, turn in enumerate(scenario.turns):
-            user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
-            choice_item = turn.choices.get(user_choice_id)
-            if choice_item and not choice_item.is_historical:
-                is_all_historical = False
-                break
+        # 6. Check if all choices are historical (calculated in step 1.5)
+        # is_all_historical is already computed
                 
         # 7. Prompt for OpenAI to generate narrative
         ending_prompt = f"""
@@ -383,7 +393,7 @@ async def generate_ending(payload: EndingRequest):
             raise Exception("API 응답 데이터를 수신하지 못했습니다.")
 
         ending_data = json.loads(ending_result)
-        ending_type = "True Ending" if (is_all_historical or payload.history_score >= 100) else "Alternative Ending"
+        ending_type = "True Ending" if (is_all_historical or history_score >= 100) else "Alternative Ending"
         title = ending_data.get("title", "")
         history_fact = ending_data.get("history_fact", "")
         story_headline = ending_data.get("story_headline", "").strip('"\'')

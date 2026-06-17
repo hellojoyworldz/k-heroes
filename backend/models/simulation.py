@@ -45,8 +45,6 @@ class TurnRequest(BaseModel):
     character_name: str
     scenario_id: int
     current_step: int
-    game_stats: Dict[str, GameStateStat]
-    game_history: List[GameHistoryItem]
 
 class TurnResponse(BaseModel):
     current_step: int
@@ -73,9 +71,7 @@ class RecommendedPlace(BaseModel):
 class EndingRequest(BaseModel):
     character_name: str
     scenario_id: int
-    history_score: int
     game_stats: Dict[str, GameStateStat]
-    game_history: List[GameHistoryItem]
     choices_path: List[str]
 
 class EndingResponse(BaseModel):
