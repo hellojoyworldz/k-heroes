@@ -4,7 +4,7 @@ import time
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Optional, Any
 import simulation_data_manager
-from simulation_data_manager import get_character_card, get_retrieved_clues, get_story_context, openai_client, save_simulation_result, get_simulation_result
+from simulation_data_manager import get_character_card, get_retrieved_clues, get_story_context, openai_client, save_simulation_result, get_simulation_result, get_recommended_places, get_pre_generated_ending
 import uuid
 from models.character import CharacterCard
 from models.simulation import (
@@ -145,83 +145,7 @@ def get_history_rag_context(character_name: str, query: str) -> str:
     except Exception as e:
         print(f"[RAG] Error retrieving context: {e}")
     return ""
-
-def is_related_place(row, char_name: str) -> bool:
-    relate_prsn = str(row.get('relate_prsn_nm', ''))
-    title = str(row.get('data_title_nm', ''))
     
-    delimiters = [',', ';', '/', '|']
-    for d in delimiters:
-        relate_prsn = relate_prsn.replace(d, ' ')
-    
-    words = relate_prsn.split()
-    for word in words:
-        if word == char_name:
-            return True
-        if char_name in ["고종", "정조", "인조", "이황"]:
-            if word in [f"{char_name}황제", f"{char_name}대왕", f"퇴계{char_name}"]:
-                return True
-        else:
-            if word.startswith(char_name):
-                suffix = word[len(char_name):]
-                if suffix in ["", "장군", "의사", "명창", "선생", "옹"]:
-                    return True
-                    
-    title_words = title.split()
-    for word in title_words:
-        if word == char_name:
-            return True
-        if char_name in ["고종", "정조", "인조", "이황"]:
-            if word in [f"{char_name}황제", f"{char_name}대왕", f"퇴계{char_name}"]:
-                return True
-            if any(word.startswith(prefix) for prefix in [f"{char_name}의", f"{char_name}과", f"{char_name}를", f"{char_name}을"]):
-                return True
-        else:
-            if word.startswith(char_name):
-                suffix = word[len(char_name):]
-                if any(suffix.startswith(s) for s in ["", "장군", "의사", "명창", "선생", "옹", "의", "과", "를", "을"]):
-                    return True
-    return False
-
-def get_recommended_places(character_name: str) -> List[RecommendedPlace]:
-    try:
-        import pandas as pd
-        from simulation_data_manager import get_master_df
-        df = get_master_df()
-        
-        # Filter valid address rows
-        valid_df = df[df['addr'].notna() & (df['addr'].str.strip() != '') & (df['addr'].str.lower() != 'nan')]
-        
-        # 1. Matches in title
-        m_title = valid_df[valid_df['data_title_nm'].str.contains(character_name, na=False)]
-        m_title = m_title[m_title.apply(lambda r: is_related_place(r, character_name), axis=1)]
-        
-        # 2. Matches in relate_prsn_nm
-        m_prsn = valid_df[valid_df['relate_prsn_nm'].str.contains(character_name, na=False)]
-        m_prsn = m_prsn[m_prsn.apply(lambda r: is_related_place(r, character_name), axis=1)]
-        
-        # Combine (prioritize title matches first)
-        combined = pd.concat([m_title, m_prsn]).drop_duplicates(subset=['data_title_nm'])
-        
-        results = []
-        for _, row in combined.head(3).iterrows():
-            desc = str(row['sumry_cn']) if pd.notna(row['sumry_cn']) else ""
-            if len(desc) > 150:
-                desc = desc[:147] + "..."
-            
-            thumb_url = str(row['main_thumb_url']) if pd.notna(row.get('main_thumb_url')) else ""
-            
-            results.append(RecommendedPlace(
-                name=row['data_title_nm'],
-                address=row['addr'],
-                description=desc,
-                image_url=thumb_url
-            ))
-        return results
-    except Exception as e:
-        print(f"[PLACES] Error getting recommended places: {e}")
-        return []
-
 @router.post("/ending", response_model=EndingResponse)
 async def generate_ending(payload: EndingRequest):
     if not openai_client:
@@ -268,60 +192,90 @@ async def generate_ending(payload: EndingRequest):
         history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
         is_all_historical = (historical_choices_count == total_turns)
                 
-        # 2. Compile user and factual stories
-        factual_story_parts = []
-        user_story_parts = []
+        # Check for pre-generated ending
+        pre_ending = get_pre_generated_ending(character_name, scenario_id, choices_path)
         
-        for idx, turn in enumerate(scenario.turns):
-            situation = turn.situation
-            # User choice
-            user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
-            user_choice = turn.choices.get(user_choice_id)
-            if not user_choice:
-                user_choice = list(turn.choices.values())[0]
+        if pre_ending:
+            print(f"[ENDING] Using pre-generated ending for {character_name} scenario {scenario_id} path: {'-'.join(choices_path)}")
+            ending_type = pre_ending.get("ending_type", "Alternative Ending")
+            title = pre_ending.get("title", "")
+            history_fact = pre_ending.get("history_fact", "")
+            story_headline = pre_ending.get("story_headline", "").strip('"\'')
+            story_contents = pre_ending.get("story_contents", "")
+            factual_contents = pre_ending.get("factual_contents", "")
+            summary_items_raw = pre_ending.get("summary_items", [])
+            summary_items = [
+                SummaryItem(title=item.get("title", ""), desc=item.get("desc", ""))
+                for item in summary_items_raw
+            ]
+            recommended_places_raw = pre_ending.get("recommended_places", [])
+            if recommended_places_raw:
+                recommended_places = [
+                    RecommendedPlace(
+                        address=item.get("address", ""),
+                        name=item.get("name", ""),
+                        description=item.get("description", ""),
+                        image_url=item.get("image_url", "")
+                    )
+                    for item in recommended_places_raw
+                ]
+            else:
+                recommended_places = get_recommended_places(character_name)
+            
+            ending_image = pre_ending.get("image_url", "")
+        else:
+            print(f"[ENDING] Pre-generated ending not found. Falling back to real-time LLM...")
+            # 2. Compile user and factual stories
+            factual_story_parts = []
+            user_story_parts = []
+            
+            for idx, turn in enumerate(scenario.turns):
+                situation = turn.situation
+                # User choice
+                user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
+                user_choice = turn.choices.get(user_choice_id)
+                if not user_choice:
+                    user_choice = list(turn.choices.values())[0]
+                    
+                # Historical choice
+                hist_choice_id = "A"
+                for cid, choice in turn.choices.items():
+                    if choice.is_historical:
+                        hist_choice_id = cid
+                        break
+                hist_choice = turn.choices.get(hist_choice_id)
                 
-            # Historical choice
-            hist_choice_id = "A"
-            for cid, choice in turn.choices.items():
-                if choice.is_historical:
-                    hist_choice_id = cid
-                    break
-            hist_choice = turn.choices.get(hist_choice_id)
-            
-            user_story_parts.append(
-                f"STEP {idx+1}. {situation}\n"
-                f"- 선택: {user_choice.title} ({'실제 역사' if user_choice.is_historical else '가상 분기'})\n"
-                f"- 결과: {user_choice.result_text}"
-            )
-            factual_story_parts.append(
-                f"STEP {idx+1}. {situation}\n"
-                f"- 실제 역사 선택: {hist_choice.title}\n"
-                f"- 결과: {hist_choice.result_text}"
-            )
-            
-        user_compiled_story = "\n\n".join(user_story_parts)
-        factual_compiled_story = "\n\n".join(factual_story_parts)
-        
-        # 3. Retrieve PDF RAG context
-        rag_context = get_history_rag_context(character_name, scenario.title)
-        
-        # 4. Core and retrieved clues context
-        other_clues = get_retrieved_clues(character_name)
-        
-        context_str = "[기타 인물 행적 배경 단서]\n"
-        for clue in other_clues[:5]:
-            context_str += f"- {clue['text']}\n"
-        if rag_context:
-            context_str += f"\n[국사 교과서 RAG 단서]\n{rag_context}\n"
-            
-        # 5. Format stats
-        stats_str = {name: f"{val}%" for name, val in current_stats.items()}
-        
-        # 6. Check if all choices are historical (calculated in step 1.5)
-        # is_all_historical is already computed
+                user_story_parts.append(
+                    f"STEP {idx+1}. {situation}\n"
+                    f"- 선택: {user_choice.title} ({'실제 역사' if user_choice.is_historical else '가상 분기'})\n"
+                    f"- 결과: {user_choice.result_text}"
+                )
+                factual_story_parts.append(
+                    f"STEP {idx+1}. {situation}\n"
+                    f"- 실제 역사 선택: {hist_choice.title}\n"
+                    f"- 결과: {hist_choice.result_text}"
+                )
                 
-        # 7. Prompt for OpenAI to generate narrative
-        ending_prompt = f"""
+            user_compiled_story = "\n\n".join(user_story_parts)
+            factual_compiled_story = "\n\n".join(factual_story_parts)
+            
+            # 3. Retrieve PDF RAG context
+            rag_context = get_history_rag_context(character_name, scenario.title)
+            
+            # 4. Core and retrieved clues context
+            other_clues = get_retrieved_clues(character_name)
+            
+            context_str = "[기타 인물 행적 배경 단서]\n"
+            for clue in other_clues[:5]:
+                context_str += f"- {clue['text']}\n"
+            if rag_context:
+                context_str += f"\n[국사 교과서 RAG 단서]\n{rag_context}\n"
+                
+            # 5. Format stats
+            stats_str = {name: f"{val}%" for name, val in current_stats.items()}
+            
+            # 7. Prompt for OpenAI to generate narrative
+            ending_prompt = f"""
 너는 역사 시뮬레이션 게임 'K-Heroes'의 최종 엔딩 연출가야.
 유저가 게임 도중 내린 선택과 그로 인해 발생한 이야기를 토대로 최종 감동적인 엔딩과 실제 역사와의 비교를 작성해 줘.
 
@@ -377,48 +331,47 @@ async def generate_ending(payload: EndingRequest):
     ]
 }}
 """
-        max_retries = 3
-        ending_result = None
-        for attempt in range(max_retries):
-            try:
-                response = openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "user", "content": ending_prompt}
-                    ],
-                    response_format={"type": "json_object"}
-                )
-                ending_result = response.choices[0].message.content
-                break
-            except Exception as e:
-                err_msg = str(e)
-                if "429" in err_msg or "rate_limit" in err_msg.lower() or "rate limit" in err_msg.lower() or "RateLimitError" in type(e).__name__:
-                    if attempt < max_retries - 1:
-                        wait_sec = 25 * (attempt + 1)
-                        print(f"\n[WARNING] OpenAI 429 Rate Limit 감지 (generate_ending). {wait_sec}초 대기 후 재시도합니다... (시도 {attempt+1}/{max_retries})")
-                        time.sleep(wait_sec)
-                        continue
-                raise e
+            max_retries = 3
+            ending_result = None
+            for attempt in range(max_retries):
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "user", "content": ending_prompt}
+                        ],
+                        response_format={"type": "json_object"}
+                    )
+                    ending_result = response.choices[0].message.content
+                    break
+                except Exception as e:
+                    err_msg = str(e)
+                    if "429" in err_msg or "rate_limit" in err_msg.lower() or "rate limit" in err_msg.lower() or "RateLimitError" in type(e).__name__:
+                        if attempt < max_retries - 1:
+                            wait_sec = 25 * (attempt + 1)
+                            print(f"\n[WARNING] OpenAI 429 Rate Limit 감지 (generate_ending). {wait_sec}초 대기 후 재시도합니다... (시도 {attempt+1}/{max_retries})")
+                            time.sleep(wait_sec)
+                            continue
+                    raise e
 
-        if not ending_result:
-            raise Exception("API 응답 데이터를 수신하지 못했습니다.")
+            if not ending_result:
+                raise Exception("API 응답 데이터를 수신하지 못했습니다.")
 
-        ending_data = json.loads(ending_result)
-        ending_type = "True Ending" if (is_all_historical or history_score >= 100) else "Alternative Ending"
-        title = ending_data.get("title", "")
-        history_fact = ending_data.get("history_fact", "")
-        story_headline = ending_data.get("story_headline", "").strip('"\'')
-        story_contents = ending_data.get("story_contents", "")
-        factual_contents = ending_data.get("factual_contents", "")
-        summary_items_raw = ending_data.get("summary_items", [])
+            ending_data = json.loads(ending_result)
+            ending_type = "True Ending" if (is_all_historical or history_score >= 100) else "Alternative Ending"
+            title = ending_data.get("title", "")
+            history_fact = ending_data.get("history_fact", "")
+            story_headline = ending_data.get("story_headline", "").strip('"\'')
+            story_contents = ending_data.get("story_contents", "")
+            factual_contents = ending_data.get("factual_contents", "")
+            summary_items_raw = ending_data.get("summary_items", [])
 
-        summary_items = [
-            SummaryItem(title=item.get("title", ""), desc=item.get("desc", ""))
-            for item in summary_items_raw
-        ]
-
-        # 8. Get recommended places directly from CSV
-        recommended_places = get_recommended_places(character_name)
+            summary_items = [
+                SummaryItem(title=item.get("title", ""), desc=item.get("desc", ""))
+                for item in summary_items_raw
+            ]
+            recommended_places = get_recommended_places(character_name)
+            ending_image = ""
 
         # 9. Format Markdown output
         emoji = "🔴" if ending_type == "True Ending" else "🔵"
@@ -455,6 +408,9 @@ async def generate_ending(payload: EndingRequest):
             if place.image_url:
                 ending_markdown += f"  ![{place.name}]({place.image_url})\n"
 
+        if ending_image:
+            ending_markdown += f"\n#### 일러스트\n![엔딩 일러스트]({ending_image})\n"
+
         ending_markdown += f"""
 #### Floating Button
 - **공유하기:** "내가 만든 역사 엔딩을 친구에게 공유해보세요! 🔗"
@@ -473,6 +429,7 @@ async def generate_ending(payload: EndingRequest):
             "summary_items": [item.dict() for item in summary_items],
             "recommended_places": [place.dict() for place in recommended_places],
             "ending_markdown": ending_markdown,
+            "ending_image": ending_image,
             "output_file_path": "",
             "uuid": result_id
         }
@@ -489,6 +446,7 @@ async def generate_ending(payload: EndingRequest):
             summary_items=summary_items,
             recommended_places=recommended_places,
             ending_markdown=ending_markdown,
+            ending_image=ending_image,
             output_file_path="",
             uuid=result_id
         )

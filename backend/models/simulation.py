@@ -84,4 +84,5 @@ class EndingResponse(BaseModel):
     recommended_places: List[RecommendedPlace]
     ending_markdown: str
     output_file_path: str
+    ending_image: Optional[str] = ""
     uuid: Optional[str] = ""

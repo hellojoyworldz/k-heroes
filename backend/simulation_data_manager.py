@@ -5,6 +5,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from models.character import CharacterCard
+from models.simulation import RecommendedPlace
 from openai import OpenAI
 
 from google.cloud import storage
@@ -56,7 +57,7 @@ def save_simulation_result(result_id: str, character_name: str, scenario_id: int
     filename = f"{date_str}_{character_name}_{scenario_id}_{result_id}.json"
     blob_name = f"endings/{filename}"
     
-    # 1. GCS 업로드 시도
+    # GCS 업로드 시도
     success = upload_to_gcs(blob_name, data)
     if success:
         return
@@ -237,3 +238,99 @@ def get_story_context(story_id: int, story_domain: str) -> str:
     except Exception as e:
         print(f"[WARNING] 스토리 컨텍스트 조회 중 오류 발생: {e}")
         return ""
+
+def is_related_place(row, char_name: str) -> bool:
+    relate_prsn = str(row.get('relate_prsn_nm', ''))
+    title = str(row.get('data_title_nm', ''))
+    
+    delimiters = [',', ';', '/', '|']
+    for d in delimiters:
+        relate_prsn = relate_prsn.replace(d, ' ')
+    
+    words = relate_prsn.split()
+    for word in words:
+        if word == char_name:
+            return True
+        if char_name in ["고종", "정조", "인조", "이황"]:
+            if word in [f"{char_name}황제", f"{char_name}대왕", f"퇴계{char_name}"]:
+                return True
+        else:
+            if word.startswith(char_name):
+                suffix = word[len(char_name):]
+                if suffix in ["", "장군", "의사", "명창", "선생", "옹"]:
+                    return True
+                    
+    title_words = title.split()
+    for word in title_words:
+        if word == char_name:
+            return True
+        if char_name in ["고종", "정조", "인조", "이황"]:
+            if word in [f"{char_name}황제", f"{char_name}대왕", f"퇴계{char_name}"]:
+                return True
+            if any(word.startswith(prefix) for prefix in [f"{char_name}의", f"{char_name}과", f"{char_name}를", f"{char_name}을"]):
+                return True
+        else:
+            if word.startswith(char_name):
+                suffix = word[len(char_name):]
+                if any(suffix.startswith(s) for s in ["", "장군", "의사", "명창", "선생", "옹", "의", "과", "를", "을"]):
+                    return True
+    return False
+
+def get_recommended_places(character_name: str) -> List[RecommendedPlace]:
+    try:
+        df = get_master_df()
+        
+        # Filter valid address rows
+        valid_df = df[df['addr'].notna() & (df['addr'].str.strip() != '') & (df['addr'].str.lower() != 'nan')]
+        
+        # 1. Matches in title
+        m_title = valid_df[valid_df['data_title_nm'].str.contains(character_name, na=False)]
+        m_title = m_title[m_title.apply(lambda r: is_related_place(r, character_name), axis=1)]
+        
+        # 2. Matches in relate_prsn_nm
+        m_prsn = valid_df[valid_df['relate_prsn_nm'].str.contains(character_name, na=False)]
+        m_prsn = m_prsn[m_prsn.apply(lambda r: is_related_place(r, character_name), axis=1)]
+        
+        # Combine (prioritize title matches first)
+        combined = pd.concat([m_title, m_prsn]).drop_duplicates(subset=['data_title_nm'])
+        
+        results = []
+        for _, row in combined.head(5).iterrows():
+            desc = str(row['sumry_cn']) if pd.notna(row['sumry_cn']) else ""
+            if len(desc) > 150:
+                desc = desc[:147] + "..."
+            
+            thumb_url = str(row['main_thumb_url']) if pd.notna(row.get('main_thumb_url')) else ""
+            
+            results.append(RecommendedPlace(
+                name=row['data_title_nm'],
+                address=row['addr'],
+                description=desc,
+                image_url=thumb_url
+            ))
+        return results
+    except Exception as e:
+        print(f"[PLACES] Error getting recommended places: {e}")
+        return []
+
+def get_pre_generated_ending(character_name: str, scenario_id: int, choices_path: List[str]) -> Optional[Dict[str, Any]]:
+    """
+    사전 생성된 엔딩 데이터(data/endings/{character_name}_{scenario_id}.json)가 있는지 확인하고,
+    선택한 분기 경로(예: "A-B-A")에 해당하는 엔딩 딕셔너리를 반환합니다.
+    """
+    try:
+        endings_dir = os.path.join(BASE_DIR, "data", "endings")
+        filename = f"{character_name}_{scenario_id}.json"
+        filepath = os.path.join(endings_dir, filename)
+        
+        if not os.path.exists(filepath):
+            return None
+            
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        path_key = "-".join(choices_path)
+        return data.get(path_key)
+    except Exception as e:
+        print(f"[WARNING] 사전 생성된 엔딩 조회 중 오류 발생: {e}")
+        return None

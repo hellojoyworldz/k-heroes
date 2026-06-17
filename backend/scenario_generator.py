@@ -918,9 +918,370 @@ No frame.
         print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 턴 {turn_no} 선택지 {choice_key} 이미지 생성/GCS 실패: {e}")
         return ""
 
+def generate_and_upload_ending_image(character_name: str, ending_title: str, story_contents: str, scenario_id: int, choices_path_str: str) -> str:
+    """
+    OpenAI gpt-image-2를 이용하여 엔딩 일러스트를 생성하고 GCS에 업로드 (16:9 가로).
+    """
+    if not openai_client:
+        print("[WARNING] OpenAI API 클라이언트가 존재하지 않습니다.")
+        return ""
+    if not GCP_BUCKET_NAME:
+        print("[WARNING] GCP_BUCKET_NAME 설정되지 않음.")
+        return ""
+
+    # 심플하게 적어둔 프롬프트 (사용자가 추후 전달할 프롬프터가 들어갈 자리)
+    prompt = f"""{character_name} - {ending_title}
+
+K-Heroes historical ending scenario illustration.
+Show {character_name} in the dramatic conclusion of: {story_contents}.
+Watercolor illustration in warm tone. Ivory paper texture. Elegant brush strokes.
+No text, no logo, no UI. 16:9 composition."""
+
+    try:
+        print(f" ➔ gpt-image-2 엔딩 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id} 경로 {choices_path_str})...")
+        response = openai_client.images.generate(
+            model="gpt-image-2",
+            prompt=prompt,
+            n=1,
+            size="1792x1024",
+            quality="high"
+        )
+        
+        b64_data = response.data[0].b64_json
+        if not b64_data:
+            raise Exception("No image data returned from OpenAI API.")
+            
+        image_bytes = base64.b64decode(b64_data)
+        
+        storage_client = storage.Client(project=GCP_PROJECT_ID)
+        bucket = storage_client.bucket(GCP_BUCKET_NAME)
+        
+        blob_name = f"endings/{character_name}_scenario_{scenario_id}_ending_{choices_path_str}.png"
+        blob = bucket.blob(blob_name)
+        
+        print(f" ➔ GCS 업로드: gs://{GCP_BUCKET_NAME}/{blob_name}")
+        blob.upload_from_string(image_bytes, content_type="image/png")
+        
+        public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
+        return public_url
+    except Exception as e:
+        print(f" [ERROR] '{character_name}' 엔딩 이미지 생성/GCS 실패: {e}")
+        return ""
+
+def generate_endings_text_for_character_scenario(character_name: str, target_scenario_id: Optional[int] = None):
+    """
+    지정된 캐릭터의 시나리오별 8가지 분기 경로(A-A-A ~ B-B-B)에 대한 엔딩 텍스트를 생성하고
+    backend/data/endings/{character_name}_{scenario_id}.json 파일로 빌드합니다.
+    """
+    from models.character import CharacterCard
+    from simulation_data_manager import get_recommended_places
+    
+    # 1. characters.json 로딩
+    if not os.path.exists(CHARACTERS_JSON_PATH):
+        print(f"[ERROR] characters.json 파일이 존재하지 않습니다: {CHARACTERS_JSON_PATH}")
+        return
+        
+    with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+        character_database = json.load(f)
+        
+    if character_name not in character_database:
+        print(f"[ERROR] '{character_name}' 인물 프로필 정보가 characters.json에 없습니다.")
+        return
+        
+    db_char = character_database[character_name]
+    character_card = CharacterCard(**db_char)
+    
+    # endings 디렉토리 생성
+    endings_dir = os.path.join(BASE_DIR, "data", "endings")
+    os.makedirs(endings_dir, exist_ok=True)
+    
+    # 8가지 선택 조합 생성
+    combinations = []
+    for c1 in ["A", "B"]:
+        for c2 in ["A", "B"]:
+            for c3 in ["A", "B"]:
+                combinations.append([c1, c2, c3])
+                
+    for scenario in character_card.scenarios:
+        s_id = scenario.scenario_id
+        if target_scenario_id is not None and s_id != target_scenario_id:
+            continue
+            
+        print(f"\n➔ '{character_name}' 시나리오 {s_id} ('{scenario.title}') 8개 분기 엔딩 텍스트 생성 시작...")
+        
+        # 기존 저장 데이터가 있다면 병합(Overwrite 방지)을 위해 로드
+        filepath = os.path.join(endings_dir, f"{character_name}_{s_id}.json")
+        existing_endings = {}
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    existing_endings = json.load(f)
+            except Exception as e:
+                print(f"  [WARNING] 기존 엔딩 JSON 파일 읽기 실패 (새로 빌드): {e}")
+                
+        scenario_endings = {}
+        
+        # 1회성 RAG 검색 수행
+        rag_context = ""
+        try:
+            db_pkl_path = os.path.join(BASE_DIR, "data", "processed", "history_db.pkl")
+            rag_instance = get_rag_instance(db_path=db_pkl_path)
+            results = rag_instance.retrieve(f"{character_name} {scenario.title}", top_k=3)
+            if results:
+                rag_context = "\n".join([f"- {r['chunk']}" for r in results])
+        except Exception as e:
+            print(f"  [WARNING] RAG 조회 중 오류 (생략 가능): {e}")
+            
+        # 기타 인물 행적 배경 단서 수집
+        from simulation_data_manager import get_retrieved_clues
+        other_clues = get_retrieved_clues(character_name)
+        context_str = "[기타 인물 행적 배경 단서]\n"
+        for clue in other_clues[:5]:
+            context_str += f"- {clue['text']}\n"
+        if rag_context:
+            context_str += f"\n[국사 교과서 RAG 단서]\n{rag_context}\n"
+            
+        # 추천 방문지 일괄 조회
+        recommended_places = get_recommended_places(character_name)
+        recommended_places_dict = [place.dict() for place in recommended_places]
+        
+        for choices_path in combinations:
+            path_key = "-".join(choices_path)
+            print(f"   ➔ 경로 {path_key} 엔딩 텍스트 생성 중...")
+            
+            # 1.5. Calculate history_score & current_stats
+            total_turns = len(scenario.turns)
+            historical_choices_count = 0
+            current_stats = {stat.name: stat.value for stat in character_card.stats}
+            
+            for idx, turn in enumerate(scenario.turns):
+                user_choice_id = choices_path[idx]
+                user_choice = turn.choices.get(user_choice_id)
+                if not user_choice:
+                    user_choice = list(turn.choices.values())[0]
+                    
+                if user_choice.is_historical:
+                    historical_choices_count += 1
+                    
+                for name, val in user_choice.stats.items():
+                    if name in current_stats:
+                        current_stats[name] += val
+                        
+            history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
+            is_all_historical = (historical_choices_count == total_turns)
+            
+            # Compile stories
+            factual_story_parts = []
+            user_story_parts = []
+            
+            for idx, turn in enumerate(scenario.turns):
+                situation = turn.situation
+                user_choice_id = choices_path[idx]
+                user_choice = turn.choices.get(user_choice_id)
+                if not user_choice:
+                    user_choice = list(turn.choices.values())[0]
+                    
+                hist_choice_id = "A"
+                for cid, choice in turn.choices.items():
+                    if choice.is_historical:
+                        hist_choice_id = cid
+                        break
+                hist_choice = turn.choices.get(hist_choice_id)
+                
+                user_story_parts.append(
+                    f"STEP {idx+1}. {situation}\n"
+                    f"- 선택: {user_choice.title} ({'실제 역사' if user_choice.is_historical else '가상 분기'})\n"
+                    f"- 결과: {user_choice.result_text}"
+                )
+                factual_story_parts.append(
+                    f"STEP {idx+1}. {situation}\n"
+                    f"- 실제 역사 선택: {hist_choice.title}\n"
+                    f"- 결과: {hist_choice.result_text}"
+                )
+                
+            user_compiled_story = "\n\n".join(user_story_parts)
+            factual_compiled_story = "\n\n".join(factual_story_parts)
+            
+            stats_str = {name: f"{val}%" for name, val in current_stats.items()}
+            
+            ending_prompt = f"""
+너는 역사 시뮬레이션 게임 'K-Heroes'의 최종 엔딩 연출가야.
+유저가 게임 도중 내린 선택과 그로 인해 발생한 이야기를 토대로 최종 감동적인 엔딩과 실제 역사와의 비교를 작성해 줘.
+
+[대상 인물]
+이름: {character_name}
+
+[시나리오]
+제목: {scenario.title}
+역사적 사실 요약: {scenario.historical_facts}
+
+[국사교과서 및 RAG 역사 단서]
+{context_str}
+
+[유저의 플레이 기록]
+- 유저의 선택 경로: {choices_path} (역사 점수: {history_score}/100점)
+- 플레이어 능력치 상태: {stats_str}
+
+[스토리 소스 (characters.json 기준)]
+1. 유저가 만든 역사 이야기 흐름:
+{user_compiled_story}
+
+2. 실제 역사 이야기 흐름:
+{factual_compiled_story}
+
+# 제작 가이드라인 & 할루시네이션 절대 금지
+1. 실제 역사적 사실과의 비교 (history_fact):
+   - 제공된 역사 단서와 실제 역사 이야기 흐름을 바탕으로, 유저의 선택이 실제 역사와 어떻게 다르고 어떤 교훈이 있는지 정확하고 상세히(3-4줄) 서술해 주세요.
+2. 엔딩 유형 (ending_type):
+   - 역사 점수가 100점인 경우 또는 모든 선택이 역사적 선택인 경우: "True Ending"
+   - 그 외의 경우: "Alternative Ending"
+3. 엔딩 타이틀 (title):
+   - 유저의 엔딩 흐름에 맞는 감동적이고 웅장한 타이틀을 지어주세요.
+4. 결과 스토리:
+   - story_headline: 효과음이나 대사로 시작하는 강렬한 헤드라인 1줄 (따옴표 포함)
+   - story_contents: 유저의 선택들이 만들어낸 서사 결과를 초등학생 눈높이에 맞게 쉽고 웅장한 톤으로 2-3줄 요약해 주세요.
+   - factual_contents: 실제 역사 이야기 흐름을 정돈하여, 역사 속 인물이 겪은 실제 결말을 2-3줄 요약해 주세요.
+5. 결과 요약 (summary_items):
+   - 이번 시나리오의 핵심 교훈이나 유저의 활약을 3개의 요약 항목 리스트(각각 title과 desc로 구성된 객체)로 작성해 주세요.
+6. 초등학생 눈높이에 맞게 쉽고 감동적인 톤을 유지하세요.
+
+반드시 아래 JSON 형식으로 응답할 것:
+{{
+    "ending_type": "True Ending" 또는 "Alternative Ending",
+    "title": "엔딩 타이틀",
+    "history_fact": "실제 역사와 비교 및 교훈 해설",
+    "story_headline": "강렬한 헤드라인 1줄 (예: \\"轟-!!! 폭음 뒤에 숨겨진 자유의 외침!\\")",
+    "story_contents": "유저 선택 기반의 서사 결과 2-3줄",
+    "factual_contents": "실제 역사 기반의 서사 결과 2-3줄",
+    "summary_items": [
+        {{"title": "요약 제목 1", "desc": "요약 설명 1"}},
+        {{"title": "요약 제목 2", "desc": "요약 설명 2"}},
+        {{"title": "요약 제목 3", "desc": "요약 설명 3"}}
+    ]
+}}
+"""
+            # OpenAI 호출 (최대 3회 재시도)
+            ending_result = None
+            for attempt in range(3):
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[{"role": "user", "content": ending_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    ending_result = response.choices[0].message.content
+                    break
+                except Exception as e:
+                    print(f"    [WARNING] 엔딩 생성 실패 (시도 {attempt+1}): {e}")
+                    time.sleep(5)
+                    
+            if not ending_result:
+                print(f"    [ERROR] 경로 {path_key} 최종 엔딩 생성 실패. 스킵합니다.")
+                continue
+                
+            ending_data = json.loads(ending_result)
+            
+            # 기존 이미지 URL 보존
+            existing_img = existing_endings.get(path_key, {}).get("image_url", "")
+            
+            scenario_endings[path_key] = {
+                "ending_type": "True Ending" if (is_all_historical or history_score >= 100) else "Alternative Ending",
+                "title": ending_data.get("title", ""),
+                "history_fact": ending_data.get("history_fact", ""),
+                "story_headline": ending_data.get("story_headline", "").strip('"\''),
+                "story_contents": ending_data.get("story_contents", ""),
+                "factual_contents": ending_data.get("factual_contents", ""),
+                "summary_items": ending_data.get("summary_items", []),
+                "recommended_places": recommended_places_dict,
+                "image_url": existing_img
+            }
+            
+        # 결과 파일 쓰기
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(scenario_endings, f, ensure_ascii=False, indent=4)
+        print(f"  [SUCCESS] '{character_name}' 시나리오 {s_id} 엔딩 텍스트 파일 저장 완료: {filepath}")
+
+def generate_endings_images_for_character_scenario(character_name: str, target_scenario_id: Optional[int] = None):
+    """
+    기존에 생성된 backend/data/endings/{character_name}_{scenario_id}.json 파일을 로드하여,
+    각 분기 경로별 엔딩 일러스트를 gpt-image-2로 생성하고 GCS에 업로드하여 image_url을 업데이트.
+    """
+    from models.character import CharacterCard
+    
+    endings_dir = os.path.join(BASE_DIR, "data", "endings")
+    
+    # 1. characters.json에서 인물 시나리오 찾기
+    if not os.path.exists(CHARACTERS_JSON_PATH):
+        print(f"[ERROR] characters.json 파일이 존재하지 않습니다: {CHARACTERS_JSON_PATH}")
+        return
+        
+    with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+        character_database = json.load(f)
+        
+    if character_name not in character_database:
+        print(f"[ERROR] '{character_name}' 인물 정보가 characters.json에 없습니다.")
+        return
+        
+    db_char = character_database[character_name]
+    character_card = CharacterCard(**db_char)
+    
+    for scenario in character_card.scenarios:
+        s_id = scenario.scenario_id
+        if target_scenario_id is not None and s_id != target_scenario_id:
+            continue
+            
+        filepath = os.path.join(endings_dir, f"{character_name}_{s_id}.json")
+        if not os.path.exists(filepath):
+            print(f"[WARNING] 시나리오 {s_id}의 엔딩 텍스트 파일이 존재하지 않습니다. 먼저 --endings-text를 실행하세요. ({filepath})")
+            continue
+            
+        with open(filepath, "r", encoding="utf-8") as f:
+            endings_data = json.load(f)
+            
+        print(f"\n➔ '{character_name}' 시나리오 {s_id} 엔딩 일러스트 생성 시작...")
+        
+        updated = False
+        for path_key, ending in endings_data.items():
+            title = ending.get("title", "")
+            story_contents = ending.get("story_contents", "")
+            existing_img = ending.get("image_url", "")
+            
+            if not existing_img or not existing_img.startswith("http"):
+                print(f"   ➔ 경로 {path_key} 일러스트가 없습니다. 생성 중...")
+                public_url = generate_and_upload_ending_image(character_name, title, story_contents, s_id, path_key)
+                if public_url:
+                    ending["image_url"] = public_url
+                    updated = True
+                    # 쓰기 반영 (매번 실패를 대비해 증분 저장)
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        json.dump(endings_data, f, ensure_ascii=False, indent=4)
+                    print(f"    [SUCCESS] 경로 {path_key} 일러스트 생성 완료: {public_url}")
+                    time.sleep(5)
+            else:
+                print(f"   ➔ 경로 {path_key} 일러스트가 이미 존재합니다: {existing_img}")
+                
+        if updated:
+            print(f"  [SUCCESS] '{character_name}' 시나리오 {s_id} 엔딩 일러스트 업데이트 완료.")
+
 
 # --- Main Pipeline Builder ---
 def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
+    # Normalize mode
+    norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
+    
+    if norm_mode == "endings-text":
+        if not target_char:
+            print("[ERROR] --endings-text 모드는 캐릭터명이 필수입니다. 예: python scenario_generator.py --endings-text 고종")
+            return
+        generate_endings_text_for_character_scenario(target_char)
+        return
+        
+    if norm_mode == "endings-image":
+        if not target_char:
+            print("[ERROR] --endings-image 모드는 캐릭터명이 필수입니다. 예: python scenario_generator.py --endings-image 고종")
+            return
+        generate_endings_images_for_character_scenario(target_char)
+        return
     print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
     if not os.path.exists(CSV_PATH):
         raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
@@ -1436,16 +1797,19 @@ if __name__ == "__main__":
         run_main_pipeline(target, mode=mode)
     else:
         print("사용법:")
-        print("  python data_pipeline.py --all [캐릭터명]             : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --profiles-text [캐릭터명]   : 이미지 생성 없이 프로필 텍스트 정보만 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --scenario-text [캐릭터명]   : 이미지 생성 없이 시나리오 메타데이터(테마) 정보만 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --turn-text [캐릭터명]       : 시나리오 1, 2, 3턴 텍스트 정보 순차 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --turn1-text [캐릭터명]      : 시나리오 1턴 텍스트만 생성/갱신")
-        print("  python data_pipeline.py --turn2-text [캐릭터명]      : 시나리오 2턴 텍스트만 생성/갱신")
-        print("  python data_pipeline.py --turn3-text [캐릭터명]      : 시나리오 3턴 텍스트만 생성/갱신")
-        print("  python data_pipeline.py --turn1-image [캐릭터명]     : 시나리오 1턴 상황 및 선택지 이미지(GCS) 생성")
-        print("  python data_pipeline.py --turn2-image [캐릭터명]     : 시나리오 2턴 상황 및 선택지 이미지(GCS) 생성")
-        print("  python data_pipeline.py --turn3-image [캐릭터명]     : 시나리오 3턴 상황 및 선택지 이미지(GCS) 생성")
-        print("  python data_pipeline.py --turn-image [캐릭터명]      : 선택지 이미지(1:1)만 생성 (특정 캐릭터 지정 가능)")
-        print("  python data_pipeline.py --images [캐릭터명]          : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --all [캐릭터명]             : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --profiles-text [캐릭터명]   : 이미지 생성 없이 프로필 텍스트 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --scenario-text [캐릭터명]   : 이미지 생성 없이 시나리오 메타데이터(테마) 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turn-text [캐릭터명]       : 시나리오 1, 2, 3턴 텍스트 정보 순차 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turn1-text [캐릭터명]      : 시나리오 1턴 텍스트만 생성/갱신")
+        print("  python scenario_generator.py --turn2-text [캐릭터명]      : 시나리오 2턴 텍스트만 생성/갱신")
+        print("  python scenario_generator.py --turn3-text [캐릭터명]      : 시나리오 3턴 텍스트만 생성/갱신")
+        print("  python scenario_generator.py --endings-text [캐릭터명]    : 8가지 엔딩 스토리 텍스트 일괄 사전 생성 (캐릭터 지정 필수)")
+        
+        print("  python scenario_generator.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turn-image [캐릭터명]      : 선택지 이미지(1:1)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turn1-image [캐릭터명]     : 시나리오 1턴 상황 및 선택지 이미지(GCS) 생성")
+        print("  python scenario_generator.py --turn2-image [캐릭터명]     : 시나리오 2턴 상황 및 선택지 이미지(GCS) 생성")
+        print("  python scenario_generator.py --turn3-image [캐릭터명]     : 시나리오 3턴 상황 및 선택지 이미지(GCS) 생성")
+        print("  python scenario_generator.py --endings-image [캐릭터명]   : 8가지 엔딩 일러스트(DALL-E) 일괄 사전 생성 (캐릭터 지정 필수)")
+        print("  python scenario_generator.py --images [캐릭터명]          : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")
