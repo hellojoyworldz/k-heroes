@@ -11,9 +11,27 @@ class InMemoryHistoryRAG:
     def __init__(self, db_pickle_path):
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
         
-        # 1. 파일 로드
+        # 1. 파일 로드 (없을 경우 원본 PDF로부터 자동 빌드 수행)
         if not os.path.exists(db_pickle_path):
-            raise FileNotFoundError(f"인메모리 RAG DB 파일이 없습니다. 빌드를 먼저 수행하세요: {db_pickle_path}")
+            print(f"[RAG] DB 파일({db_pickle_path})이 존재하지 않아 자동 빌드를 수행합니다...")
+            base_dir = os.path.dirname(db_pickle_path)
+            raw_pdf_path = os.path.join(base_dir, "..", "raw", "고등학교_국사_(7차_교육과정).pdf")
+            
+            # 파일명 NFD/NFC 정규화 차이 등으로 인해 경로가 없을 경우를 대비하여 폴더 스캔
+            if not os.path.exists(raw_pdf_path):
+                raw_dir = os.path.join(base_dir, "..", "raw")
+                if os.path.exists(raw_dir):
+                    for fname in os.listdir(raw_dir):
+                        if "국사" in fname and fname.endswith(".pdf"):
+                            raw_pdf_path = os.path.join(raw_dir, fname)
+                            break
+                            
+            if os.path.exists(raw_pdf_path):
+                from build_history_db import build_db
+                os.makedirs(os.path.dirname(db_pickle_path), exist_ok=True)
+                build_db(raw_pdf_path, db_pickle_path)
+            else:
+                raise FileNotFoundError(f"인메모리 RAG DB 파일 및 원본 PDF 파일을 찾을 수 없습니다: {db_pickle_path}")
             
         with open(db_pickle_path, "rb") as f:
             data = pickle.load(f)
