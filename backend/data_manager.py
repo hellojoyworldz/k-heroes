@@ -20,7 +20,8 @@ def upload_to_gcs(blob_name: str, data: Dict[str, Any]) -> bool:
     if not GCP_BUCKET_NAME:
         return False
     try:
-        storage_client = storage.Client()
+        project_id = os.environ.get("GCP_PROJECT_ID")
+        storage_client = storage.Client(project=project_id)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         blob = bucket.blob(blob_name)
         blob.upload_from_string(
@@ -37,7 +38,8 @@ def fetch_from_gcs(blob_name: str) -> Optional[Dict[str, Any]]:
     if not GCP_BUCKET_NAME:
         return None
     try:
-        storage_client = storage.Client()
+        project_id = os.environ.get("GCP_PROJECT_ID")
+        storage_client = storage.Client(project=project_id)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         blob = bucket.blob(blob_name)
         if not blob.exists():
@@ -48,8 +50,11 @@ def fetch_from_gcs(blob_name: str) -> Optional[Dict[str, Any]]:
         print(f"[WARNING] GCS 다운로드 중 오류 발생 (로컬 fallback 사용): {e}")
         return None
 
-def save_simulation_result(result_id: str, data: Dict[str, Any]):
-    blob_name = f"simulation_results/{result_id}.json"
+def save_simulation_result(result_id: str, character_name: str, scenario_id: int, data: Dict[str, Any]):
+    import datetime
+    date_str = datetime.datetime.now().strftime("%Y%m%d")
+    filename = f"{date_str}_{character_name}_{scenario_id}_{result_id}.json"
+    blob_name = f"endings/{filename}"
     
     # 1. GCS 업로드 시도
     success = upload_to_gcs(blob_name, data)
@@ -58,9 +63,9 @@ def save_simulation_result(result_id: str, data: Dict[str, Any]):
         
     # 2. GCS 실패 시 로컬 파일 저장 fallback
     try:
-        local_dir = os.path.join(BASE_DIR, "data", "results")
+        local_dir = os.path.join(BASE_DIR, "gcp", "endings")
         os.makedirs(local_dir, exist_ok=True)
-        local_path = os.path.join(local_dir, f"{result_id}.json")
+        local_path = os.path.join(local_dir, filename)
         with open(local_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         print(f"[SUCCESS] 로컬 파일 백업 저장 완료: {local_path}")
@@ -68,18 +73,31 @@ def save_simulation_result(result_id: str, data: Dict[str, Any]):
         print(f"[ERROR] 로컬 결과 파일 저장 실패: {e}")
 
 def get_simulation_result(result_id: str) -> Optional[Dict[str, Any]]:
-    blob_name = f"simulation_results/{result_id}.json"
-    
     # 1. GCS 조회 시도
-    data = fetch_from_gcs(blob_name)
-    if data:
-        return data
-        
+    if GCP_BUCKET_NAME:
+        try:
+            project_id = os.environ.get("GCP_PROJECT_ID")
+            storage_client = storage.Client(project=project_id)
+            bucket = storage_client.bucket(GCP_BUCKET_NAME)
+            blobs = bucket.list_blobs(prefix="endings/")
+            target_blob = None
+            for b in blobs:
+                if b.name.endswith(f"_{result_id}.json"):
+                    target_blob = b
+                    break
+            if target_blob:
+                content = target_blob.download_as_text(encoding="utf-8")
+                return json.loads(content)
+        except Exception as e:
+            print(f"[WARNING] GCS 다운로드 중 오류 발생 (로컬 fallback 사용): {e}")
+
     # 2. GCS 실패 시 로컬 파일 로드 fallback
     try:
-        local_path = os.path.join(BASE_DIR, "data", "results", f"{result_id}.json")
-        if os.path.exists(local_path):
-            with open(local_path, "r", encoding="utf-8") as f:
+        import glob
+        local_dir = os.path.join(BASE_DIR, "gcp", "endings")
+        files = glob.glob(os.path.join(local_dir, f"*_{result_id}.json"))
+        if files:
+            with open(files[0], "r", encoding="utf-8") as f:
                 return json.load(f)
     except Exception as e:
         print(f"[ERROR] 로컬 결과 파일 로드 실패: {e}")
