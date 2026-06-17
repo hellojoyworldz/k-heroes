@@ -34,6 +34,7 @@ class ScenarioItem(BaseModel):
     title: str
     description: str
     historical_facts: str
+    scenario_image: str = ""
     source_story_ids: List[int] = []
     turns: List[TurnItem]
 

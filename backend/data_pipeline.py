@@ -187,7 +187,7 @@ RAG 데이터 컨텍스트에 담긴 인물의 주된 업적과 행적을 분석
 - J vs P : J (치밀한 계획 수립, 국가 제도/법전 완성) / P (임기응변, 신출귀몰 게릴라 전술)
 
 반드시 아래 JSON 형식으로만 출력해:
-{{
+{
     "name": "인물 이름 (예: 고종, 이순신, 세종대왕)",
     "category": "RAG 컨텍스트를 분석하여 부여한 카테고리. 반드시 다음 4가지 문자열 중 하나여야 함: ['정치 / 외교', '독립 / 호국', '예술 / 문학', '실학 / 학문']",
     "era": "시대 명칭 (예: 조선 후기(1863-1907), 조선 시대(1545-1598))",
@@ -199,20 +199,20 @@ RAG 데이터 컨텍스트에 담긴 인물의 주된 업적과 행적을 분석
     "one_line_summary": "히어로물 느낌의 직관적인 수식어 한줄 요약",
     "mbti": "RAG 분석을 통해 인물에게 가장 잘 어울린다고 판별한 실제 16가지 중 하나인 MBTI 4글자 (반드시 대문자)",
     "mbti_nickname": "부여한 MBTI에 따른 캐릭터 별명",
-    "mbti_details": {{
+    "mbti_details": {
         "E_I": "E 또는 I의 행적 설명",
         "S_N": "S 또는 N의 행적 설명",
         "T_F": "T 또는 F의 행적 설명",
         "J_P": "J 또는 P의 행적 설명"
-    }},
+    },
     "stats": [
-        {{"name": "스탯 1 이름", "value": 88, "desc": "설명"}},
-        {{"name": "스탯 2 이름", "value": 90, "desc": "설명"}},
-        {{"name": "스탯 3 이름", "value": 85, "desc": "설명"}}
+        {"name": "스탯 1 이름", "value": 88, "desc": "설명"},
+        {"name": "스탯 2 이름", "value": 90, "desc": "설명"},
+        {"name": "스탯 3 이름", "value": 85, "desc": "설명"}
     ],
     "intro_quote": "인물의 유명한 명언이나 다짐 한 줄",
     "intro_desc": "인물이 활약하게 된 주요 계기와 행적 설명 2~3줄"
-}}
+}
 """
     valid_mbtis = {"ISTJ", "ISFJ", "INFJ", "INTJ", "ISTP", "ISFP", "INFP", "INTP", "ESTP", "ESFP", "ENFP", "ENTP", "ESTJ", "ESFJ", "ENFJ", "ENTJ"}
 
@@ -240,56 +240,35 @@ RAG 데이터 컨텍스트에 담긴 인물의 주된 업적과 행적을 분석
     return profile_data
 
 
-def generate_scenarios_via_openai(character_name: str, stories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def generate_scenario_themes(character_name: str, stories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not openai_client:
-        raise ValueError("OpenAI API 클라이언트가 존재하지 않아 시나리오 생성을 할 수 없습니다.")
+        raise ValueError("OpenAI API 클라이언트가 존재하지 않아 시나리오 테마 생성을 할 수 없습니다.")
 
     context_str = ""
-    for i, s in enumerate(stories[:30]):  # 넉넉하게 30개의 스토리를 전달
+    for i, s in enumerate(stories[:50]):  # 최대 50개의 RAG 스토리 전달
         context_str += f"[스토리 ID: {s['id']}] 제목: {s['title']}, 요약: {s['summary']}\n\n"
 
     lifespan_info = HISTORICAL_LIFESPANS.get(character_name, {})
     lifespan_str = lifespan_info.get("years", "알 수 없음")
 
-    prompt = f"""
-너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 시나리오 설계자야.
-제공된 역사 단서(RAG)를 바탕으로 대상 인물에 대한 독립된 역사 테마 시나리오(챕터)를 최소 3개에서 최대 5개까지 설계해 줘.
+    prompt = f"""너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 시나리오 기획자야.
+제공된 역사 단서(RAG)를 바탕으로 대상 인물인 '{character_name}'에 대한 독립된 역사 테마 시나리오(챕터)를 정확히 3개 선정하여 설계해 줘.
+각 시나리오의 핵심 메타데이터만 구성하고, 턴(turns) 정보는 절대 포함하지 마십시오.
 어려운 한자어는 피하고 초등학생도 쉽게 읽을 수 있는 단어를 써줘.
 
 [대상 인물 및 역사적 타임라인 제약]
 이름: {character_name}
 실제 생몰년도 (활동 연대): {lifespan_str}
 
-[역사 자료]
+[역사 자료 (RAG 스토리가 인물별로 분류되어 있음)]
 {context_str}
 
-[설계 원칙]
-1. 오타 방지: 시나리오 상황이나 인물 설명 속에서 인물의 이름(예: {character_name})에 오타(예: '허균'을 '헌귄'으로 쓰는 행위)가 발생하지 않도록 절대 보장하세요.
-2. 긍정적이고 수준 높은 선택지 작명: 선택지의 제목은 품위 있고 플레이어가 고르고 싶게 긍정적/중립적 언어를 사용해 작성하세요. '주절주절한 이야기로 풀어낸다' 등 비속어나 장황함, 부정적 뉘앙스가 담긴 단어는 절대 금지합니다. 대신 '구체적인 삶의 예시를 들어 풀어낸다' 등으로 순화하세요.
-3. 턴 간의 연결성(B 선택지 결과 뉘앙스):
-   - 본 게임은 선택지 A와 B 중 무엇을 고르더라도 각 턴이 종료되면 다음 턴(turn_no: 2, 3)으로 상황이 이어지는 병합형 구조(Converging Choice)입니다.
-   - 따라서, 1턴 혹은 2턴에서 비역사적 선택지 'B'를 고르더라도 그 결과가 '이야기가 완전히 망했거나 주인공이 잊혔다'며 극단적으로 끝나버리게 하지 마십시오.
-   - 1턴과 2턴의 'B' 결과 텍스트('result_text')는 과정 중심/전환 중심의 중간 지문이어야 합니다. 예: "온건한 방향을 선택하자 다소 평이해졌으나, 다른 흥미로운 사건을 구상하게 된다" 등으로 표현하여, 다음 턴의 상황(situation)과 논리적으로 모순되지 않도록 매끄럽게 연결해 주어야 합니다.
-4. 역사적 시대상 반영 (출판/유통):
-   - 조선 시대를 배경으로 한 인물들의 문집이나 소설(예: 홍길동전, 한정록 등)의 완성 시나리오에서는 '출판하고 공개한다' 또는 '즉시 출판한다'라는 근현대식 표현을 피해 주십시오.
-   - 조선 시대에는 대중용 출판 시스템이 없었으므로, '필사본을 유통시킨다', '목판본으로 간행하여 지인과 나눈다' 등 시대에 맞는 현실적인 단어와 역사적 사실을 서술해야 합니다.
-5. 역사적 정확성과 타임라인:
-   - 시나리오 및 각 턴에 기입하는 연도는 대상 인물의 실제 활동 시기와 RAG 데이터에 근거해 정확해야 합니다.
-   - 대상 인물의 생몰년도나 활동 기간(예: {character_name}의 활동 연도인 {lifespan_str})을 절대적으로 벗어난 연도(예: 정자가 처음 지어진 해 등 인물이 태어나기도 전이나 사망한 한참 후 of 연도)를 인물이 활동하는 시나리오/턴 연도로 표기하는 것은 치명적인 역사 오류입니다. 반드시 인물의 실제 생애 기간인 {lifespan_str} 범위 내로만 연도를 기입하도록 철저히 교차 검증하십시오.
-6. 주인공 중심의 능동적 주체성 (Active Protagonist Agent):
-   - 모든 시나리오와 각 턴의 상황(situation), 선택지(choices)는 반드시 해당 대상 인물(예: {character_name})의 시점과 행동을 중심으로 서술되어야 합니다. RAG 문서에 등장하는 다른 인물이 주어가 되어 선택을 내리게 하지 마십시오. 타인의 업적에 숟가락만 얹는 시나리오가 아니라, {character_name} 본인이 직접 고민하고 선택하는 상황으로만 설계해야 합니다.
-7. 각 시나리오는 서로 겹치지 않는 독립적인 주요 역사적 에피소드여야 해.
-8. 각 시나리오별로 정확히 3개의 턴(turn_no: 1, 2, 3)을 기획해 줘. (1: 사건의 시작, 2: 위기/대립, 3: 승리/결말)
-9. 각 턴은 'title' (사건 주제와 연도 정보 포함, 예: "무기 선택 (1932년 4월)"), 'situation' (상황 설명), 'tip_title' (역사 지식을 호기심 있게 유도하는 질문, 예: "💡 왜 하필 도시락과 물통일까요?"), 'tip_desc' (질문에 대한 정확하고 자세한 실제 역사적 설명 2~3줄), 그리고 'choices' (A선택지와 B선택지)를 가져야 해.
-10. 'A' 선택지는 역사적 팩트(is_historical: true)에 입각한 결정이어야 하고, 'B' 선택지는 설득력 있는 대체 역사(is_historical: false) 결정이어야 해.
-11. 각 선택지는 'title' (행동 위주의 제목, 예: "물통 폭탄과 도시락 폭탄을 챙긴다"), 'description' (구체적인 행동과 예상 설명 1줄, 예: "도시락과 물통 모양으로 위장한 폭탄을 선택해 경비를 통과한다"), 'stats' (딕셔너리 형태의 3가지 스탯 영향도), 그리고 'result_text' (결과 지문 1~2줄)를 포함해야 해.
-12. 'stats'는 대상 인물의 성향/카테고리에 가장 어울리는 3가지 수치를 설정하여 개연성 있게 10~30 범위 내외의 정수 변동(예: 10, -10)을 부여해 줘.
-    [스탯 키 선택 가이드라인]
-    - 독립 / 호국 카테고리인 경우: {{"독립 자금": -10, "팀워크": 10, "성공 확률": 30}} 처럼 독립 자금, 팀워크, 성공 확률 키를 주로 사용.
-    - 정치 / 외교 카테고리인 경우: {{"국력": 20, "백성의 지지": 10, "성공 확률": -15}} 처럼 국력, 백성의 지지, 성공 확률 키를 주로 사용.
-    - 예술 / 문학 카테고리인 경우: {{"예술성": 15, "백성의 위로": 10, "성공 확률": 20}} 처럼 예술성, 백성의 위로, 성공 확률 키를 주로 사용.
-    - 실학 / 학문 카테고리인 경우: {{"학문적 깊이": 20, "실용성": 15, "성공 확률": 10}} 처럼 학문적 깊이, 실용성, 성공 확률 키를 주로 사용.
-13. 이 시나리오에 영감을 준 원본 역사 자료의 ID 목록('source_story_ids')을 포함해 줘.
+[시나리오 선정 및 구성 원칙]
+반드시 다음 기준에 따라 정확히 3개의 시나리오를 선정 및 설계하십시오:
+1. **역사적 중요성 및 의의 (Historical Significance)**: 인물의 일생과 한국 역사 전체에서 가장 영향력이 크고 대표적인 핵심 사건/업적/전환점 3가지를 선정합니다.
+2. **스토리 병합 및 종합 (Story Merging & Grouping)**: 제공된 역사 자료 중 개별적으로 흩어져 있는 연관 스토리들을 유기적으로 병합(Merge)하여 하나의 풍부한 시나리오 테마로 합치십시오.
+3. **주인공 중심의 능동적 결단 (Active Agency)**: 타인이 상황을 주도하는 것이 아니라, 주인공인 '{character_name}'가 중심에 서서 깊이 고뇌하고 직접 의사결정을 내렸던 갈등의 순간을 시나리오화 하십시오.
+4. **테마의 다양성 (Thematic Diversity)**: 3개의 시나리오가 서로 겹치지 않고, 인물의 성향이나 생애 주기(예: 청년기의 도전, 장년기의 제도 개혁, 말년의 구국 투쟁 등)의 다른 측면을 보여주도록 구성하십시오.
 
 반드시 아래 JSON 형식으로만 출력해:
 {{
@@ -299,78 +278,7 @@ def generate_scenarios_via_openai(character_name: str, stories: List[Dict[str, A
             "title": "시나리오 대주제 (예: 상하이 홍커우 공원 의거)",
             "description": "이 시나리오가 어떤 국면인지 설명 2~3줄",
             "historical_facts": "RAG에서 발췌한 이 시나리오의 핵심 실제 역사적 팩트 2~3줄",
-            "source_story_ids": [102, 105],
-            "turns": [
-                {{
-                    "turn_no": 1,
-                    "title": "1턴 사건 명칭과 연도 (예: 무기 선택 (1932년 4월))",
-                    "situation": "상황 묘사 2~3줄",
-                    "tip_title": "💡 질문 형식의 토글 질문",
-                    "tip_desc": "역사적 팩트 기반의 상세 해설 2~3줄",
-                    "choices": {{
-                        "A": {{
-                            "title": "선택지 A 제목",
-                            "description": "선택지 A 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": -10, "팀워크": 10, "성공 확률": 30 }},
-                            "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄 (전환형 지문)",
-                            "is_historical": true
-                        }},
-                        "B": {{
-                            "title": "선택지 B 제목",
-                            "description": "선택지 B 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": 15, "팀워크": -10, "성공 확률": -25 }},
-                            "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄 (전환형 지문)",
-                            "is_historical": false
-                        }}
-                    }}
-                }},
-                {{
-                    "turn_no": 2,
-                    "title": "2턴 사건 명칭과 연도",
-                    "situation": "2턴 상황 묘사 (1턴 A/B 결과 이후 자연스럽게 이어지는 병합 상황)",
-                    "tip_title": "💡 질문 형식의 토글 질문",
-                    "tip_desc": "역사적 해설 2~3줄",
-                    "choices": {{
-                        "A": {{
-                            "title": "선택지 A 제목",
-                            "description": "선택지 A 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": -5, "팀워크": 15, "성공 확률": 20 }},
-                            "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄 (전환형 지문)",
-                            "is_historical": true
-                        }},
-                        "B": {{
-                            "title": "선택지 B 제목",
-                            "description": "선택지 B 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": 10, "팀워크": -15, "성공 확률": -30 }},
-                            "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄 (전환형 지문)",
-                            "is_historical": false
-                        }}
-                    }}
-                }},
-                {{
-                    "turn_no": 3,
-                    "title": "3턴 사건 명칭과 연도",
-                    "situation": "3턴 상황 묘사 (2턴 A/B 결과 이후 최종 마무리를 장식하는 연출 상황)",
-                    "tip_title": "💡 질문 형식의 토글 질문",
-                    "tip_desc": "역사적 해설 2~3줄",
-                    "choices": {{
-                        "A": {{
-                            "title": "선택지 A 제목",
-                            "description": "선택지 A 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": -20, "팀워크": 20, "성공 확률": 40 }},
-                            "result_text": "이 선택을 한 후 최종 결말 결과 지문 및 역사적 의의 1~2줄",
-                            "is_historical": true
-                        }},
-                        "B": {{
-                            "title": "선택지 B 제목",
-                            "description": "선택지 B 상세 행동 설명 1줄",
-                            "stats": {{ "독립 자금": 30, "팀워크": -20, "성공 확률": -40 }},
-                            "result_text": "이 선택을 한 후 최종 결말 결과 지문 및 역사적 의의 1~2줄",
-                            "is_historical": false
-                        }}
-                    }}
-                }}
-            ]
+            "source_story_ids": [102, 105]
         }}
     ]
 }}
@@ -386,6 +294,206 @@ def generate_scenarios_via_openai(character_name: str, stories: List[Dict[str, A
     data = json.loads(response.choices[0].message.content)
     return data.get("scenarios", [])
 
+
+def generate_turns_for_scenario(character_name: str, scenario_title: str, scenario_description: str, historical_facts: str, category: str) -> List[Dict[str, Any]]:
+    if not openai_client:
+        raise ValueError("OpenAI API 클라이언트가 존재하지 않아 턴 생성을 할 수 없습니다.")
+
+    lifespan_info = HISTORICAL_LIFESPANS.get(character_name, {})
+    lifespan_str = lifespan_info.get("years", "알 수 없음")
+
+    # Determine stats keys
+    if category == "독립 / 호국":
+        stats_keys = ["독립 자금", "팀워크", "성공 확률"]
+    elif category == "정치 / 외교":
+        stats_keys = ["국력", "백성의 지지", "성공 확률"]
+    elif category == "예술 / 문학":
+        stats_keys = ["예술성", "백성의 위로", "성공 확률"]
+    elif category == "실학 / 학문":
+        stats_keys = ["학문적 깊이", "실용성", "성공 확률"]
+    else:
+        stats_keys = ["스탯1", "스탯2", "성공 확률"]
+
+    stats_format = "{" + ", ".join([f'"{k}": 정수' for k in stats_keys]) + "}"
+
+    prompt = f"""너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 턴 설계자야.
+대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 총 3개의 턴(turn_no: 1, 2, 3)을 설계해 줘.
+어려운 한자어는 피하고 초등학생도 쉽게 읽을 수 있는 단어를 써줘.
+
+[대상 인물 및 역사적 타임라인 제약]
+이름: {character_name}
+실제 생몰년도 (활동 연대): {lifespan_str}
+
+[시나리오 컨텍스트]
+시나리오 제목: {scenario_title}
+시나리오 설명: {scenario_description}
+시나리오 핵심 역사적 팩트: {historical_facts}
+
+[설계 원칙]
+1. 턴 흐름의 연속성 (보틀넥 수렴 구조):
+   - 본 게임은 1턴, 2턴의 선택 결과에 상관없이 2턴, 3턴으로 상황이 이어지는 병합형 구조(Converging Choice)입니다.
+   - 1턴 혹은 2턴에서 비역사적 선택지 'B'를 고르더라도 그 결과가 '이야기가 완전히 망했거나 주인공이 잊혔다'며 극단적으로 끝나버리게 하지 마십시오.
+   - 1턴과 2턴의 'B' 결과 텍스트('result_text')는 과정 중심/전환 중심의 중간 지문이어야 합니다. 예: "온건한 방향을 선택하자 다소 평이해졌으나, 다른 흥미로운 사건을 구상하게 된다" 등으로 표현하여, 다음 턴의 상황(situation)과 논리적으로 모순되지 않도록 매끄럽게 연결해 주어야 합니다.
+   - 단, 3턴은 이 시나리오의 '최종 결말'이어야 합니다.
+2. 선택지 작명과 결과 뉘앙스:
+   - 선택지 제목은 품위 있고 플레이어가 고르고 싶게 작성해.
+   - 역사적 선택지 'A'는 역사적 팩트(is_historical: true)에 기반하고, 대체역사 선택지 'B'는 설득력 있는 대체역사(is_historical: false)여야 해.
+3. 역사적 시대상 및 타임라인 준수:
+   - 연도 기입 시, 반드시 {character_name}의 활동 연도인 {lifespan_str} 범위 내로만 설정하십시오.
+   - 조선 시대 배경일 때 '출판', '대중 유통' 등의 현대식 단어 대신 '필사본 유통', '목판본 간행' 같은 단어를 사용하십시오.
+4. 주인공 중심: {character_name}가 주어가 되어 고민하고 선택하는 상황으로만 설계하십시오.
+5. 스탯(stats): 반드시 다음 3가지 스탯 키만 사용해야 합니다: {stats_keys}. 수치 변동은 10~30 범위 내외의 정수(예: 15, -10 등)로 설정해 주십시오.
+
+반드시 아래 JSON 형식으로만 출력해:
+{{
+    "turns": [
+        {{
+            "turn_no": 1,
+            "title": "1턴 사건 명칭과 연도 (예: 무기 선택 (1932년 4월))",
+            "situation": "상황 묘사 2~3줄 (이전 턴의 어떤 결정을 내렸어도 자연스럽게 흘러오도록 작성)",
+            "tip_title": "💡 질문 형식의 토글 질문 (해당 역사 사실에 관한 흥미로운 질문)",
+            "tip_desc": "질문에 대한 정확하고 자세한 실제 역사적 해설 2~3줄",
+            "choices": {{
+                "A": {{
+                    "title": "선택지 A 제목",
+                    "description": "선택지 A 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄",
+                    "is_historical": true
+                }},
+                "B": {{
+                    "title": "선택지 B 제목",
+                    "description": "선택지 B 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄",
+                    "is_historical": false
+                }}
+            }}
+        }},
+        {{
+            "turn_no": 2,
+            "title": "2턴 사건 명칭과 연도",
+            "situation": "상황 묘사 2~3줄",
+            "tip_title": "💡 질문 형식의 토글 질문",
+            "tip_desc": "질문에 대한 실제 역사적 해설 2~3줄",
+            "choices": {{
+                "A": {{
+                    "title": "선택지 A 제목",
+                    "description": "선택지 A 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄",
+                    "is_historical": true
+                }},
+                "B": {{
+                    "title": "선택지 B 제목",
+                    "description": "선택지 B 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 보여줄 결과 지문 1~2줄",
+                    "is_historical": false
+                }}
+            }}
+        }},
+        {{
+            "turn_no": 3,
+            "title": "3턴 사건 명칭과 연도",
+            "situation": "상황 묘사 2~3줄 (최종 결말 상황)",
+            "tip_title": "💡 질문 형식의 토글 질문",
+            "tip_desc": "질문에 대한 실제 역사적 해설 2~3줄",
+            "choices": {{
+                "A": {{
+                    "title": "선택지 A 제목",
+                    "description": "선택지 A 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 최종 결말 결과 지문 및 역사적 의의 1~2줄",
+                    "is_historical": true
+                }},
+                "B": {{
+                    "title": "선택지 B 제목",
+                    "description": "선택지 B 상세 행동 설명 1줄",
+                    "stats": {stats_format},
+                    "result_text": "이 선택을 한 후 최종 결말 결과 지문 및 역사적 의의 1~2줄",
+                    "is_historical": false
+                }}
+            }}
+        }}
+    ]
+}}"""
+    response = openai_client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        response_format={"type": "json_object"}
+    )
+    
+    data = json.loads(response.choices[0].message.content)
+    return data.get("turns", [])
+
+
+def generate_and_upload_scenario_image(character_name: str, scenario_title: str, scenario_description: str, scenario_id: int) -> str:
+    """
+    OpenAI gpt-image-2를 이용하여 시나리오 메인 키아트 일러스트를 생성하고 GCS에 업로드 (16:9 가로).
+    """
+    if not openai_client:
+        print("[WARNING] OpenAI API 클라이언트가 존재하지 않습니다.")
+        return ""
+    if not GCP_BUCKET_NAME:
+        print("[WARNING] GCP_BUCKET_NAME 설정되지 않음.")
+        return ""
+
+    prompt = f"""{character_name}
+
+Scenario: {scenario_title}
+Description: {scenario_description}
+
+K-Heroes historical scenario main keyart illustration.
+Focus on the overall theme of the scenario: {scenario_title}.
+Historically accurate clothing, architecture, and cultural elements.
+Traditional Korean watercolor illustration mixed with ink wash painting (sumukhwa).
+Premium Korean cultural heritage artwork.
+Warm ivory paper texture.
+Elegant brush strokes.
+Soft watercolor edges.
+Warm beige, brown, olive green and ivory palette.
+Historical atmosphere.
+No text.
+No logo.
+No UI.
+No border.
+No frame.
+16:9 composition.
+4K quality."""
+
+    try:
+        print(f" ➔ gpt-image-2 시나리오 대표 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id})...")
+        response = openai_client.images.generate(
+            model="gpt-image-2",
+            prompt=prompt,
+            n=1,
+            size="1792x1024",
+            quality="high"
+        )
+        
+        b64_data = response.data[0].b64_json
+        if not b64_data:
+            raise Exception("No image data returned from OpenAI API.")
+            
+        image_bytes = base64.b64decode(b64_data)
+        
+        storage_client = storage.Client(project=GCP_PROJECT_ID)
+        bucket = storage_client.bucket(GCP_BUCKET_NAME)
+        
+        blob_name = f"scenarios/{character_name}_scenario_{scenario_id}_main.png"
+        blob = bucket.blob(blob_name)
+        
+        print(f" ➔ GCS 업로드: gs://{GCP_BUCKET_NAME}/{blob_name}")
+        blob.upload_from_string(image_bytes, content_type="image/png")
+        
+        public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
+        return public_url
+    except Exception as e:
+        print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 대표 이미지 생성/GCS 실패: {e}")
+        return ""
 # --- OpenAI Image Generators & GCS Upload ---
 def generate_and_upload_character_image(character_name: str) -> str:
     """
@@ -716,6 +824,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
         # Determine execution flags for text generation steps
         curr_run_profile_text = False
         curr_run_scenario_text = False
+        curr_run_turn_text = False
         
         if norm_mode in ["all", "profiles-scenario-text"]:
             needs_profile = "mbti" not in db_char or not db_char.get("scenarios")
@@ -730,17 +839,16 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                     turns = first_scenario.get("turns", [])
                     if not turns:
                         needs_profile = True
-                    else:
-                        first_turn = turns[0]
-                        if "tip_title" not in first_turn or "title" not in first_turn:
-                            needs_profile = True
             if needs_profile:
                 curr_run_profile_text = True
                 curr_run_scenario_text = True
+                curr_run_turn_text = True
         elif norm_mode == "profiles-text":
             curr_run_profile_text = True
-        elif norm_mode in ["scenario-text", "turn0text", "turn0-text", "turn-text"]:
+        elif norm_mode == "scenario-text":
             curr_run_scenario_text = True
+        elif norm_mode in ["turn-text", "turn0text", "turn0-text"]:
+            curr_run_turn_text = True
             
         # 1-1. 프로필 텍스트 생성
         if curr_run_profile_text:
@@ -780,44 +888,22 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
             if not success:
                 print(f"  [CRITICAL] '{char_name}' 프로필 텍스트 파이프라인 최종 실패.")
                 
-        # 1-2. 시나리오 텍스트 생성
+        # 1-2. 시나리오 테마 텍스트 생성
         if curr_run_scenario_text:
-            print(f" ➔ '{char_name}' 시나리오 텍스트 생성 진행...")
+            print(f" ➔ '{char_name}' 시나리오 테마 텍스트 생성 진행...")
             success = False
             for attempt in range(3):
                 try:
-                    scenarios = generate_scenarios_via_openai(char_name, associated_stories)
+                    scenarios = generate_scenario_themes(char_name, associated_stories)
                     
-                    # schema fields 보장
-                    for scenario in scenarios:
+                    # Ensure scenario_id is an integer and basic schema structure
+                    for s_idx, scenario in enumerate(scenarios, 1):
+                        scenario["scenario_id"] = int(scenario.get("scenario_id", s_idx))
                         if "scenario_image_url" in scenario:
                             del scenario["scenario_image_url"]
-                        for turn in scenario.get("turns", []):
-                            if "turn_image" not in turn:
-                                turn["turn_image"] = turn.get("turn_image_url", "")
-                            if "turn_image_url" in turn:
-                                del turn["turn_image_url"]
-                            if "tip_title" not in turn:
-                                turn["tip_title"] = ""
-                            if "tip_desc" not in turn:
-                                turn["tip_desc"] = ""
-                            if "title" not in turn:
-                                turn["title"] = ""
-                                
-                            choices = turn.get("choices", {})
-                            for choice_key, choice_val in choices.items():
-                                if isinstance(choice_val, dict):
-                                    if "choice_image" not in choice_val:
-                                        choice_val["choice_image"] = choice_val.get("image_url", "")
-                                    if "image_url" in choice_val:
-                                        del choice_val["image_url"]
-                                    if "title" not in choice_val:
-                                        choice_val["title"] = choice_val.get("text", "")
-                                    if "description" not in choice_val:
-                                        choice_val["description"] = ""
-                                    if "stats" not in choice_val:
-                                        choice_val["stats"] = {}
-                                        
+                        if "turns" in scenario:
+                            del scenario["turns"]
+                            
                     db_char["scenarios"] = scenarios
                     if "name" not in db_char:
                         db_char["name"] = char_name
@@ -826,13 +912,64 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                     db_char["associated_stories"] = stories_dict
                     
                     success = True
-                    print(f"  [SUCCESS] '{char_name}' 시나리오 텍스트 생성 완료")
+                    print(f"  [SUCCESS] '{char_name}' 시나리오 테마 텍스트 생성 완료")
                     break
                 except Exception as e:
-                    print(f"  [WARNING] 시나리오 텍스트 생성 시도 {attempt+1} 실패: {e}")
+                    print(f"  [WARNING] 시나리오 테마 생성 시도 {attempt+1} 실패: {e}")
                     time.sleep(5)
             if not success:
-                print(f"  [CRITICAL] '{char_name}' 시나리오 텍스트 파이프라인 최종 실패.")
+                print(f"  [CRITICAL] '{char_name}' 시나리오 테마 텍스트 파이프라인 최종 실패.")
+                
+        # 1-3. 시나리오 턴 텍스트 생성
+        if curr_run_turn_text:
+            print(f" ➔ '{char_name}' 시나리오 턴 텍스트 생성 진행...")
+            scenarios = db_char.get("scenarios", [])
+            if not scenarios:
+                print(f"  [WARNING] 기존 시나리오 테마가 없습니다. 먼저 테마를 생성합니다...")
+                success = False
+                for attempt in range(3):
+                    try:
+                        scenarios = generate_scenario_themes(char_name, associated_stories)
+                        success = True
+                        break
+                    except Exception as e:
+                        print(f"  [WARNING] 시나리오 테마 생성 시도 {attempt+1} 실패: {e}")
+                        time.sleep(5)
+                if not success or not scenarios:
+                    print(f"  [CRITICAL] '{char_name}' 시나리오 테마가 없어 턴 생성을 진행할 수 없습니다.")
+                    scenarios = []
+
+            if scenarios:
+                category = db_char.get("category", "")
+                if not category:
+                    category = character_database.get(char_name, {}).get("category", "정치 / 외교")
+                
+                updated_scenarios = []
+                for scenario in scenarios:
+                    s_id = scenario.get("scenario_id", 1)
+                    s_title = scenario.get("title", "")
+                    s_desc = scenario.get("description", "")
+                    s_facts = scenario.get("historical_facts", "")
+                    
+                    print(f"   ➔ 시나리오 {s_id} ('{s_title}') 턴 텍스트 생성 중...")
+                    success = False
+                    for attempt in range(3):
+                        try:
+                            turns = generate_turns_for_scenario(char_name, s_title, s_desc, s_facts, category)
+                            scenario["turns"] = turns
+                            success = True
+                            print(f"    [SUCCESS] 시나리오 {s_id} 턴 텍스트 생성 완료")
+                            break
+                        except Exception as e:
+                            print(f"    [WARNING] 시나리오 {s_id} 턴 생성 시도 {attempt+1} 실패: {e}")
+                            time.sleep(5)
+                    if not success:
+                        print(f"    [ERROR] 시나리오 {s_id} 턴 텍스트 생성 최종 실패.")
+                        scenario["turns"] = []
+                    updated_scenarios.append(scenario)
+                
+                db_char["scenarios"] = updated_scenarios
+                db_char["associated_stories"] = stories_dict
 
         # 마이그레이션: 기존 associated_stories가 list인 경우 dict로 변환
         old_stories = db_char.get("associated_stories", [])
