@@ -353,7 +353,7 @@ def get_stats_keys_and_format(category: str):
 
 
 def get_history_rag_context(character_name: str, scenario_title: str) -> str:
-    """국사 교과서 인메모리 RAG로부터 해당 시나리오 관련 팩트를 조회하여 컨텍스트 텍스트로 구성합니다."""
+    """국사 교과서 인메모리 RAG로부터 해당 시나리오 관련 팩트를 조회하여 컨텍스트 텍스트로 구성."""
     try:
         db_pkl_path = os.path.join(BASE_DIR, "data", "processed", "history_db.pkl")
         rag_instance = get_rag_instance(db_path=db_pkl_path)
@@ -662,7 +662,6 @@ def generate_turn3_for_scenario(character_name: str, scenario_title: str, scenar
 
 
 def generate_turns_for_scenario(character_name: str, scenario_title: str, scenario_description: str, historical_facts: str, category: str) -> List[Dict[str, Any]]:
-    # Sequential generation to preserve causal context between turns
     print("      -> Turn 1 생성 중...")
     t1 = generate_turn1_for_scenario(character_name, scenario_title, scenario_description, historical_facts, category)
     print("      -> Turn 2 생성 중...")
@@ -902,6 +901,18 @@ No frame.
             
         image_bytes = base64.b64decode(b64_data)
         
+        # Crop to 4:3 (1024x768)
+        try:
+            print(" ➔ 선택지 이미지 4:3 크롭 처리 중 (Pillow)...")
+            from PIL import Image
+            img = Image.open(io.BytesIO(image_bytes))
+            cropped_img = img.crop((0, 128, 1024, 896))
+            output_bytes = io.BytesIO()
+            cropped_img.save(output_bytes, format="PNG")
+            image_bytes = output_bytes.getvalue()
+        except Exception as crop_err:
+            print(f" [WARNING] Pillow 크롭 처리 중 오류 발생 (원본 그대로 업로드): {crop_err}")
+        
         storage_client = storage.Client(project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         
@@ -970,7 +981,7 @@ No text, no logo, no UI. 16:9 composition."""
 def generate_endings_text_for_character_scenario(character_name: str, target_scenario_id: Optional[int] = None):
     """
     지정된 캐릭터의 시나리오별 8가지 분기 경로(A-A-A ~ B-B-B)에 대한 엔딩 텍스트를 생성하고
-    backend/data/endings/{character_name}_{scenario_id}.json 파일로 빌드합니다.
+    backend/data/endings/{character_name}_{scenario_id}.json 파일로 빌드.
     """
     from models.character import CharacterCard
     from simulation_data_manager import get_recommended_places
@@ -1265,7 +1276,6 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
 
 # --- Main Pipeline Builder ---
 def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
-    # Normalize mode
     norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
     
     if norm_mode == "endings-text":

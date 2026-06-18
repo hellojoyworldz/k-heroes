@@ -36,27 +36,39 @@ def upload_to_gcs(blob_name: str, data: Dict[str, Any]) -> bool:
         return False
 
 
-def save_simulation_result(result_id: str, character_name: str, scenario_id: int, data: Dict[str, Any]):
+def save_simulation_result(result_id: str, character_name: str, scenario_id: int, data: Dict[str, Any]) -> str:
     import datetime
     date_str = datetime.datetime.now().strftime("%Y%m%d")
     filename = f"{date_str}_{character_name}_{scenario_id}_{result_id}.json"
     blob_name = f"endings/{filename}"
     
+    output_path = ""
+    if GCP_BUCKET_NAME:
+        output_path = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
+    else:
+        local_dir = os.path.join(BASE_DIR, "gcp", "endings")
+        output_path = os.path.join(local_dir, filename)
+        
+    data["output_file_path"] = output_path
+    
     # GCS 업로드 시도
     success = upload_to_gcs(blob_name, data)
     if success:
-        return
+        return output_path
         
     # 2. GCS 실패 시 로컬 파일 저장 fallback
     try:
         local_dir = os.path.join(BASE_DIR, "gcp", "endings")
         os.makedirs(local_dir, exist_ok=True)
         local_path = os.path.join(local_dir, filename)
+        data["output_file_path"] = local_path
         with open(local_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         print(f"[SUCCESS] 로컬 파일 백업 저장 완료: {local_path}")
+        return local_path
     except Exception as e:
         print(f"[ERROR] 로컬 결과 파일 저장 실패: {e}")
+        return output_path
 
 def get_simulation_result(result_id: str) -> Optional[Dict[str, Any]]:
     # 1. GCS 조회 시도

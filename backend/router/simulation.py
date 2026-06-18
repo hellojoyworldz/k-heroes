@@ -440,7 +440,7 @@ async def generate_ending(payload: EndingRequest):
             "uuid": result_id
         }
         
-        save_simulation_result(result_id, character_name, scenario_id, result_dict)
+        output_file_path = save_simulation_result(result_id, character_name, scenario_id, result_dict)
 
         return EndingResponse(
             result_code="-".join(choices_path),
@@ -454,7 +454,7 @@ async def generate_ending(payload: EndingRequest):
             recommended_places=recommended_places,
             ending_markdown=ending_markdown,
             ending_image=ending_image,
-            output_file_path="",
+            output_file_path=output_file_path,
             uuid=result_id
         )
         
