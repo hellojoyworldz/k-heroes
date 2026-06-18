@@ -80,6 +80,7 @@ class EndingResponse(BaseModel):
     history_fact: str
     story_headline: str
     story_contents: str
+    factual_contents: Optional[str] = ""
     summary_items: List[SummaryItem]
     recommended_places: List[RecommendedPlace]
     ending_markdown: str
