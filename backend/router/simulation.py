@@ -3,15 +3,20 @@ import json
 import time
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Optional, Any
-import simulation_data_manager
-from simulation_data_manager import get_character_card, get_retrieved_clues, get_story_context, openai_client, save_simulation_result, get_simulation_result, get_recommended_places, get_pre_generated_ending
+from simulation_data_manager import (
+    get_character_card,
+    get_retrieved_clues,
+    openai_client,
+    save_simulation_result,
+    get_simulation_result,
+    get_recommended_places,
+    get_pre_generated_ending
+)
 import uuid
 from models.character import CharacterCard
 from models.simulation import (
-    SearchResponse,
     StartRequest,
     GameStateStat,
-    GameHistoryItem,
     GameState,
     StartResponse,
     ChoiceDetail,

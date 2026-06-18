@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
-CSV_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_total_merged.csv")
+CSV_PATH = os.path.join(BASE_DIR, "data", "processed", "kf_area_total_merged.csv")
 GCP_BUCKET_NAME = os.environ.get("GCP_BUCKET_NAME")
 
 def upload_to_gcs(blob_name: str, data: Dict[str, Any]) -> bool:
@@ -35,21 +35,6 @@ def upload_to_gcs(blob_name: str, data: Dict[str, Any]) -> bool:
         print(f"[WARNING] GCS 업로드 중 오류 발생 (로컬 fallback 사용): {e}")
         return False
 
-def fetch_from_gcs(blob_name: str) -> Optional[Dict[str, Any]]:
-    if not GCP_BUCKET_NAME:
-        return None
-    try:
-        project_id = os.environ.get("GCP_PROJECT_ID")
-        storage_client = storage.Client(project=project_id)
-        bucket = storage_client.bucket(GCP_BUCKET_NAME)
-        blob = bucket.blob(blob_name)
-        if not blob.exists():
-            return None
-        content = blob.download_as_text(encoding="utf-8")
-        return json.loads(content)
-    except Exception as e:
-        print(f"[WARNING] GCS 다운로드 중 오류 발생 (로컬 fallback 사용): {e}")
-        return None
 
 def save_simulation_result(result_id: str, character_name: str, scenario_id: int, data: Dict[str, Any]):
     import datetime
@@ -222,22 +207,6 @@ def get_master_df() -> pd.DataFrame:
         _df_master = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
     return _df_master
 
-def get_story_context(story_id: int, story_domain: str) -> str:
-    """
-    story_id와 story_domain에 해당하는 특정 RAG 단서 행을 찾아 타이틀과 요약문 반환.
-    """
-    try:
-        df = get_master_df()
-        rows = df[(df["data_manage_no"] == story_id) & (df["data_manage_keyword"] == story_domain)]
-        if rows.empty:
-            return ""
-        row = rows.iloc[0]
-        title = row.get("data_title_nm", "")
-        summary = row.get("sumry_cn", "")
-        return f"제목: {title}\n요약: {summary}"
-    except Exception as e:
-        print(f"[WARNING] 스토리 컨텍스트 조회 중 오류 발생: {e}")
-        return ""
 
 def is_related_place(row, char_name: str) -> bool:
     relate_prsn = str(row.get('relate_prsn_nm', ''))

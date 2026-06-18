@@ -6,7 +6,6 @@ import io
 import base64
 from typing import Dict, Any, List, Optional
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 from google.cloud import storage
@@ -17,7 +16,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
-CSV_PATH = os.path.join(BASE_DIR, "data", "proceed", "kf_area_total_merged.csv")
+CSV_PATH = os.path.join(BASE_DIR, "data", "processed", "kf_area_total_merged.csv")
 
 # OpenAI API 클라이언트 초기화
 openai_api_key = os.environ.get("OPENAI_API_KEY")
