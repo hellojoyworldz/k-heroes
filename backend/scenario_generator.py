@@ -1270,17 +1270,45 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
     norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
     
     if norm_mode == "endings-text":
-        if not target_char:
-            print("[ERROR] --endings-text 모드는 캐릭터명이 필수입니다. 예: python scenario_generator.py --endings-text 고종")
-            return
-        generate_endings_text_for_character_scenario(target_char)
+        chars_to_run = []
+        if not target_char or target_char.lower() == "all":
+            if os.path.exists(CHARACTERS_JSON_PATH):
+                try:
+                    with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+                        character_database = json.load(f)
+                    chars_to_run = list(character_database.keys())
+                except Exception as e:
+                    print(f"[ERROR] characters.json 로드 실패: {e}")
+            if not chars_to_run:
+                print("[ERROR] characters.json에 캐릭터 데이터가 없거나 로드에 실패했습니다.")
+                return
+        else:
+            chars_to_run = [target_char]
+            
+        print(f"[INFO] 엔딩 텍스트 일괄 생성 시작 (대상 인물: {chars_to_run})")
+        for char in chars_to_run:
+            generate_endings_text_for_character_scenario(char)
         return
         
     if norm_mode == "endings-image":
-        if not target_char:
-            print("[ERROR] --endings-image 모드는 캐릭터명이 필수입니다. 예: python scenario_generator.py --endings-image 고종")
-            return
-        generate_endings_images_for_character_scenario(target_char)
+        chars_to_run = []
+        if not target_char or target_char.lower() == "all":
+            if os.path.exists(CHARACTERS_JSON_PATH):
+                try:
+                    with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
+                        character_database = json.load(f)
+                    chars_to_run = list(character_database.keys())
+                except Exception as e:
+                    print(f"[ERROR] characters.json 로드 실패: {e}")
+            if not chars_to_run:
+                print("[ERROR] characters.json에 캐릭터 데이터가 없거나 로드에 실패했습니다.")
+                return
+        else:
+            chars_to_run = [target_char]
+            
+        print(f"[INFO] 엔딩 이미지 일괄 생성 시작 (대상 인물: {chars_to_run})")
+        for char in chars_to_run:
+            generate_endings_images_for_character_scenario(char)
         return
     print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
     if not os.path.exists(CSV_PATH):
@@ -1805,7 +1833,7 @@ if __name__ == "__main__":
         print("  python scenario_generator.py --turn2-text [캐릭터명]      : 시나리오 2턴 텍스트만 생성/갱신")
         print("  python scenario_generator.py --turn3-text [캐릭터명]      : 시나리오 3턴 텍스트만 생성/갱신")
         print("  python scenario_generator.py --endings-text [캐릭터명]    : 8가지 엔딩 스토리 텍스트 일괄 사전 생성 (캐릭터 지정 필수)")
-        
+
         print("  python scenario_generator.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
         print("  python scenario_generator.py --turn-image [캐릭터명]      : 선택지 이미지(1:1)만 생성 (특정 캐릭터 지정 가능)")
         print("  python scenario_generator.py --turn1-image [캐릭터명]     : 시나리오 1턴 상황 및 선택지 이미지(GCS) 생성")
