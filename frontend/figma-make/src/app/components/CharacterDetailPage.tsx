@@ -1,24 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, Clock, BarChart2 } from "lucide-react";
-import { CHARACTERS, type CharacterData } from "../data/characters";
-import { getScenariosForChar, type ScenarioMeta } from "../data/scenarios";
-import { BrandLogo } from "./BrandLogo";
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ChevronRight, Clock, BarChart2 } from 'lucide-react';
+import { CHARACTERS, type CharacterData } from '../data/characters';
+import { getScenariosForChar, type ScenarioMeta } from '../data/scenarios';
+import { BrandLogo } from './BrandLogo';
+import { storyPageBackground } from './storyPageBackground';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
 const LEGACY_API_NAMES: Record<string, string> = {
-  "yi-sunsin": "이순신",
-  yi_sunsin: "이순신",
-  yunbongil: "윤봉길",
-  sejong: "세종대왕",
+  'yi-sunsin': '이순신',
+  yi_sunsin: '이순신',
+  yunbongil: '윤봉길',
+  sejong: '세종대왕',
 };
 
 const detailCache = new Map<string, CharacterDetailPayload>();
 const detailRequestCache = new Map<string, Promise<CharacterDetailPayload>>();
 
-type ApiMbtiDetails = Partial<Record<"E_I" | "S_N" | "T_F" | "J_P", string>>;
+type ApiMbtiDetails = Partial<Record<'E_I' | 'S_N' | 'T_F' | 'J_P', string>>;
 
 interface ApiStat {
   name: string;
@@ -64,29 +65,29 @@ interface CharacterDetailPayload {
 }
 
 const MBTI_LABELS: Record<string, string> = {
-  E: "외향형",
-  I: "내향형",
-  S: "감각형",
-  N: "직관형",
-  T: "사고형",
-  F: "감정형",
-  J: "판단형",
-  P: "인식형",
+  E: '외향형',
+  I: '내향형',
+  S: '감각형',
+  N: '직관형',
+  T: '사고형',
+  F: '감정형',
+  J: '판단형',
+  P: '인식형',
 };
 
-const MBTI_DETAIL_KEYS = ["E_I", "S_N", "T_F", "J_P"] as const;
-const DIFFICULTIES = ["입문", "중급", "심화"] as const;
+const MBTI_DETAIL_KEYS = ['E_I', 'S_N', 'T_F', 'J_P'] as const;
+const DIFFICULTIES = ['입문', '중급', '심화'] as const;
 
 function getApiName(charId: string) {
   return LEGACY_API_NAMES[charId] ?? charId;
 }
 
 function normalizeQuote(quote?: string) {
-  return quote?.replace(/^["“]|["”]$/g, "") ?? "";
+  return quote?.replace(/^["“]|["”]$/g, '') ?? '';
 }
 
 function toTag(keyword: string) {
-  return keyword.startsWith("#") ? keyword : `#${keyword}`;
+  return keyword.startsWith('#') ? keyword : `#${keyword}`;
 }
 
 function toScore(value: number) {
@@ -94,24 +95,24 @@ function toScore(value: number) {
 }
 
 function toCharacterData(data: ApiCharacterDetail, routeCharId: string): CharacterData {
-  const mbti = data.mbti ?? "----";
-  const keywords = data.keywords?.length ? data.keywords : [data.category ?? "역사 인물"];
+  const mbti = data.mbti ?? '----';
+  const keywords = data.keywords?.length ? data.keywords : [data.category ?? '역사 인물'];
   const stats = data.stats?.length
     ? data.stats
-    : [{ name: "영향력", value: 80, desc: "역사 속에서 의미 있는 영향을 남겼습니다." }];
+    : [{ name: '영향력', value: 80, desc: '역사 속에서 의미 있는 영향을 남겼습니다.' }];
 
   return {
     id: data.name || routeCharId,
     name: data.name || routeCharId,
-    role: data.role ?? data.category ?? "역사 인물",
-    tagline: data.one_line_summary ?? data.intro_desc ?? "역사 속 선택의 순간을 만나보세요.",
-    era: data.era_tag ?? data.era ?? "시대 정보",
-    years: data.years ?? "연대 미상",
-    situation: data.situation ?? data.intro_desc ?? "상세 상황을 준비 중입니다.",
-    summary: data.one_line_summary ?? data.intro_desc ?? "상세 요약을 준비 중입니다.",
+    role: data.role ?? data.category ?? '역사 인물',
+    tagline: data.one_line_summary ?? data.intro_desc ?? '역사 속 선택의 순간을 만나보세요.',
+    era: data.era_tag ?? data.era ?? '시대 정보',
+    years: data.years ?? '연대 미상',
+    situation: data.situation ?? data.intro_desc ?? '상세 상황을 준비 중입니다.',
+    summary: data.one_line_summary ?? data.intro_desc ?? '상세 요약을 준비 중입니다.',
     mbti,
-    mbtiTitle: data.mbti_nickname ?? "역사 속 성향",
-    mbtiSubtitle: data.category ?? "K-Heroes",
+    mbtiTitle: data.mbti_nickname ?? '역사 속 성향',
+    mbtiSubtitle: data.category ?? 'K-Heroes',
     strengths: stats.map((stat) => ({
       name: stat.name,
       score: toScore(stat.value),
@@ -120,36 +121,36 @@ function toCharacterData(data: ApiCharacterDetail, routeCharId: string): Charact
       desc: stat.desc,
     })),
     mbtiTypes: mbti
-      .split("")
+      .split('')
       .slice(0, 4)
       .map((letter, index) => ({
         letter,
-        label: MBTI_LABELS[letter] ?? "성향",
+        label: MBTI_LABELS[letter] ?? '성향',
         desc:
           data.mbti_details?.[MBTI_DETAIL_KEYS[index]] ??
-          "역사적 기록과 행동을 바탕으로 해석한 성향입니다.",
+          '역사적 기록과 행동을 바탕으로 해석한 성향입니다.',
       })),
-    quote: normalizeQuote(data.intro_quote) || data.one_line_summary || "역사 속 선택의 순간",
-    storyIntro: data.intro_desc ?? data.situation ?? "",
-    img: data.image_url || "/logo.svg",
-    bgImg: data.image_url || "",
+    quote: normalizeQuote(data.intro_quote) || data.one_line_summary || '역사 속 선택의 순간',
+    storyIntro: data.intro_desc ?? data.situation ?? '',
+    img: data.image_url || '/logo.svg',
+    bgImg: data.image_url || '',
     tags: keywords.map(toTag),
-    region: data.category ?? data.era_tag ?? data.era ?? "역사",
+    region: data.category ?? data.era_tag ?? data.era ?? '역사',
   };
 }
 
 function getScenarioIcon(category: string | undefined, index: number) {
   const categoryIcon =
-    category?.includes("호국") || category?.includes("독립")
-      ? "⚔️"
-      : category?.includes("정치") || category?.includes("외교")
-        ? "👑"
-        : category?.includes("예술") || category?.includes("문학")
-          ? "🎨"
-          : category?.includes("학문") || category?.includes("실학")
-            ? "📚"
-            : "📜";
-  const alternates = [categoryIcon, "🧭", "⚖️"];
+    category?.includes('호국') || category?.includes('독립')
+      ? '⚔️'
+      : category?.includes('정치') || category?.includes('외교')
+        ? '👑'
+        : category?.includes('예술') || category?.includes('문학')
+          ? '🎨'
+          : category?.includes('학문') || category?.includes('실학')
+            ? '📚'
+            : '📜';
+  const alternates = [categoryIcon, '🧭', '⚖️'];
   return alternates[index % alternates.length];
 }
 
@@ -161,14 +162,14 @@ function extractPeriod(scenario: ApiScenario, fallback: string) {
     scenario.turns?.[0]?.title,
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
   return source.match(/\d{3,4}년(?:\s*\d{1,2}월)?/)?.[0] ?? fallback;
 }
 
 function makeSubtitle(scenario: ApiScenario) {
   const fact = scenario.historical_facts?.split(/[.!?。]/)[0]?.trim();
   if (fact && fact.length <= 42) return fact;
-  return "역사적 선택의 순간";
+  return '역사적 선택의 순간';
 }
 
 function toScenarioMetas(data: ApiCharacterDetail, charId: string): ScenarioMeta[] {
@@ -178,7 +179,7 @@ function toScenarioMetas(data: ApiCharacterDetail, charId: string): ScenarioMeta
     index,
     title: scenario.title,
     subtitle: makeSubtitle(scenario),
-    period: extractPeriod(scenario, data.era_tag ?? data.era ?? "역사"),
+    period: extractPeriod(scenario, data.era_tag ?? data.era ?? '역사'),
     difficulty: DIFFICULTIES[Math.min(index, DIFFICULTIES.length - 1)],
     desc: scenario.description,
     themeIcon: getScenarioIcon(data.category, index),
@@ -231,23 +232,22 @@ function PageHeader({
     <header
       className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
       style={{
-        background: "rgba(244,239,228,0.94)",
-        backdropFilter: "blur(12px)",
-        borderColor: "rgba(42,66,50,0.09)",
+        background: 'rgba(248,242,230,0.32)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderColor: 'rgba(42,66,50,0.08)',
       }}
     >
       <button
         onClick={onBack}
         className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
-        style={{ color: "#5A5248", fontSize: "13px", fontFamily: "'Noto Sans KR', sans-serif" }}
+        style={{ color: '#5A5248', fontSize: '13px', fontFamily: "'Noto Sans KR', sans-serif" }}
       >
         <ArrowLeft className="w-4 h-4" />
-        <span className="hidden sm:inline">{backLabel ?? "돌아가기"}</span>
+        <span className="hidden sm:inline">{backLabel ?? '돌아가기'}</span>
       </button>
 
-      <div className="flex items-center">
-        {centerContent}
-      </div>
+      <div className="flex items-center">{centerContent}</div>
 
       <BrandLogo compact />
     </header>
@@ -259,7 +259,10 @@ function Stars({ score, max }: { score: number; max: number }) {
   return (
     <div className="flex gap-0.5 items-center">
       {Array.from({ length: max }).map((_, i) => (
-        <span key={i} style={{ fontSize: "14px", color: i < score ? "#D4921E" : "#DDD5C5", lineHeight: 1 }}>
+        <span
+          key={i}
+          style={{ fontSize: '14px', color: i < score ? '#D4921E' : '#DDD5C5', lineHeight: 1 }}
+        >
           ★
         </span>
       ))}
@@ -267,135 +270,159 @@ function Stars({ score, max }: { score: number; max: number }) {
   );
 }
 
-/* ─── 히어로 ─── */
-function HeroSection({ char }: { char: CharacterData }) {
+/* ─── 히어로 + 인물정보 통합 배경 영역 ─── */
+function CharacterBackdropSection({
+  char,
+  children,
+}: {
+  char: CharacterData;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="relative overflow-hidden" style={{ minHeight: "220px" }}>
+    <div className="relative" style={{ overflow: 'hidden' }}>
       <div
+        aria-hidden
         style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: "52%",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "flex-end",
-          pointerEvents: "none",
+          position: 'absolute',
+          top: '-8px',
+          right: '2%',
+          width: '58%',
+          height: 'calc(100% + 16px)',
+          pointerEvents: 'none',
+          zIndex: 0,
         }}
       >
         <img
           src={char.img}
-          alt={char.name}
+          alt=""
           style={{
-            height: "100%",
-            width: "auto",
-            maxWidth: "100%",
-            objectFit: "contain",
-            objectPosition: "bottom right",
-            display: "block",
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            objectPosition: 'top center',
+            display: 'block',
+            mixBlendMode: 'multiply',
+            opacity: 0.9,
+            transform: 'scale(0.9)',
+            transformOrigin: 'top right',
           }}
         />
       </div>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(to right, #F4EFE4 38%, rgba(244,239,228,0.82) 54%, rgba(244,239,228,0.2) 72%, transparent 88%)",
-          pointerEvents: "none",
-        }}
-      />
-      <div className="relative" style={{ maxWidth: "56%", padding: "32px 0 28px" }}>
-        <div className="flex gap-1.5 mb-3 flex-wrap">
-          {char.tags.map((tag) => (
-            <span
-              key={tag}
-              style={{
-                fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.6rem",
-                background: "rgba(42,66,50,0.1)",
-                color: "#2A4232",
-                borderRadius: "99px",
-                padding: "2px 8px",
-                fontWeight: 600,
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-        <h1
-          style={{
-            fontFamily: "'Noto Serif KR', serif",
-            fontWeight: 700,
-            fontSize: "clamp(1.4rem, 3vw, 2.2rem)",
-            color: "#1A1714",
-            lineHeight: 1.2,
-            marginBottom: "6px",
-          }}
-        >
-          {char.name}
-        </h1>
-        <p
-          style={{
-            fontFamily: "'Noto Sans KR', sans-serif",
-            fontSize: "0.78rem",
-            color: "#7A7060",
-            marginBottom: "10px",
-          }}
-        >
-          {char.role}
-        </p>
-        <p
-          style={{
-            fontFamily: "'Noto Sans KR', sans-serif",
-            fontSize: "0.82rem",
-            color: "#6A6055",
-            lineHeight: 1.65,
-            maxWidth: "280px",
-          }}
-        >
-          {char.tagline}
-        </p>
+
+      <div className="relative" style={{ zIndex: 1 }}>
+        {children}
       </div>
     </div>
   );
 }
 
-/* ─── 인물 정보 카드 ─── */
+/* ─── 히어로 텍스트 영역 ─── */
+function HeroSection({ char }: { char: CharacterData }) {
+  return (
+    <div style={{ padding: '36px 0 24px', maxWidth: '58%' }}>
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {char.tags.map((tag) => (
+          <span
+            key={tag}
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: '0.6rem',
+              background: 'rgba(42,66,50,0.12)',
+              color: '#2A4232',
+              borderRadius: '99px',
+              padding: '2px 8px',
+              fontWeight: 600,
+            }}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+      <h1
+        style={{
+          fontFamily: "'Noto Serif KR', serif",
+          fontWeight: 700,
+          fontSize: 'clamp(1.6rem, 3.2vw, 2.4rem)',
+          color: '#1A1714',
+          lineHeight: 1.2,
+          marginBottom: '6px',
+        }}
+      >
+        {char.name}
+      </h1>
+      <p
+        style={{
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontSize: '0.78rem',
+          color: '#7A7060',
+          marginBottom: '12px',
+        }}
+      >
+        {char.role}
+      </p>
+      <p
+        style={{
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontSize: '0.84rem',
+          color: '#5A5048',
+          lineHeight: 1.75,
+          maxWidth: '300px',
+        }}
+      >
+        {char.tagline}
+      </p>
+    </div>
+  );
+}
+
+/* ─── 인물 정보 카드 (반투명 유리 느낌) ─── */
 function CharInfoCard({ char }: { char: CharacterData }) {
   const infoRows = [
-    { label: "시대", value: `${char.era} (${char.years})` },
-    { label: "상황", value: char.situation },
-    { label: "한줄 요약", value: char.summary },
+    { label: '시대', value: `${char.era} (${char.years})` },
+    { label: '상황', value: char.situation },
+    { label: '한줄 요약', value: char.summary },
   ];
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      className="rounded-2xl overflow-hidden relative"
       style={{
-        background: "#FDFAF4",
-        border: "1px solid rgba(42,66,50,0.09)",
-        boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+        background:
+          'linear-gradient(to right, rgba(253,250,244,0.88) 0%, rgba(253,250,244,0.7) 58%, rgba(253,250,244,0.2) 100%)',
+        border: '1px solid rgba(42,66,50,0.1)',
+        boxShadow: '0 4px 24px rgba(42,66,50,0.08)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
       }}
     >
-      <div className="px-6 pt-5 pb-1">
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 52%, rgba(253,250,244,0) 100%)',
+          pointerEvents: 'none',
+          zIndex: 2,
+          borderRadius: 'inherit',
+        }}
+      />
+      <div className="relative px-6 pt-5 pb-1" style={{ zIndex: 3 }}>
         {infoRows.map((row, i) => (
           <div
             key={row.label}
             className="flex gap-4 py-3"
             style={{
-              borderBottom: i < infoRows.length - 1 ? "1px solid rgba(42,66,50,0.07)" : "none",
+              borderBottom: i < infoRows.length - 1 ? '1px solid rgba(42,66,50,0.07)' : 'none',
             }}
           >
             <span
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.72rem",
-                color: "#A89E8E",
+                fontSize: '0.72rem',
+                color: '#A89E8E',
                 flexShrink: 0,
-                width: "64px",
-                paddingTop: "1px",
+                width: '64px',
+                paddingTop: '1px',
               }}
             >
               {row.label}
@@ -403,8 +430,8 @@ function CharInfoCard({ char }: { char: CharacterData }) {
             <span
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.8rem",
-                color: row.label === "한줄 요약" ? "#2A4232" : "#2A2420",
+                fontSize: '0.8rem',
+                color: row.label === '한줄 요약' ? '#2A4232' : '#2A2420',
                 lineHeight: 1.7,
               }}
             >
@@ -414,16 +441,20 @@ function CharInfoCard({ char }: { char: CharacterData }) {
         ))}
       </div>
       <div
-        className="px-6 py-4 mt-1"
-        style={{ borderTop: "1px solid rgba(42,66,50,0.08)", background: "rgba(42,66,50,0.015)" }}
+        className="relative px-6 py-4 mt-1"
+        style={{
+          borderTop: '1px solid rgba(42,66,50,0.08)',
+          background: 'rgba(42,66,50,0.025)',
+          zIndex: 3,
+        }}
       >
         <p
           className="mb-3"
           style={{
             fontFamily: "'Noto Serif KR', serif",
             fontWeight: 700,
-            fontSize: "0.84rem",
-            color: "#1A1714",
+            fontSize: '0.84rem',
+            color: '#1A1714',
           }}
         >
           강점
@@ -435,16 +466,16 @@ function CharInfoCard({ char }: { char: CharacterData }) {
               className="flex items-center gap-3 py-2.5 flex-wrap"
               style={{
                 borderBottom:
-                  i < char.strengths.length - 1 ? "1px solid rgba(42,66,50,0.07)" : "none",
+                  i < char.strengths.length - 1 ? '1px solid rgba(42,66,50,0.07)' : 'none',
               }}
             >
               <span
                 style={{
                   fontFamily: "'Noto Sans KR', sans-serif",
                   fontWeight: 600,
-                  fontSize: "0.78rem",
-                  color: "#2A2420",
-                  width: "82px",
+                  fontSize: '0.78rem',
+                  color: '#2A2420',
+                  width: '82px',
                   flexShrink: 0,
                 }}
               >
@@ -455,8 +486,8 @@ function CharInfoCard({ char }: { char: CharacterData }) {
                 style={{
                   fontFamily: "'Noto Serif KR', serif",
                   fontWeight: 700,
-                  fontSize: "0.78rem",
-                  color: "#C9933A",
+                  fontSize: '0.78rem',
+                  color: '#C9933A',
                   flexShrink: 0,
                 }}
               >
@@ -465,10 +496,10 @@ function CharInfoCard({ char }: { char: CharacterData }) {
               <span
                 style={{
                   fontFamily: "'Noto Sans KR', sans-serif",
-                  fontSize: "0.72rem",
-                  color: "#7A7060",
+                  fontSize: '0.72rem',
+                  color: '#7A7060',
                   flex: 1,
-                  minWidth: "100px",
+                  minWidth: '100px',
                 }}
               >
                 {s.desc}
@@ -481,67 +512,199 @@ function CharInfoCard({ char }: { char: CharacterData }) {
   );
 }
 
+function getMbtiPalette(mbti: string) {
+  const type = mbti.toUpperCase();
+  if (['INTJ', 'INTP', 'ENTJ', 'ENTP'].includes(type)) {
+    return {
+      main: '#4A3A6A',
+      deep: '#31264A',
+      soft: 'rgba(74,58,106,0.12)',
+      glow: 'rgba(74,58,106,0.22)',
+      seal: '#4A3A6A',
+    };
+  }
+  if (['INFJ', 'INFP', 'ENFJ', 'ENFP'].includes(type)) {
+    return {
+      main: '#2A5A4A',
+      deep: '#1F4036',
+      soft: 'rgba(42,90,74,0.12)',
+      glow: 'rgba(42,90,74,0.22)',
+      seal: '#2A5A4A',
+    };
+  }
+  if (['ISTJ', 'ISFJ', 'ESTJ', 'ESFJ'].includes(type)) {
+    return {
+      main: '#3A4A6A',
+      deep: '#26344F',
+      soft: 'rgba(58,74,106,0.12)',
+      glow: 'rgba(58,74,106,0.22)',
+      seal: '#3A4A6A',
+    };
+  }
+  return {
+    main: '#6A3A2A',
+    deep: '#4A2A20',
+    soft: 'rgba(106,58,42,0.12)',
+    glow: 'rgba(106,58,42,0.22)',
+    seal: '#6A3A2A',
+  };
+}
+
 /* ─── MBTI 카드 ─── */
 function MbtiCard({ char }: { char: CharacterData }) {
+  const palette = getMbtiPalette(char.mbti);
+
   return (
     <div
-      className="rounded-2xl overflow-hidden"
+      className="rounded-2xl overflow-hidden relative"
       style={{
-        background: "#FDFAF4",
-        border: "1px solid rgba(42,66,50,0.09)",
-        boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+        background:
+          'linear-gradient(to right, rgba(253,250,244,0.88) 0%, rgba(253,250,244,0.7) 58%, rgba(253,250,244,0.2) 100%)',
+        border: `1px solid ${palette.glow}`,
+        boxShadow: `0 18px 42px rgba(42,66,50,0.08), inset 0 1px 0 rgba(255,255,255,0.42)`,
+        backdropFilter: 'blur(7px)',
+        WebkitBackdropFilter: 'blur(7px)',
       }}
     >
       <div
-        className="flex items-center gap-3 px-6 py-4"
-        style={{ borderBottom: "1px solid rgba(42,66,50,0.08)" }}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 52%, rgba(253,250,244,0) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          right: 0,
+          height: '4px',
+          background: palette.main,
+        }}
+      />
+      <div
+        className="relative flex items-center justify-between gap-4 px-6 py-5"
+        style={{ borderBottom: '1px solid rgba(42,66,50,0.08)' }}
       >
-        <div
-          className="flex-shrink-0 flex items-center justify-center rounded-full"
-          style={{ width: "32px", height: "32px", background: "rgba(42,66,50,0.1)" }}
-        >
-          <span style={{ fontSize: "16px" }}>👤</span>
-        </div>
-        <div>
-          <span
-            style={{
-              fontFamily: "'Noto Serif KR', serif",
-              fontWeight: 700,
-              fontSize: "0.88rem",
-              color: "#1A1714",
-            }}
-          >
-            MBTI · {char.mbti}
-          </span>
-          <span
-            style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "0.72rem",
-              color: "#8A7E6E",
-              marginLeft: "8px",
-            }}
-          >
-            {char.mbtiTitle} / {char.mbtiSubtitle}
-          </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        {char.mbtiTypes.map((t, i) => (
+        <div className="flex items-center gap-3">
           <div
-            key={t.letter}
-            className="px-5 py-5 flex flex-col gap-2"
+            className="flex-shrink-0 flex items-center justify-center rounded-full"
             style={{
-              borderRight: i < char.mbtiTypes.length - 1 ? "1px solid rgba(42,66,50,0.08)" : "none",
-              borderBottom: i < 2 ? "1px solid rgba(42,66,50,0.08)" : "none",
-              background: i % 2 === 0 ? "rgba(42,66,50,0.015)" : "transparent",
+              width: '42px',
+              height: '42px',
+              background: `linear-gradient(135deg, ${palette.deep}, ${palette.main})`,
+              boxShadow: `0 8px 18px ${palette.glow}`,
             }}
           >
             <span
               style={{
+                color: '#FFF8EA',
                 fontFamily: "'Noto Serif KR', serif",
+                fontSize: '0.72rem',
                 fontWeight: 800,
-                fontSize: "2rem",
-                color: "#2A4232",
+                lineHeight: 1.1,
+              }}
+            >
+              氣
+            </span>
+          </div>
+          <div>
+            <span
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontWeight: 700,
+                fontSize: '0.64rem',
+                color: palette.main,
+                letterSpacing: '0.08em',
+              }}
+            >
+              이 인물의 기질
+            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '10px',
+                flexWrap: 'wrap',
+                marginTop: '2px',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'Noto Serif KR', serif",
+                  fontWeight: 800,
+                  fontSize: '1.22rem',
+                  color: '#1A1714',
+                }}
+              >
+                {char.mbti}
+              </span>
+              <span
+                style={{
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  fontSize: '0.76rem',
+                  color: '#7A7060',
+                }}
+              >
+                {char.mbtiTitle} · {char.mbtiSubtitle}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div
+          aria-hidden
+          className="hidden sm:flex items-center justify-center"
+          style={{
+            width: '58px',
+            height: '58px',
+            border: `2px solid ${palette.seal}`,
+            color: palette.seal,
+            borderRadius: '14px',
+            transform: 'rotate(-5deg)',
+            opacity: 0.72,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'Noto Serif KR', serif",
+              fontWeight: 800,
+              fontSize: '0.72rem',
+              lineHeight: 1.25,
+              textAlign: 'center',
+            }}
+          >
+            {char.mbti}
+            <br />
+            성향
+          </span>
+        </div>
+      </div>
+      <div className="relative grid grid-cols-2 sm:grid-cols-4">
+        {char.mbtiTypes.map((t, i) => (
+          <div
+            key={t.letter}
+            className="relative px-5 py-5 flex flex-col gap-2 overflow-hidden"
+            style={{
+              borderRight: i < char.mbtiTypes.length - 1 ? '1px solid rgba(42,66,50,0.08)' : 'none',
+              borderBottom: i < 2 ? '1px solid rgba(42,66,50,0.08)' : 'none',
+              background: 'transparent',
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '8px',
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 900,
+                fontSize: '4.2rem',
+                color: palette.soft,
                 lineHeight: 1,
               }}
             >
@@ -549,15 +712,29 @@ function MbtiCard({ char }: { char: CharacterData }) {
             </span>
             <span
               style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontWeight: 800,
+                fontSize: '2rem',
+                color: palette.deep,
+                lineHeight: 1,
+                position: 'relative',
+              }}
+            >
+              {t.letter}
+            </span>
+            <span
+              style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.6rem",
-                color: "#5C5248",
-                background: "rgba(42,66,50,0.08)",
-                borderRadius: "4px",
-                padding: "1px 7px",
-                display: "inline-block",
-                width: "fit-content",
-                fontWeight: 600,
+                fontSize: '0.6rem',
+                color: palette.deep,
+                background: palette.soft,
+                border: `1px solid ${palette.glow}`,
+                borderRadius: '999px',
+                padding: '2px 8px',
+                display: 'inline-block',
+                width: 'fit-content',
+                fontWeight: 700,
+                position: 'relative',
               }}
             >
               {t.label}
@@ -565,9 +742,10 @@ function MbtiCard({ char }: { char: CharacterData }) {
             <p
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.68rem",
-                color: "#6A6055",
+                fontSize: '0.68rem',
+                color: '#6A6055',
                 lineHeight: 1.65,
+                position: 'relative',
               }}
             >
               {t.desc}
@@ -593,9 +771,11 @@ function ScenarioCard({
     <div
       className="rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
       style={{
-        background: "#FDFAF4",
-        border: "1px solid rgba(42,66,50,0.09)",
-        boxShadow: "0 2px 12px rgba(42,66,50,0.06)",
+        background: 'rgba(253,250,244,0.62)',
+        border: '1px solid rgba(42,66,50,0.1)',
+        boxShadow: '0 2px 12px rgba(42,66,50,0.07)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
       }}
     >
       <div className="flex items-stretch">
@@ -603,27 +783,27 @@ function ScenarioCard({
         <div
           className="flex-shrink-0 flex flex-col items-center justify-start pt-5 px-4"
           style={{
-            borderRight: "1px solid rgba(42,66,50,0.08)",
-            background: "rgba(42,66,50,0.018)",
-            minWidth: "52px",
+            borderRight: '1px solid rgba(42,66,50,0.08)',
+            background: 'rgba(42,66,50,0.018)',
+            minWidth: '52px',
           }}
         >
           <span
             style={{
               fontFamily: "'Noto Serif KR', serif",
               fontWeight: 800,
-              fontSize: "1.5rem",
-              color: "rgba(42,66,50,0.18)",
+              fontSize: '1.5rem',
+              color: 'rgba(42,66,50,0.18)',
               lineHeight: 1,
             }}
           >
-            {String(index + 1).padStart(2, "0")}
+            {String(index + 1).padStart(2, '0')}
           </span>
           <span
             style={{
               fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "1.4rem",
-              marginTop: "10px",
+              fontSize: '1.4rem',
+              marginTop: '10px',
               lineHeight: 1,
             }}
           >
@@ -638,27 +818,27 @@ function ScenarioCard({
             <span
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.6rem",
-                color: "#8A7E6E",
-                display: "flex",
-                alignItems: "center",
-                gap: "3px",
+                fontSize: '0.6rem',
+                color: '#8A7E6E',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
               }}
             >
-              <Clock style={{ width: "10px", height: "10px" }} />
+              <Clock style={{ width: '10px', height: '10px' }} />
               {scenario.period}
             </span>
             <span
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.6rem",
-                color: "#8A7E6E",
-                display: "flex",
-                alignItems: "center",
-                gap: "3px",
+                fontSize: '0.6rem',
+                color: '#8A7E6E',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
               }}
             >
-              <BarChart2 style={{ width: "10px", height: "10px" }} />
+              <BarChart2 style={{ width: '10px', height: '10px' }} />
               {scenario.stepCount}단계
             </span>
           </div>
@@ -668,10 +848,10 @@ function ScenarioCard({
             style={{
               fontFamily: "'Noto Serif KR', serif",
               fontWeight: 700,
-              fontSize: "1rem",
-              color: "#1A1714",
+              fontSize: '1rem',
+              color: '#1A1714',
               lineHeight: 1.3,
-              marginBottom: "2px",
+              marginBottom: '2px',
             }}
           >
             {scenario.title}
@@ -679,9 +859,9 @@ function ScenarioCard({
           <p
             style={{
               fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "0.72rem",
-              color: "#7A7060",
-              marginBottom: "8px",
+              fontSize: '0.72rem',
+              color: '#7A7060',
+              marginBottom: '8px',
             }}
           >
             {scenario.subtitle}
@@ -689,10 +869,10 @@ function ScenarioCard({
           <p
             style={{
               fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "0.78rem",
-              color: "#5A5248",
+              fontSize: '0.78rem',
+              color: '#5A5248',
               lineHeight: 1.7,
-              marginBottom: "14px",
+              marginBottom: '14px',
             }}
           >
             {scenario.desc}
@@ -703,12 +883,12 @@ function ScenarioCard({
             onClick={onStart}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all hover:opacity-90 active:scale-[0.98]"
             style={{
-              background: "linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)",
-              color: "white",
+              background: 'linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)',
+              color: 'white',
               fontFamily: "'Noto Sans KR', sans-serif",
               fontWeight: 700,
-              fontSize: "0.82rem",
-              boxShadow: "0 2px 10px rgba(30,51,40,0.24)",
+              fontSize: '0.82rem',
+              boxShadow: '0 2px 10px rgba(30,51,40,0.24)',
             }}
           >
             시뮬레이션 시작하기
@@ -727,17 +907,17 @@ function SectionLabel({ num, label }: { num: string; label: string }) {
       <div
         className="flex items-center justify-center rounded-full flex-shrink-0"
         style={{
-          width: "22px",
-          height: "22px",
-          background: "#2A4232",
+          width: '22px',
+          height: '22px',
+          background: '#2A4232',
         }}
       >
         <span
           style={{
             fontFamily: "'Noto Serif KR', serif",
             fontWeight: 700,
-            fontSize: "0.7rem",
-            color: "white",
+            fontSize: '0.7rem',
+            color: 'white',
             lineHeight: 1,
           }}
         >
@@ -748,8 +928,8 @@ function SectionLabel({ num, label }: { num: string; label: string }) {
         style={{
           fontFamily: "'Noto Serif KR', serif",
           fontWeight: 700,
-          fontSize: "0.95rem",
-          color: "#1A1714",
+          fontSize: '0.95rem',
+          color: '#1A1714',
         }}
       >
         {label}
@@ -763,9 +943,9 @@ function Divider() {
   return (
     <div
       style={{
-        height: "1px",
-        background: "rgba(42,66,50,0.1)",
-        margin: "0 0 28px",
+        height: '1px',
+        background: 'rgba(42,66,50,0.1)',
+        margin: '0 0 28px',
       }}
     />
   );
@@ -783,8 +963,8 @@ export function CharacterDetailPage({
 }) {
   const fallbackChar = CHARACTERS[charId];
   const fallbackScenarios = useMemo(() => getScenariosForChar(charId), [charId]);
-  const [apiPayload, setApiPayload] = useState<CharacterDetailPayload | null>(() =>
-    detailCache.get(getApiName(charId)) ?? null,
+  const [apiPayload, setApiPayload] = useState<CharacterDetailPayload | null>(
+    () => detailCache.get(getApiName(charId)) ?? null,
   );
   const [isLoading, setIsLoading] = useState(!apiPayload);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -804,7 +984,7 @@ export function CharacterDetailPage({
       })
       .catch((error: unknown) => {
         if (!isActive) return;
-        setLoadError(error instanceof Error ? error.message : "인물 정보를 불러오지 못했습니다.");
+        setLoadError(error instanceof Error ? error.message : '인물 정보를 불러오지 못했습니다.');
         setApiPayload(null);
       })
       .finally(() => {
@@ -822,10 +1002,7 @@ export function CharacterDetailPage({
 
   if (!char) {
     return (
-      <div
-        className="fixed inset-0 z-50 overflow-y-auto"
-        style={{ background: "#F4EFE4", fontFamily: "'Noto Sans KR', sans-serif" }}
-      >
+      <div className="fixed inset-0 z-50 overflow-y-auto" style={storyPageBackground}>
         <PageHeader
           onBack={onBack}
           backLabel="인물 목록으로"
@@ -834,8 +1011,8 @@ export function CharacterDetailPage({
               style={{
                 fontFamily: "'Noto Serif KR', serif",
                 fontWeight: 600,
-                fontSize: "0.88rem",
-                color: "#2A4232",
+                fontSize: '0.88rem',
+                color: '#2A4232',
               }}
             >
               인물 정보
@@ -846,17 +1023,17 @@ export function CharacterDetailPage({
           <div
             className="rounded-2xl px-6 py-8 text-center"
             style={{
-              background: "#FDFAF4",
-              border: "1px solid rgba(42,66,50,0.09)",
-              boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+              background: '#FDFAF4',
+              border: '1px solid rgba(42,66,50,0.09)',
+              boxShadow: '0 2px 16px rgba(42,66,50,0.06)',
             }}
           >
             <p
               style={{
                 fontFamily: "'Noto Serif KR', serif",
                 fontWeight: 700,
-                color: "#1A1714",
-                marginBottom: "8px",
+                color: '#1A1714',
+                marginBottom: '8px',
               }}
             >
               인물 정보를 찾을 수 없어요.
@@ -864,11 +1041,11 @@ export function CharacterDetailPage({
             <p
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.82rem",
-                color: "#7A7060",
+                fontSize: '0.82rem',
+                color: '#7A7060',
               }}
             >
-              {loadError ?? "잠시 후 다시 시도해주세요."}
+              {loadError ?? '잠시 후 다시 시도해주세요.'}
             </p>
           </div>
         </div>
@@ -877,10 +1054,25 @@ export function CharacterDetailPage({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "#F4EFE4", fontFamily: "'Noto Sans KR', sans-serif" }}
-    >
+    <div className="fixed inset-0 z-50 overflow-y-auto" style={storyPageBackground}>
+      <style>{`
+        @keyframes khDetailPageEnter {
+          0% {
+            opacity: 0;
+            transform: translate3d(-18px, 0, 0);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .kh-detail-enter {
+            animation: none !important;
+          }
+        }
+      `}</style>
       <PageHeader
         onBack={onBack}
         backLabel="인물 목록으로"
@@ -889,8 +1081,8 @@ export function CharacterDetailPage({
             style={{
               fontFamily: "'Noto Serif KR', serif",
               fontWeight: 600,
-              fontSize: "0.88rem",
-              color: "#2A4232",
+              fontSize: '0.88rem',
+              color: '#2A4232',
             }}
           >
             {char.name}
@@ -898,17 +1090,23 @@ export function CharacterDetailPage({
         }
       />
 
-      <div className="max-w-[820px] mx-auto px-6 pb-16">
-        {/* 히어로 */}
-        <HeroSection char={char} />
-        <Divider />
-
-        <div className="flex flex-col gap-8">
-          {/* 1. 인물 설명 */}
-          <div>
+      <div
+        className="kh-detail-enter max-w-[820px] mx-auto px-6 pb-16"
+        style={{
+          animation: 'khDetailPageEnter 1.5s cubic-bezier(0.22, 0.8, 0.28, 1) both',
+          willChange: 'opacity, transform',
+        }}
+      >
+        <CharacterBackdropSection char={char}>
+          <HeroSection char={char} />
+          <div style={{ paddingBottom: '32px' }}>
             <SectionLabel num="1" label="인물 설명" />
             <CharInfoCard char={char} />
           </div>
+        </CharacterBackdropSection>
+
+        <div className="flex flex-col gap-8 mt-2">
+          <div style={{ height: '1px', background: 'rgba(42,66,50,0.1)' }} />
 
           {/* 2. MBTI */}
           <div>
@@ -924,32 +1122,32 @@ export function CharacterDetailPage({
               className="mb-4"
               style={{
                 fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "0.8rem",
-                color: "#8A7E6E",
+                fontSize: '0.8rem',
+                color: '#8A7E6E',
                 lineHeight: 1.7,
               }}
             >
-              {char.name}의 생애 중 결정적인 순간 {scenarios.length}가지를 선택해
-              직접 체험해보세요. 당신의 선택이 역사를 바꿀 수 있습니다.
-              {isLoading && " 인물 정보를 불러오는 중입니다."}
+              {char.name}의 생애 중 결정적인 순간 {scenarios.length}가지를 선택해 직접 체험해보세요.
+              당신의 선택이 역사를 바꿀 수 있습니다.
+              {isLoading && ' 인물 정보를 불러오는 중입니다.'}
             </p>
 
             {/* 인용구 */}
             <div
               className="mb-5 px-5 py-4 rounded-2xl"
               style={{
-                background: "rgba(42,66,50,0.04)",
-                border: "1px solid rgba(42,66,50,0.1)",
+                background: 'rgba(42,66,50,0.04)',
+                border: '1px solid rgba(42,66,50,0.1)',
               }}
             >
               <span
                 style={{
-                  fontFamily: "Georgia, serif",
-                  fontSize: "2.8rem",
-                  color: "rgba(42,66,50,0.15)",
+                  fontFamily: 'Georgia, serif',
+                  fontSize: '2.8rem',
+                  color: 'rgba(42,66,50,0.15)',
                   lineHeight: 0.7,
-                  display: "block",
-                  marginBottom: "-2px",
+                  display: 'block',
+                  marginBottom: '-2px',
                 }}
               >
                 "
@@ -958,8 +1156,8 @@ export function CharacterDetailPage({
                 style={{
                   fontFamily: "'Noto Serif KR', serif",
                   fontWeight: 700,
-                  fontSize: "0.95rem",
-                  color: "#1A1714",
+                  fontSize: '0.95rem',
+                  color: '#1A1714',
                   lineHeight: 1.6,
                 }}
               >
