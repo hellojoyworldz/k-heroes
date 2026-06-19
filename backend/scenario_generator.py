@@ -1722,6 +1722,32 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
         with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(character_database, f, ensure_ascii=False, indent=4)
             
+        # 1-4. 생성된 데이터 품질 평가 (RAG Evaluator)
+        try:
+            from rag_evaluator import RAGEvaluator
+            evaluator = RAGEvaluator()
+            
+            # RAG 컨텍스트를 하나의 문자열로 결합
+            rag_context_texts = [s.get('summary', '') for s in associated_stories if isinstance(s, dict)]
+            # 국사교과서 RAG 결과도 추가
+            for s in associated_stories:
+                if isinstance(s, dict) and 'chunk' in s:
+                    rag_context_texts.append(s['chunk'])
+            rag_context_str = "\n".join([txt for txt in rag_context_texts if txt])
+            
+            # 평가 실행 및 로깅
+            print(f" ➔ '{char_name}' 생성 데이터 품질 평가 진행 중...")
+            eval_log = evaluator.evaluate_scenario_quality(
+                character_name=char_name,
+                rag_context=rag_context_str,
+                generated_json=ordered_profile,
+                mode="profile_and_scenario"
+            )
+            metrics = eval_log.get("metrics", {})
+            print(f"  [EVAL] Facts: {metrics.get('facts_consistency')}/5, Glorification: {metrics.get('glorification_bias')}/5, Attribution: {metrics.get('actor_attribution')}/5, Era: {metrics.get('era_consistency')}/5")
+        except Exception as eval_err:
+            print(f"  [WARNING] 품질 평가 실행 중 오류 발생: {eval_err}")
+            
         # 2. 캐릭터 전신 이미지 생성 (GCS)
         curr_run_profile_image = False
         if norm_mode in ["all", "images", "profiles-image", "profies-image"]:

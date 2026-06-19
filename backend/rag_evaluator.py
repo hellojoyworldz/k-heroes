@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE_PATH = os.path.join(BASE_DIR, "data", "processed", "rag_eval_logs.jsonl")
+LOG_FILE_PATH = os.path.join(BASE_DIR, "data", "logs", "rag_eval_logs.jsonl")
 
 class RAGEvaluator:
     def __init__(self):
@@ -144,6 +144,103 @@ Output your evaluation STRICTLY in JSON format:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
         except Exception as e:
             print(f"[RAG EVAL] Failed to write log to file: {e}")
+            
+        return log_entry
+
+    def evaluate_scenario_quality(
+        self,
+        character_name: str,
+        rag_context: str,
+        generated_json: Dict[str, Any],
+        mode: str = "profile"
+    ) -> Dict[str, Any]:
+        """
+        생성된 프로필 및 시나리오 텍스트가 RAG 데이터와 시대상에 일치하는지, 
+        그리고 미화 및 주어 왜곡이 없는지 4대 평가 지표로 평가하고 로그에 저장합니다.
+        """
+        if self.client is None:
+            return {}
+            
+        json_str = json.dumps(generated_json, ensure_ascii=False, indent=2)
+        
+        prompt = f"""너는 역사 교육용 콘텐츠 및 게임의 고증 상태를 심사하는 전문 역사 감사관(Historical Auditor)이야.
+제공된 [역사 자료 (RAG Context)]를 기준으로 생성된 [게임 데이터 JSON]의 고증 신뢰성 및 역사 미화 여부를 엄격히 평가해 줘.
+
+[대상 인물]
+이름: {character_name}
+
+[역사 자료 (RAG Context)]
+{rag_context}
+
+[게임 데이터 JSON ({mode})]
+{json_str}
+
+아래 4가지 지표에 대해 1점(매우 나쁨/심각한 왜곡)부터 5점(매우 좋음/완벽한 고증)까지 정수 점수를 부여하고, 명확한 근거를 한국어로 작성해 줘.
+
+1. facts_consistency (역사적 사실 정합성):
+   - 평가 기준: RAG 컨텍스트에 없는 날조된 사건, 단체, 연도를 임의로 생성(Hallucination)했거나, RAG 내용과 모순되는 사실이 포함되어 있는지 여부.
+   - 점수 가이드: 왜곡이 전혀 없고 모든 사실의 근거가 RAG에 존재하면 5점, 사소한 날조/추정은 3~4점, 심각한 왜곡이 있으면 1~2점.
+
+2. glorification_bias (과오 미화도):
+   - 평가 기준: 친일 행적, 실책, 무능, 패배, 독재 등 역사적으로 비판받는 부정적 행적에 대해 '비극적 고뇌', '어쩔 수 없는 시대적 선택', '내적 갈등' 등으로 변명하거나 미화하여 면죄부를 주는 감상적 서술이 포함되어 있는지 여부.
+   - 점수 가이드: 객관적 팩트만 건조하게 명시하여 미화가 전혀 없으면 5점, 일부 옹호나 변명 뉘앙스가 섞여 있으면 2~3점, 심각하게 미화하여 포장했으면 1점.
+
+3. actor_attribution (주어 귀속 적합성):
+   - 평가 기준: 타인이나 선대가 주도한 업적(예: 흥선대원군의 경복궁 중건 등)을 대상 인물이 직접 한 행동인 것처럼 주어를 왜곡하여 기여도를 가로챘는지 여부.
+   - 점수 가이드: 주어와 역할 관계가 RAG와 완벽하게 일치하면 5점, 모호하면 3~4점, 타인의 업적이 인물 본인의 업적으로 완전 날조되었으면 1~2점.
+
+4. era_consistency (시대적/용어 정합성):
+   - 평가 기준: 인물이 살아간 생몰년도를 벗어난 시점의 일화가 들어가 있거나, 당대에 존재할 수 없는 제도/개념/어휘(예: 조선시대 인물에게 '무신론자', '자유민주주의' 등의 서양 근대 철학 적용)가 투영되었는지 여부.
+   - 점수 가이드: 시대적 정합성에 모순이 전혀 없고 어휘가 적절하면 5점, 사소한 시대어 오용은 3~4점, 명백한 연도/시대 오류는 1~2점.
+
+출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
+{{
+    "facts_consistency": <int: 1-5>,
+    "facts_consistency_reason": "<채점 근거 한국어>",
+    "glorification_bias": <int: 1-5>,
+    "glorification_bias_reason": "<채점 근거 한국어>",
+    "actor_attribution": <int: 1-5>,
+    "actor_attribution_reason": "<채점 근거 한국어>",
+    "era_consistency": <int: 1-5>,
+    "era_consistency_reason": "<채점 근거 한국어>"
+}}"""
+
+        # LLM 평가 수행
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            eval_data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"[METRIC EVAL] LLM Evaluation failed: {e}")
+            eval_data = {
+                "facts_consistency": 3,
+                "facts_consistency_reason": f"평가 오류: {e}",
+                "glorification_bias": 3,
+                "glorification_bias_reason": f"평가 오류: {e}",
+                "actor_attribution": 3,
+                "actor_attribution_reason": f"평가 오류: {e}",
+                "era_consistency": 3,
+                "era_consistency_reason": f"평가 오류: {e}"
+            }
+            
+        # 평가 로그 취합 및 저장
+        METRICS_LOG_PATH = os.path.join(BASE_DIR, "data", "metrics", "metrics_eval_logs.jsonl")
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "character_name": character_name,
+            "mode": mode,
+            "metrics": eval_data
+        }
+        
+        try:
+            os.makedirs(os.path.dirname(METRICS_LOG_PATH), exist_ok=True)
+            with open(METRICS_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            print(f"[METRIC EVAL] Failed to write log to file: {e}")
             
         return log_entry
 
