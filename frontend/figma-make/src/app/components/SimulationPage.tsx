@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Check } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
+import { storyPageBackground } from "./storyPageBackground";
 
 /* ────────────────────────────
    타입
@@ -605,15 +606,16 @@ export function SimulationPage({
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "#F4EFE4", fontFamily: "'Noto Sans KR', sans-serif" }}
+      style={storyPageBackground}
     >
       {/* ── 헤더 ── */}
       <header
         className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
         style={{
-          background: "rgba(244,239,228,0.94)",
-          backdropFilter: "blur(12px)",
-          borderColor: "rgba(42,66,50,0.09)",
+          background: "rgba(248,242,230,0.32)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          borderColor: "rgba(42,66,50,0.08)",
         }}
       >
         <button
@@ -678,8 +680,6 @@ export function SimulationPage({
           right: 0,
           zIndex: 20,
           padding: "16px 16px 24px",
-          background:
-            "linear-gradient(to top, #F4EFE4 60%, rgba(244,239,228,0))",
           pointerEvents: selected ? "auto" : "none",
         }}
       >
