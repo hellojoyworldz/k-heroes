@@ -1279,6 +1279,34 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
 def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
     norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
     
+    VALID_MODES = {
+        "all",
+        "profiles-text",
+        "scenarios-text",
+        "turns-text",
+        "turn1-text",
+        "turn2-text",
+        "turn3-text",
+        "endings-text",
+        "profiles-image",
+        "turns-image",
+        "endings-image"
+    }
+    
+    if norm_mode not in VALID_MODES:
+        print(f"[ERROR] 지원하지 않거나 폐기된 모드입니다: --{mode}")
+        print("사용 가능한 명령어 목록:")
+        print("  python scenario_generator.py --all [캐릭터명]             : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --profiles-text [캐릭터명]   : 이미지 생성 없이 캐릭터 프로필 정보만 생성/갱신 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --scenarios-text [캐릭터명]  : 이미지 생성 없이 시나리오 메타데이터(테마) 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turns-text [캐릭터명]      : 시나리오 1, 2, 3턴 텍스트 정보만 순차 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --endings-text [캐릭터명]    : 8가지 경우의 엔딩 스토리 텍스트 일괄 사전 생성 (캐릭터 지정 필수)")
+        print()
+        print("  python scenario_generator.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turns-image [캐릭터명]     : 시나리오 내 모든 턴 상황 및 선택지 이미지(GCS) 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --endings-image [캐릭터명]   : 8가지 엔딩 일러스트(DALL-E) 일괄 사전 생성 (캐릭터 지정 필수)")
+        return
+    
     if norm_mode == "endings-text":
         chars_to_run = []
         if not target_char or target_char.lower() == "all":
@@ -1373,15 +1401,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
             
     start_time = time.time()
     
-    # Normalize mode
-    norm_mode = mode.lower().strip().lstrip("-") if mode else "all"
-    
-    # Map original/legacy commands
-    if norm_mode == "profiles":
-        norm_mode = "profiles-scenario-text"
-    elif norm_mode == "char-only":
-        norm_mode = "profiles-image"
-    
+
     for idx, char_name in enumerate(selected_characters):
         print(f"\n[{idx+1}/{len(selected_characters)}] '{char_name}' 처리 중...")
         
@@ -1422,7 +1442,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
         curr_run_turn2_text = False
         curr_run_turn3_text = False
         
-        if norm_mode in ["all", "profiles-scenario-text"]:
+        if norm_mode == "all":
             needs_profile = "mbti" not in db_char or not db_char.get("scenarios")
             if lifespan_info and db_char.get("years") != lifespan_info.get("years"):
                 needs_profile = True
@@ -1443,9 +1463,9 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                 curr_run_turn3_text = True
         elif norm_mode == "profiles-text":
             curr_run_profile_text = True
-        elif norm_mode == "scenario-text":
+        elif norm_mode == "scenarios-text":
             curr_run_scenario_text = True
-        elif norm_mode in ["turn-text", "turn0text", "turn0-text"]:
+        elif norm_mode == "turns-text":
             curr_run_turn1_text = True
             curr_run_turn2_text = True
             curr_run_turn3_text = True
@@ -1750,12 +1770,11 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
             
         # 2. 캐릭터 전신 이미지 생성 (GCS)
         curr_run_profile_image = False
-        if norm_mode in ["all", "images", "profiles-image", "profies-image"]:
-            if norm_mode in ["profiles-image", "profies-image"]:
-                curr_run_profile_image = True
-            else:
-                curr_run_profile_image = not db_char.get("image_url") or not db_char["image_url"].startswith("http")
-                
+        if norm_mode == "all":
+            curr_run_profile_image = not db_char.get("image_url") or not db_char["image_url"].startswith("http")
+        elif norm_mode == "profiles-image":
+            curr_run_profile_image = True
+            
         if curr_run_profile_image:
             print(f" ➔ '{char_name}' 전신 이미지 생성 중...")
             img_url = generate_and_upload_character_image(char_name)
@@ -1774,23 +1793,12 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
         curr_run_text_image = False
         target_turn_image_no = None
         
-        if norm_mode in ["all", "images"]:
+        if norm_mode == "all":
             curr_run_scenario_image = True
             curr_run_text_image = True
-        elif norm_mode in ["text-image", "choice-image", "turn-image"]:
-            curr_run_text_image = True
-        elif norm_mode == "turn1-image":
+        elif norm_mode == "turns-image":
             curr_run_scenario_image = True
             curr_run_text_image = True
-            target_turn_image_no = 1
-        elif norm_mode == "turn2-image":
-            curr_run_scenario_image = True
-            curr_run_text_image = True
-            target_turn_image_no = 2
-        elif norm_mode == "turn3-image":
-            curr_run_scenario_image = True
-            curr_run_text_image = True
-            target_turn_image_no = 3
             
         if not curr_run_scenario_image and not curr_run_text_image:
             print(f" ➔ '{char_name}' 시나리오/선택지 이미지 생성을 생략합니다. (모드 제외)")
@@ -1862,18 +1870,11 @@ if __name__ == "__main__":
     else:
         print("사용법:")
         print("  python scenario_generator.py --all [캐릭터명]             : 프로필 텍스트 및 모든 이미지(전신/상황/선택지) 일괄 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --profiles-text [캐릭터명]   : 이미지 생성 없이 프로필 텍스트 정보만 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --scenario-text [캐릭터명]   : 이미지 생성 없이 시나리오 메타데이터(테마) 정보만 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --turn-text [캐릭터명]       : 시나리오 1, 2, 3턴 텍스트 정보 순차 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --turn1-text [캐릭터명]      : 시나리오 1턴 텍스트만 생성/갱신")
-        print("  python scenario_generator.py --turn2-text [캐릭터명]      : 시나리오 2턴 텍스트만 생성/갱신")
-        print("  python scenario_generator.py --turn3-text [캐릭터명]      : 시나리오 3턴 텍스트만 생성/갱신")
-        print("  python scenario_generator.py --endings-text [캐릭터명]    : 8가지 엔딩 스토리 텍스트 일괄 사전 생성 (캐릭터 지정 필수)")
+        print("  python scenario_generator.py --profiles-text [캐릭터명]   : 이미지 생성 없이 캐릭터 프로필 정보만 생성/갱신 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --scenarios-text [캐릭터명]  : 이미지 생성 없이 시나리오 메타데이터(테마) 정보만 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --turns-text [캐릭터명]      : 시나리오 1, 2, 3턴 텍스트 정보만 순차 생성 (특정 캐릭터 지정 가능)")
+        print("  python scenario_generator.py --endings-text [캐릭터명]    : 8가지 경우의 엔딩 스토리 텍스트 일괄 사전 생성 (캐릭터 지정 필수)")
 
         print("  python scenario_generator.py --profiles-image [캐릭터명]  : 캐릭터 전신 일러스트(프로필 카드용)만 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --turn-image [캐릭터명]      : 선택지 이미지(1:1)만 생성 (특정 캐릭터 지정 가능)")
-        print("  python scenario_generator.py --turn1-image [캐릭터명]     : 시나리오 1턴 상황 및 선택지 이미지(GCS) 생성")
-        print("  python scenario_generator.py --turn2-image [캐릭터명]     : 시나리오 2턴 상황 및 선택지 이미지(GCS) 생성")
-        print("  python scenario_generator.py --turn3-image [캐릭터명]     : 시나리오 3턴 상황 및 선택지 이미지(GCS) 생성")
+        print("  python scenario_generator.py --turns-image [캐릭터명]     : 시나리오 내 모든 턴 상황 및 선택지 이미지(GCS) 생성 (특정 캐릭터 지정 가능)")
         print("  python scenario_generator.py --endings-image [캐릭터명]   : 8가지 엔딩 일러스트(DALL-E) 일괄 사전 생성 (캐릭터 지정 필수)")
-        print("  python scenario_generator.py --images [캐릭터명]          : 이미지 생성 단계만 누락된 부분 채워 넣기 (특정 캐릭터 지정 가능)")

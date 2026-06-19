@@ -226,8 +226,10 @@ Output your evaluation STRICTLY in JSON format:
                 "era_consistency_reason": f"평가 오류: {e}"
             }
             
-        # 평가 로그 취합 및 저장
-        METRICS_LOG_PATH = os.path.join(BASE_DIR, "data", "metrics", "metrics_eval_logs.jsonl")
+        # 평가 로그 취합 및 저장 (날짜별 분리)
+        date_str = datetime.now().strftime("%Y%m%d")
+        filename = f"metrics_eval_logs_{date_str}.jsonl"
+        METRICS_LOG_PATH = os.path.join(BASE_DIR, "data", "metrics", filename)
         log_entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "character_name": character_name,
