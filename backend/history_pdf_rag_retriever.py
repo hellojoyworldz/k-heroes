@@ -7,6 +7,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 시대별 키워드 매핑 (메타데이터 리랭킹에 활용)
+ERA_KEYWORDS = {
+    "조선 시대": ["조선", "한양", "임금", "왕조", "태조", "세종", "영조", "정조", "양반", "사림", "붕당"],
+    "조선 후기": ["조선", "실학", "세도정치", "임진왜란", "병자호란", "영조", "정조", "고종", "개항", "강화도조약", "대한제국"],
+    "일제강점기": ["일제", "강점기", "독립", "의병", "총독부", "만세", "임시정부", "신간회", "3·1", "광복"],
+    "근현대": ["대통령", "정부", "현대", "전쟁", "민주", "공화국", "남북", "협상", "휴전"],
+    "고려 시대": ["고려", "개경", "태조", "광종", "성종", "공민왕", "무신", "몽골", "삼별초", "금속활자"]
+}
+
 class InMemoryHistoryRAG:
     def __init__(self, db_pickle_path):
         self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -51,43 +60,80 @@ class InMemoryHistoryRAG:
         )
         return np.array(response.data[0].embedding, dtype=np.float32)
 
-    def retrieve(self, query, top_k=3, similarity_threshold=0.30):
-        """Sparse(BM25) + Dense(Cosine) 하이브리드 검색 및 스코어링"""
-        # A. Dense Vector Similarity 계산 (NumPy 행렬 내적 연산)
+    def _check_era_match(self, chunk_text: str, era_tag: str) -> bool:
+        if not era_tag:
+            return False
+        for era, keywords in ERA_KEYWORDS.items():
+            if era in era_tag or era_tag in era:
+                if any(kw in chunk_text for kw in keywords):
+                    return True
+        return False
+
+    def retrieve(self, query, top_k=3, similarity_threshold=0.20, character_name=None, era_tag=None):
+        """Sparse(BM25) + Dense(Cosine) 하이브리드 RRF 검색 및 메타데이터 리랭커 적용"""
+        # A. Dense Vector Similarity 계산 (L2 정규화가 되어있는 임베딩의 내적)
         q_emb = self._get_query_embedding(query)
-        # L2 정규화가 되어있는 text-embedding 특성상 내적(dot product)이 곧 코사인 유사도
         cosine_scores = np.dot(self.embeddings, q_emb)
         
         # B. Sparse BM25 키워드 점수 계산
         tokenized_query = query.split(" ")
-        bm25_scores = self.bm25.get_scores(tokenized_query)
+        bm25_scores = np.array(self.bm25.get_scores(tokenized_query))
         
-        # C. 하이브리드 가중치 결합 (점수 정규화 후 7:3 합산)
-        # 단순 가중합 방식으로 구현
-        max_bm25 = max(bm25_scores) if max(bm25_scores) > 0 else 1.0
-        normalized_bm25 = np.array(bm25_scores) / max_bm25
+        # C. RRF (Reciprocal Rank Fusion) 계산
+        # 점수 순으로 인덱스 정렬해서 순위(rank) 매김
+        dense_rank_indices = np.argsort(cosine_scores)[::-1]
+        dense_ranks = np.zeros(len(self.chunks), dtype=np.int32)
+        for rank, idx in enumerate(dense_rank_indices):
+            dense_ranks[idx] = rank
+            
+        sparse_rank_indices = np.argsort(bm25_scores)[::-1]
+        sparse_ranks = np.zeros(len(self.chunks), dtype=np.int32)
+        for rank, idx in enumerate(sparse_rank_indices):
+            sparse_ranks[idx] = rank
+            
+        # RRF Score = 1 / (60 + r_dense) + 1 / (60 + r_sparse)
+        rrf_scores = 1.0 / (60.0 + dense_ranks) + 1.0 / (60.0 + sparse_ranks)
         
-        hybrid_scores = (cosine_scores * 0.7) + (normalized_bm25 * 0.3)
+        # RRF 점수 정규화 (0 ~ 1 범위)
+        max_rrf = np.max(rrf_scores) if np.max(rrf_scores) > 0 else 1.0
+        normalized_rrf = rrf_scores / max_rrf
         
-        # D. 정렬 및 스코어 필터링
-        top_indices = np.argsort(hybrid_scores)[::-1]
-        
-        results = []
-        for idx in top_indices:
+        # D. 메타데이터 리랭커 연산
+        candidates = []
+        for idx in range(len(self.chunks)):
             cos_score = float(cosine_scores[idx])
-            # 최소 신뢰도 유사도(Threshold) 미만이면 배제하여 RAG의 정확성 담보
+            
+            # 최소 신뢰도 코사인 유사도 미만이면 1차 필터링
             if cos_score < similarity_threshold:
                 continue
                 
-            results.append({
-                "chunk": self.chunks[idx],
-                "score": cos_score,
-                "hybrid_score": float(hybrid_scores[idx])
-            })
-            if len(results) >= top_k:
-                break
+            chunk_text = self.chunks[idx]
+            
+            # 피처 기반 가중치(Boost) 계산
+            character_boost = 0.0
+            if character_name and character_name in chunk_text:
+                character_boost = 0.3
                 
-        return results
+            era_boost = 0.0
+            if era_tag and self._check_era_match(chunk_text, era_tag):
+                era_boost = 0.2
+                
+            # 최종 리랭크 스코어 계산
+            rerank_score = float(normalized_rrf[idx] + character_boost + era_boost)
+            
+            candidates.append({
+                "chunk": chunk_text,
+                "score": cos_score,
+                "rrf_score": float(rrf_scores[idx]),
+                "normalized_rrf": float(normalized_rrf[idx]),
+                "character_boost": character_boost,
+                "era_boost": era_boost,
+                "rerank_score": rerank_score
+            })
+            
+        # E. 리랭크 스코어 기준으로 정렬 및 반환
+        candidates.sort(key=lambda x: x["rerank_score"], reverse=True)
+        return candidates[:top_k]
 
 # 싱글톤 인스턴스 전역 관리 (실제 배포 시 임포트하여 사용)
 _rag_instance = None

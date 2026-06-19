@@ -14,6 +14,9 @@ from simulation_data_manager import (
 )
 import uuid
 from models.character import CharacterCard
+from rag_evaluator import RAGEvaluator
+
+rag_evaluator = RAGEvaluator()
 from models.simulation import (
     StartRequest,
     GameStateStat,
@@ -137,19 +140,22 @@ async def play_turn(payload: TurnRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"시나리오 턴 정보 조회 실패: {str(e)}")
 
-def get_history_rag_context(character_name: str, query: str) -> str:
+def get_history_rag_context(character_name: str, query: str, era_tag: Optional[str] = None) -> List[Dict[str, Any]]:
     try:
         from history_pdf_rag_retriever import get_rag_instance
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         db_path = os.path.join(base_dir, "data", "processed", "history_db.pkl")
         rag = get_rag_instance(db_path)
         if rag:
-            results = rag.retrieve(f"{character_name} {query}", top_k=3)
-            if results:
-                return "\n".join([f"- {r['chunk']} (유사도: {r['score']:.2f})" for r in results])
+            return rag.retrieve(
+                f"{character_name} {query}",
+                top_k=3,
+                character_name=character_name,
+                era_tag=era_tag
+            )
     except Exception as e:
         print(f"[RAG] Error retrieving context: {e}")
-    return ""
+    return []
     
 @router.post("/ending", response_model=EndingResponse)
 async def generate_ending(payload: EndingRequest):
@@ -264,8 +270,15 @@ async def generate_ending(payload: EndingRequest):
             user_compiled_story = "\n\n".join(user_story_parts)
             factual_compiled_story = "\n\n".join(factual_story_parts)
             
-            # 3. Retrieve PDF RAG context
-            rag_context = get_history_rag_context(character_name, scenario.title)
+            # 3. Retrieve PDF RAG context (Metadata-aware retrieval with RRF)
+            start_rag_time = time.time()
+            rag_results = get_history_rag_context(character_name, scenario.title, character_card.era_tag)
+            rag_latency_ms = (time.time() - start_rag_time) * 1000
+            
+            # Format context string for the LLM prompt
+            rag_context = ""
+            if rag_results:
+                rag_context = "\n".join([f"- {r['chunk']} (유사도: {r['score']:.2f})" for r in rag_results])
             
             # 4. Core and retrieved clues context
             other_clues = get_retrieved_clues(character_name)
@@ -358,11 +371,25 @@ async def generate_ending(payload: EndingRequest):
                             time.sleep(wait_sec)
                             continue
                     raise e
-
             if not ending_result:
                 raise Exception("API 응답 데이터를 수신하지 못했습니다.")
 
             ending_data = json.loads(ending_result)
+            
+            # Log and evaluate RAG context continuously
+            try:
+                rag_evaluator.evaluate_and_log(
+                    character_name=character_name,
+                    era_tag=character_card.era_tag,
+                    query=f"{character_name} {scenario.title}",
+                    retrieved_results=rag_results,
+                    generated_ending=ending_data,
+                    latency_ms=rag_latency_ms,
+                    force_llm_eval=payload.force_eval
+                )
+            except Exception as eval_err:
+                print(f"[RAG EVAL] Error in evaluate_and_log: {eval_err}")
+
             ending_type = "True Ending" if (is_all_historical or history_score >= 100) else "Alternative Ending"
             title = ending_data.get("title", "")
             history_fact = ending_data.get("history_fact", "")
@@ -473,3 +500,12 @@ async def get_simulation_result_api(uuid: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"시뮬레이션 결과 조회 실패: {str(e)}")
+
+@router.get("/rag/metrics")
+async def get_rag_metrics(limit: int = 100):
+    try:
+        from rag_evaluator import get_rag_statistics
+        stats = get_rag_statistics(limit=limit)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"RAG 지표 조회 실패: {str(e)}")

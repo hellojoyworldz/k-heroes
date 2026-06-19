@@ -72,6 +72,7 @@ class EndingRequest(BaseModel):
     character_name: str
     scenario_id: int
     choices_path: List[str]
+    force_eval: Optional[bool] = False
 
 class EndingResponse(BaseModel):
     result_code: str

@@ -358,10 +358,26 @@ def get_history_rag_context(character_name: str, scenario_title: str) -> str:
         db_pkl_path = os.path.join(BASE_DIR, "data", "processed", "history_db.pkl")
         rag_instance = get_rag_instance(db_path=db_pkl_path)
         query = f"{character_name} {scenario_title}"
-        history_rag_results = rag_instance.retrieve(query, top_k=3, similarity_threshold=0.18)
+        
+        # HISTORICAL_LIFESPANS에서 era_tag 조회
+        era_tag = HISTORICAL_LIFESPANS.get(character_name, {}).get("era_tag", "")
+        
+        history_rag_results = rag_instance.retrieve(
+            query, 
+            top_k=3, 
+            similarity_threshold=0.18,
+            character_name=character_name,
+            era_tag=era_tag
+        )
         if not history_rag_results:
             # Fallback to searching with character name only if scenario search yields no results
-            history_rag_results = rag_instance.retrieve(character_name, top_k=3, similarity_threshold=0.18)
+            history_rag_results = rag_instance.retrieve(
+                character_name, 
+                top_k=3, 
+                similarity_threshold=0.18,
+                character_name=character_name,
+                era_tag=era_tag
+            )
         if history_rag_results:
             context_str = "\n[국사교과서 관련 추가 고증 자료]\n"
             for r in history_rag_results:
