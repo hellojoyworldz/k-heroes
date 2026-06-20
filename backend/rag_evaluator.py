@@ -156,15 +156,15 @@ Output your evaluation STRICTLY in JSON format:
     ) -> Dict[str, Any]:
         """
         생성된 프로필 및 시나리오 텍스트가 RAG 데이터와 시대상에 일치하는지, 
-        그리고 미화 및 주어 왜곡이 없는지 4대 평가 지표로 평가하고 로그에 저장합니다.
+        그리고 미화 및 주어 왜곡이 없는지, 시나리오 턴 간 개연성이 매끄러운지 평가하고 로그에 저장합니다.
         """
         if self.client is None:
             return {}
             
         json_str = json.dumps(generated_json, ensure_ascii=False, indent=2)
         
-        prompt = f"""너는 역사 교육용 콘텐츠 및 게임의 고증 상태를 심사하는 전문 역사 감사관(Historical Auditor)이야.
-제공된 [역사 자료 (RAG Context)]를 기준으로 생성된 [게임 데이터 JSON]의 고증 신뢰성 및 역사 미화 여부를 엄격히 평가해 줘.
+        prompt = f"""너는 역사 교육용 콘텐츠 및 게임의 고증 상태 및 시나리오 완성도를 심사하는 전문 역사 감사관이자 게임 시나리오 감수관이야.
+제공된 [역사 자료 (RAG Context)]를 기준으로 생성된 [게임 데이터 JSON]의 고증 신뢰성, 역사 미화 여부, 그리고 시나리오 턴 간 스토리 흐름의 개연성을 엄격히 평가해 줘.
 
 [대상 인물]
 이름: {character_name}
@@ -175,7 +175,7 @@ Output your evaluation STRICTLY in JSON format:
 [게임 데이터 JSON ({mode})]
 {json_str}
 
-아래 4가지 지표에 대해 1점(매우 나쁨/심각한 왜곡)부터 5점(매우 좋음/완벽한 고증)까지 정수 점수를 부여하고, 명확한 근거를 한국어로 작성해 줘.
+아래 5가지 지표에 대해 1점(매우 나쁨/심각한 왜곡 및 모순)부터 5점(매우 좋음/완벽한 고증 및 매끄러운 흐름)까지 정수 점수를 부여하고, 명확한 근거를 한국어로 작성해 줘.
 
 1. facts_consistency (역사적 사실 정합성):
    - 평가 기준: RAG 컨텍스트에 없는 날조된 사건, 단체, 연도를 임의로 생성(Hallucination)했거나, RAG 내용과 모순되는 사실이 포함되어 있는지 여부.
@@ -193,6 +193,10 @@ Output your evaluation STRICTLY in JSON format:
    - 평가 기준: 인물이 살아간 생몰년도를 벗어난 시점의 일화가 들어가 있거나, 당대에 존재할 수 없는 제도/개념/어휘(예: 조선시대 인물에게 '무신론자', '자유민주주의' 등의 서양 근대 철학 적용)가 투영되었는지 여부.
    - 점수 가이드: 시대적 정합성에 모순이 전혀 없고 어휘가 적절하면 5점, 사소한 시대어 오용은 3~4점, 명백한 연도/시대 오류는 1~2점.
 
+5. story_flow_coherence (스토리 흐름 개연성):
+   - 평가 기준: 각 시나리오의 턴(1턴 -> 2턴 -> 3턴) 간 스토리 흐름과 인과관계가 자연스러운지 평가. 특히 1턴에서 A(역사적)나 B(대체역사) 선택을 내린 후의 결과 텍스트(result_text)들이 2턴 상황(situation)으로 무리 없이 수렴하여 이어지는지, 2턴 결과들이 3턴 상황으로도 논리적 모순 없이 매끄럽게 연결되는지 여부.
+   - 점수 가이드: 이전 턴의 선택 결과들이 다음 턴의 상황 도입부로 논리적 모순 없이 매우 자연스럽게 이어지며 전체적인 서사 완성도가 높으면 5점, 연결이 약간 작위적이거나 매끄럽지 못하면 3점, 앞뒤 내용에 명백한 설정 충돌이나 논리적 인과 관계 모순이 발생하면 1~2점.
+
 출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
 {{
     "facts_consistency": <int: 1-5>,
@@ -202,7 +206,9 @@ Output your evaluation STRICTLY in JSON format:
     "actor_attribution": <int: 1-5>,
     "actor_attribution_reason": "<채점 근거 한국어>",
     "era_consistency": <int: 1-5>,
-    "era_consistency_reason": "<채점 근거 한국어>"
+    "era_consistency_reason": "<채점 근거 한국어>",
+    "story_flow_coherence": <int: 1-5>,
+    "story_flow_coherence_reason": "<채점 근거 한국어>"
 }}"""
 
         # LLM 평가 수행
@@ -223,7 +229,9 @@ Output your evaluation STRICTLY in JSON format:
                 "actor_attribution": 3,
                 "actor_attribution_reason": f"평가 오류: {e}",
                 "era_consistency": 3,
-                "era_consistency_reason": f"평가 오류: {e}"
+                "era_consistency_reason": f"평가 오류: {e}",
+                "story_flow_coherence": 3,
+                "story_flow_coherence_reason": f"평가 오류: {e}"
             }
             
         # 평가 로그 취합 및 저장 (날짜별 분리)

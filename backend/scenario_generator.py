@@ -1848,7 +1848,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                 mode="profile_and_scenario"
             )
             metrics = eval_log.get("metrics", {})
-            print(f"  [EVAL] Facts: {metrics.get('facts_consistency')}/5, Glorification: {metrics.get('glorification_bias')}/5, Attribution: {metrics.get('actor_attribution')}/5, Era: {metrics.get('era_consistency')}/5")
+            print(f"  [EVAL] Facts: {metrics.get('facts_consistency')}/5, Glorification: {metrics.get('glorification_bias')}/5, Attribution: {metrics.get('actor_attribution')}/5, Era: {metrics.get('era_consistency')}/5, Story Flow: {metrics.get('story_flow_coherence')}/5")
         except Exception as eval_err:
             print(f"  [WARNING] 품질 평가 실행 중 오류 발생: {eval_err}")
             
