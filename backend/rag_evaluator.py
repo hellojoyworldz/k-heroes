@@ -227,6 +227,10 @@ Output your evaluation STRICTLY in JSON format:
             }
             
         # 평가 로그 취합 및 저장 (날짜별 분리)
+        return self._write_metrics_log(character_name, mode, eval_data)
+
+    def _write_metrics_log(self, character_name: str, mode: str, metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """평가 로그를 날짜별 metrics 파일에 JSONL 형식으로 기록"""
         date_str = datetime.now().strftime("%Y%m%d")
         filename = f"metrics_eval_logs_{date_str}.jsonl"
         METRICS_LOG_PATH = os.path.join(BASE_DIR, "data", "metrics", filename)
@@ -234,17 +238,229 @@ Output your evaluation STRICTLY in JSON format:
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "character_name": character_name,
             "mode": mode,
-            "metrics": eval_data
+            "metrics": metrics
         }
-        
         try:
             os.makedirs(os.path.dirname(METRICS_LOG_PATH), exist_ok=True)
             with open(METRICS_LOG_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
         except Exception as e:
             print(f"[METRIC EVAL] Failed to write log to file: {e}")
-            
         return log_entry
+
+    def evaluate_ending_quality(
+        self,
+        character_name: str,
+        rag_context: str,
+        generated_ending: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """사전 생성된 엔딩 텍스트가 RAG 데이터와 적합한지, 미화가 없는지 4대 고증 지표로 평가"""
+        if self.client is None:
+            return {}
+            
+        ending_str = json.dumps(generated_ending, ensure_ascii=False, indent=2)
+        
+        prompt = f"""너는 역사 게임의 사전 빌드 엔딩을 심사하는 전문 역사 감사관이야.
+제공된 [역사 자료 (RAG Context)]를 기준으로 생성된 [엔딩 데이터 JSON]의 고증 상태와 미화 여부를 엄격히 평가해 줘.
+
+[대상 인물]
+이름: {character_name}
+
+[역사 자료 (RAG Context)]
+{rag_context}
+
+[엔딩 데이터 JSON]
+{ending_str}
+
+아래 4가지 지표에 대해 1점(매우 나쁨/심각한 왜곡)부터 5점(매우 좋음/완벽한 고증)까지 정수 점수를 부여하고, 명확한 채점 근거를 한국어로 작성해 줘.
+
+1. facts_consistency (역사적 사실 정합성): RAG 자료와 대조했을 때 날조(Hallucination)되거나 왜곡된 팩트가 있는지 검증.
+2. glorification_bias (과오 미화도): 행적이나 오류에 대한 합리화, 변명, 감정적 미화 뉘앙스가 포함되어 있는지 검증 (미화가 없으면 5점, 심각하면 1~2점).
+3. actor_attribution (주어 귀속 적합성): 타인의 업적을 주인공 본인의 업적으로 왜곡 표기했는지 여부.
+4. era_consistency (시대적/용어 정합성): 생몰년도를 벗어난 사건이나 당대에 불가능한 현대식 개념/단어가 투영되었는지 여부.
+
+출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
+{{
+    "facts_consistency": <int: 1-5>,
+    "facts_consistency_reason": "<채점 근거 한국어>",
+    "glorification_bias": <int: 1-5>,
+    "glorification_bias_reason": "<채점 근거 한국어>",
+    "actor_attribution": <int: 1-5>,
+    "actor_attribution_reason": "<채점 근거 한국어>",
+    "era_consistency": <int: 1-5>,
+    "era_consistency_reason": "<채점 근거 한국어>"
+}}"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            eval_data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"[METRIC EVAL] Ending Evaluation failed: {e}")
+            eval_data = {
+                "facts_consistency": 3,
+                "facts_consistency_reason": f"평가 오류: {e}",
+                "glorification_bias": 3,
+                "glorification_bias_reason": f"평가 오류: {e}",
+                "actor_attribution": 3,
+                "actor_attribution_reason": f"평가 오류: {e}",
+                "era_consistency": 3,
+                "era_consistency_reason": f"평가 오류: {e}"
+            }
+            
+        return self._write_metrics_log(character_name, "ending_quality", eval_data)
+
+    def evaluate_retrieved_context(
+        self,
+        character_name: str,
+        query: str,
+        retrieved_results: List[Dict[str, Any]],
+        mode: str = "offline",
+        sampling_rate: float = 0.10,
+        force_eval: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """RAG로 검색된 원본 텍스트 청크들이 대상 인물과 시대상에 적합한지 평가"""
+        print(f"[DEBUG RAG EVAL] evaluate_retrieved_context start for {character_name}, results_len={len(retrieved_results) if retrieved_results else 0}")
+        if self.client is None:
+            print("[DEBUG RAG EVAL] self.client is None!")
+            return None
+            
+        # 런타임(online/simulation) 시에는 성능과 비용을 위해 샘플링 적용
+        if mode != "offline" and not force_eval:
+            if random.random() >= sampling_rate:
+                return None
+                
+        chunks_text = []
+        for r in retrieved_results:
+            c = ""
+            if isinstance(r, dict):
+                c = r.get("chunk", r.get("summary", ""))
+            else:
+                c = getattr(r, "chunk", getattr(r, "summary", ""))
+                if not c:
+                    try:
+                        c = r["chunk"]
+                    except:
+                        try:
+                            c = r["summary"]
+                        except:
+                            pass
+            if c:
+                chunks_text.append(c)
+                
+        if not chunks_text:
+            print("[DEBUG RAG EVAL] chunks_text is empty!")
+            return None
+            
+        retrieved_context = "\n---\n".join(chunks_text)
+        
+        prompt = f"""너는 역사 RAG(Retrieval-Augmented Generation) 시스템의 검색 정확도를 평가하는 전문 역사학자야.
+제시된 [대상 인물] 및 [검색 쿼리]에 대해, 실제 검색되어 나온 [검색된 텍스트 청크들]의 품질을 엄격히 평가해 줘.
+
+[대상 인물]
+이름: {character_name}
+
+[검색 쿼리]
+{query}
+
+[검색된 텍스트 청크들]
+{retrieved_context}
+
+아래 3가지 지표에 대해 1점(매우 나쁨/불일치)부터 5점(매우 좋음/완벽한 검색)까지 정수 점수를 부여하고, 채점 근거를 한국어로 작성해 줘.
+
+1. context_relevance (검색 컨텍스트 관련성): 검색 결과가 쿼리와 인물에 얼마나 부합하고 필요한 정보를 담고 있는가.
+2. actor_attribution (주어 적합성/노이즈 방지): 검색 결과 중 대상 인물이 아닌 다른 인물의 일화나 업적이 섞여 들어왔는지 여부 (타인의 일화 비중이 높을수록 감점, 노이즈가 없으면 5점).
+3. era_consistency (시대적 정합성): 대상 인물이 살았던 생몰 연도와 상관없는 엉뚱한 시기의 역사적 사실이 섞여 들어왔는지 여부.
+
+출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
+{{
+    "context_relevance": <int: 1-5>,
+    "context_relevance_reason": "<채점 근거 한국어>",
+    "actor_attribution": <int: 1-5>,
+    "actor_attribution_reason": "<채점 근거 한국어>",
+    "era_consistency": <int: 1-5>,
+    "era_consistency_reason": "<채점 근거 한국어>"
+}}"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            eval_data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"[METRIC EVAL] Retrieval Evaluation failed: {e}")
+            eval_data = {
+                "context_relevance": 3,
+                "context_relevance_reason": f"평가 오류: {e}",
+                "actor_attribution": 3,
+                "actor_attribution_reason": f"평가 오류: {e}",
+                "era_consistency": 3,
+                "era_consistency_reason": f"평가 오류: {e}"
+            }
+            
+        return self._write_metrics_log(character_name, f"retrieved_context_{mode}", eval_data)
+
+    def evaluate_choice_balance(
+        self,
+        character_name: str,
+        scenario_title: str,
+        turn_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """생성된 시나리오 턴 내 선택지(A/B)의 매력 균형(딜레마)과 스탯 변동 밸런스 평가"""
+        if self.client is None:
+            return {}
+            
+        turn_str = json.dumps(turn_data, ensure_ascii=False, indent=2)
+        
+        prompt = f"""너는 역사 시뮬레이션 게임의 레벨 디자이너이자 게임 시나리오 감수관이야.
+제공된 턴 정보 내의 두 선택지(Choice A, Choice B)의 기획 완성도를 엄격히 평가해 줘.
+
+[대상 인물]
+이름: {character_name}
+
+[시나리오 제목]
+{scenario_title}
+
+[턴 및 선택지 데이터]
+{turn_str}
+
+아래 2가지 지표에 대해 1점(매우 나쁨)부터 5점(매우 좋음)까지 정수 점수를 부여하고, 채점 근거를 한국어로 작성해 줘.
+
+1. dilemma_strength (딜레마 강도 / 매력도 균형):
+   - 평가 기준: A 선택지와 B 선택지가 모두 각각의 가치나 논리를 지니고 있어 유저가 쉽게 한쪽을 고르지 못하고 고민할 만큼 균형을 이루고 있는가. 한쪽이 도덕적으로 너무 악하거나 터무니없어서 선택 가치가 없다면 감점.
+2. stat_balance (스탯 영향도 적정성):
+   - 평가 기준: 각 선택에 따라 변동되는 캐릭터 스탯(stats)이 극단적으로 쏠려 있지 않고 게임 밸런스 조절 및 타당한 결과를 제공하는지 여부.
+
+출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
+{{
+    "dilemma_strength": <int: 1-5>,
+    "dilemma_strength_reason": "<채점 근거 한국어>",
+    "stat_balance": <int: 1-5>,
+    "stat_balance_reason": "<채점 근거 한국어>"
+}}"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            eval_data = json.loads(response.choices[0].message.content)
+        except Exception as e:
+            print(f"[METRIC EVAL] Choice Balance Evaluation failed: {e}")
+            eval_data = {
+                "dilemma_strength": 3,
+                "dilemma_strength_reason": f"평가 오류: {e}",
+                "stat_balance": 3,
+                "stat_balance_reason": f"평가 오류: {e}"
+            }
+            
+        return self._write_metrics_log(character_name, "choice_balance", eval_data)
 
 def get_rag_statistics(limit: int = 200) -> Dict[str, Any]:
     """저장된 JSONL 로그 파일을 분석하여 평균 지표 및 통계 데이터 반환"""

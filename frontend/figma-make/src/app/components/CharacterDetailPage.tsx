@@ -123,13 +123,21 @@ function toCharacterData(data: ApiCharacterDetail, routeCharId: string): Charact
     mbtiTypes: mbti
       .split('')
       .slice(0, 4)
-      .map((letter, index) => ({
-        letter,
-        label: MBTI_LABELS[letter] ?? '성향',
-        desc:
-          data.mbti_details?.[MBTI_DETAIL_KEYS[index]] ??
-          '역사적 기록과 행동을 바탕으로 해석한 성향입니다.',
-      })),
+      .map((letter, index) => {
+        const labels = [
+          '외향적/내향적(E/I)',
+          '감각적/직관적(S/N)',
+          '사고적/감정적(T/F)',
+          '판단적/인식적(J/P)',
+        ];
+        return {
+          letter,
+          label: labels[index] ?? '성향',
+          desc:
+            data.mbti_details?.[MBTI_DETAIL_KEYS[index]] ??
+            '역사적 기록과 행동을 바탕으로 해석한 성향입니다.',
+        };
+      }),
     quote: normalizeQuote(data.intro_quote) || data.one_line_summary || '역사 속 선택의 순간',
     storyIntro: data.intro_desc ?? data.situation ?? '',
     img: data.image_url || '/logo.svg',

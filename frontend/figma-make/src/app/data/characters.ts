@@ -60,22 +60,22 @@ export const CHARACTERS: Record<string, CharacterData> = {
     mbtiTypes: [
       {
         letter: "I",
-        label: "내향형",
+        label: "외향적/내향적(E/I)",
         desc: "혼자 조용히 책략을 품고 치밀하게 실천 사항들을 기록합니다.",
       },
       {
         letter: "N",
-        label: "직관형",
+        label: "감각적/직관적(S/N)",
         desc: "나라의 미래를 이끌 큰 그림을 바라보고 그려냅니다.",
       },
       {
         letter: "F",
-        label: "감정형",
+        label: "사고적/감정적(T/F)",
         desc: "진심으로 타인의 아픔에 공감하며 독립의 당위성을 느낍니다.",
       },
       {
         letter: "J",
-        label: "판단형",
+        label: "판단적/인식적(J/P)",
         desc: "독립 거사부터 시간까지 1분의 오차도 없이 완벽하게 계획합니다.",
       },
     ],
@@ -109,22 +109,22 @@ export const CHARACTERS: Record<string, CharacterData> = {
     mbtiTypes: [
       {
         letter: "I",
-        label: "내향형",
+        label: "외향적/내향적(E/I)",
         desc: "난중일기를 쓰며 혼자 전략을 수립하고 내면을 다독입니다.",
       },
       {
         letter: "S",
-        label: "감각형",
+        label: "감각적/직관적(S/N)",
         desc: "지형·조류·날씨 등 현실적 데이터를 분석해 전투에 활용합니다.",
       },
       {
         letter: "T",
-        label: "사고형",
+        label: "사고적/감정적(T/F)",
         desc: "감정보다 냉철한 판단으로 군사 전략을 세웁니다.",
       },
       {
         letter: "J",
-        label: "판단형",
+        label: "판단적/인식적(J/P)",
         desc: "철저한 사전 준비와 규율로 군대를 이끕니다.",
       },
     ],
@@ -158,22 +158,22 @@ export const CHARACTERS: Record<string, CharacterData> = {
     mbtiTypes: [
       {
         letter: "E",
-        label: "외향형",
+        label: "외향적/내향적(E/I)",
         desc: "신하들과 활발히 토론하며 집현전 학자들과 함께 연구합니다.",
       },
       {
         letter: "N",
-        label: "직관형",
+        label: "감각적/직관적(S/N)",
         desc: "백성이 글을 읽는 미래를 먼저 그리고 역으로 설계합니다.",
       },
       {
         letter: "F",
-        label: "감정형",
+        label: "사고적/감정적(T/F)",
         desc: "백성의 고통에 진심으로 공감하고 그 해결을 정책으로 잇습니다.",
       },
       {
         letter: "J",
-        label: "판단형",
+        label: "판단적/인식적(J/P)",
         desc: "훈민정음 반포까지 체계적인 계획으로 완성도를 높입니다.",
       },
     ],

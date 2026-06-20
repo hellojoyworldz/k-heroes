@@ -275,6 +275,19 @@ async def generate_ending(payload: EndingRequest):
             rag_results = get_history_rag_context(character_name, scenario.title, character_card.era_tag)
             rag_latency_ms = (time.time() - start_rag_time) * 1000
             
+            # RAG 검색 결과 평가 적재 (런타임이므로 샘플링 적용)
+            try:
+                rag_evaluator.evaluate_retrieved_context(
+                    character_name=character_name,
+                    query=f"{character_name} {scenario.title}",
+                    retrieved_results=rag_results,
+                    mode="online",
+                    sampling_rate=0.10,
+                    force_eval=payload.force_eval
+                )
+            except Exception as eval_err:
+                print(f"[RAG EVAL] Error in evaluate_retrieved_context: {eval_err}")
+            
             # Format context string for the LLM prompt
             rag_context = ""
             if rag_results:

@@ -207,10 +207,10 @@ RAG 데이터 컨텍스트에 담긴 인물의 주된 업적과 행적을 분석
     "mbti": "RAG 분석을 통해 인물의 역사적 행적을 가장 잘 설명하는 MBTI 4글자 (대문자 필수)",
     "mbti_nickname": "부여한 MBTI에 따른 캐릭터 별명 (과오나 한계가 있는 인물은 그것이 드러나는 별명 부여)",
     "mbti_details": {{
-        "E_I": "E 또는 I 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
-        "S_N": "S 또는 N 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
-        "T_F": "T 또는 F 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
-        "J_P": "J 또는 P 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술"
+        "E_I": "반드시 '외향형(E) 성향은...' 또는 '내향형(I) 성향은...'으로 시작하여, 해당 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
+        "S_N": "반드시 '감각형(S) 성향은...' 또는 '직관형(N) 성향은...'으로 시작하여, 해당 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
+        "T_F": "반드시 '사고형(T) 성향은...' 또는 '감정형(F) 성향은...'으로 시작하여, 해당 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술",
+        "J_P": "반드시 '판단형(J) 성향은...' 또는 '인식형(P) 성향은...'으로 시작하여, 해당 성향이 역사 속 행동(성공 혹은 한계/과오)에서 어떻게 나타났는지 객관적 서술"
     }},
     "stats": [
         {{"name": "스탯 1 이름 (예: 학문적 깊이, 전술력, 개혁 추진력 등)", "value": 88, "desc": "해당 능력치에 대한 역사적 사실 기반 설명"}},
@@ -1040,6 +1040,19 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
             results = rag_instance.retrieve(f"{character_name} {scenario.title}", top_k=3)
             if results:
                 rag_context = "\n".join([f"- {r['chunk']}" for r in results])
+                
+                # RAG 검색 결과 평가 적재
+                try:
+                    from rag_evaluator import RAGEvaluator
+                    evaluator = RAGEvaluator()
+                    evaluator.evaluate_retrieved_context(
+                        character_name=character_name,
+                        query=f"{character_name} {scenario.title}",
+                        retrieved_results=results,
+                        mode="offline"
+                    )
+                except Exception as eval_err:
+                    print(f"  [WARNING] 엔딩 RAG 검색 결과 평가 실패: {eval_err}")
         except Exception as e:
             print(f"  [WARNING] RAG 조회 중 오류 (생략 가능): {e}")
             
@@ -1171,26 +1184,66 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
     ]
 }}
 """
-            # OpenAI 호출 (최대 3회 재시도)
-            ending_result = None
-            for attempt in range(3):
-                try:
-                    response = openai_client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "user", "content": ending_prompt}],
-                        response_format={"type": "json_object"}
-                    )
-                    ending_result = response.choices[0].message.content
-                    break
-                except Exception as e:
-                    print(f"    [WARNING] 엔딩 생성 실패 (시도 {attempt+1}): {e}")
-                    time.sleep(5)
-                    
-            if not ending_result:
-                print(f"    [ERROR] 경로 {path_key} 최종 엔딩 생성 실패. 스킵합니다.")
-                continue
+            ending_data = None
+            from rag_evaluator import RAGEvaluator
+            evaluator = RAGEvaluator()
+            
+            # 품질 만족 시까지 최대 3회 엔딩 재생성 시도
+            for gen_attempt in range(1, 4):
+                print(f"   ➔ 경로 {path_key} 엔딩 텍스트 생성 및 품질 평가 시도 ({gen_attempt}/3)...")
                 
-            ending_data = json.loads(ending_result)
+                # OpenAI API 호출 (API 오류 대비 최대 3회 재시도)
+                ending_result = None
+                for api_attempt in range(3):
+                    try:
+                        response = openai_client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[{"role": "user", "content": ending_prompt}],
+                            response_format={"type": "json_object"}
+                        )
+                        ending_result = response.choices[0].message.content
+                        break
+                    except Exception as e:
+                        print(f"    [WARNING] 엔딩 API 호출 실패 (시도 {api_attempt+1}): {e}")
+                        time.sleep(5)
+                        
+                if not ending_result:
+                    print(f"    [ERROR] 경로 {path_key} API 최종 실패")
+                    break
+                    
+                temp_ending_data = json.loads(ending_result)
+                
+                # 고증 품질 평가 수행
+                try:
+                    eval_log = evaluator.evaluate_ending_quality(
+                        character_name=character_name,
+                        rag_context=rag_context,
+                        generated_ending=temp_ending_data
+                    )
+                    metrics = eval_log.get("metrics", {})
+                    facts_score = metrics.get("facts_consistency", 3)
+                    glorification_score = metrics.get("glorification_bias", 3)
+                    
+                    print(f"      [EVAL] Facts: {facts_score}/5, Glorification: {glorification_score}/5")
+                    
+                    # 팩트 정합성 및 미화도가 4점 이상이면 최종 승인
+                    if facts_score >= 4 and glorification_score >= 4:
+                        ending_data = temp_ending_data
+                        print(f"      [APPROVED] 엔딩 품질 승인 완료 (Facts: {facts_score}, Glorification: {glorification_score})")
+                        break
+                    else:
+                        print(f"      [REJECTED] 고증 품질 불만족으로 재생성을 예약합니다.")
+                except Exception as eval_err:
+                    print(f"      [WARNING] 엔딩 품질 평가 오류(임시 승인): {eval_err}")
+                    ending_data = temp_ending_data
+                    break
+            
+            if not ending_data:
+                print(f"    [ERROR] 경로 {path_key} 최종 승인 가능한 엔딩을 생성하지 못했습니다. 마지막 데이터를 임시 저장합니다.")
+                if 'temp_ending_data' in locals():
+                    ending_data = temp_ending_data
+                else:
+                    continue
             
             # 기존 이미지 URL 보존
             existing_img = existing_endings.get(path_key, {}).get("image_url", "")
@@ -1348,6 +1401,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
         for char in chars_to_run:
             generate_endings_images_for_character_scenario(char)
         return
+        
     print(f"[INFO] 마스터 CSV 파일 로드 시도: {CSV_PATH}")
     if not os.path.exists(CSV_PATH):
         raise FileNotFoundError(f"마스터 CSV 파일이 존재하지 않습니다: {CSV_PATH}")
@@ -1414,6 +1468,20 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
             db_pkl_path = os.path.join(BASE_DIR, "data", "processed", "history_db.pkl")
             rag_instance = get_rag_instance(db_path=db_pkl_path)
             history_rag_results = rag_instance.retrieve(char_name, top_k=5, similarity_threshold=0.25)
+            
+            # RAG 검색 결과 평가 적재
+            try:
+                from rag_evaluator import RAGEvaluator
+                evaluator = RAGEvaluator()
+                evaluator.evaluate_retrieved_context(
+                    character_name=char_name,
+                    query=char_name,
+                    retrieved_results=history_rag_results,
+                    mode="offline"
+                )
+            except Exception as eval_err:
+                print(f"  [WARNING] RAG 검색 결과 평가 실패: {eval_err}")
+
             for r_idx, r in enumerate(history_rag_results):
                 associated_stories.append({
                     "id": 900000 + r_idx,
@@ -1671,6 +1739,22 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                         final_turns.append(turns_map[t_no])
                     
                     scenario["turns"] = final_turns
+                    
+                    # 선택지 밸런스 평가 적재
+                    try:
+                        from rag_evaluator import RAGEvaluator
+                        evaluator = RAGEvaluator()
+                        for turn_item in final_turns:
+                            t_no = turn_item.get("turn_no", 1)
+                            print(f"   ➔ 시나리오 {s_id} 턴 {t_no} 선택지 밸런스 평가 진행 중...")
+                            evaluator.evaluate_choice_balance(
+                                character_name=char_name,
+                                scenario_title=s_title,
+                                turn_data=turn_item
+                            )
+                    except Exception as eval_err:
+                        print(f"    [WARNING] 선택지 밸런스 평가 중 오류: {eval_err}")
+
                     updated_scenarios.append(scenario)
                 
                 db_char["scenarios"] = updated_scenarios
