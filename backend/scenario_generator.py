@@ -1218,21 +1218,23 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
                     eval_log = evaluator.evaluate_ending_quality(
                         character_name=character_name,
                         rag_context=rag_context,
-                        generated_ending=temp_ending_data
+                        generated_ending=temp_ending_data,
+                        user_compiled_story=user_compiled_story
                     )
                     metrics = eval_log.get("metrics", {})
                     facts_score = metrics.get("facts_consistency", 3)
                     glorification_score = metrics.get("glorification_bias", 3)
+                    story_flow_score = metrics.get("story_flow_coherence", 3)
                     
-                    print(f"      [EVAL] Facts: {facts_score}/5, Glorification: {glorification_score}/5")
+                    print(f"      [EVAL] Facts: {facts_score}/5, Glorification: {glorification_score}/5, Story Flow: {story_flow_score}/5")
                     
-                    # 팩트 정합성 및 미화도가 4점 이상이면 최종 승인
-                    if facts_score >= 4 and glorification_score >= 4:
+                    # 팩트 정합성, 미화도 및 스토리 흐름 개연성이 4점 이상이면 최종 승인
+                    if facts_score >= 4 and glorification_score >= 4 and story_flow_score >= 4:
                         ending_data = temp_ending_data
-                        print(f"      [APPROVED] 엔딩 품질 승인 완료 (Facts: {facts_score}, Glorification: {glorification_score})")
+                        print(f"      [APPROVED] 엔딩 품질 승인 완료 (Facts: {facts_score}, Glorification: {glorification_score}, Story Flow: {story_flow_score})")
                         break
                     else:
-                        print(f"      [REJECTED] 고증 품질 불만족으로 재생성을 예약합니다.")
+                        print(f"      [REJECTED] 고증 및 개연성 품질 불만족으로 재생성을 예약합니다.")
                 except Exception as eval_err:
                     print(f"      [WARNING] 엔딩 품질 평가 오류(임시 승인): {eval_err}")
                     ending_data = temp_ending_data

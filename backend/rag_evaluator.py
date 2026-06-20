@@ -260,32 +260,35 @@ Output your evaluation STRICTLY in JSON format:
         self,
         character_name: str,
         rag_context: str,
-        generated_ending: Dict[str, Any]
+        generated_ending: Dict[str, Any],
+        user_compiled_story: Optional[str] = None
     ) -> Dict[str, Any]:
-        """사전 생성된 엔딩 텍스트가 RAG 데이터와 적합한지, 미화가 없는지 4대 고증 지표로 평가"""
+        """사전 생성된 엔딩 텍스트가 RAG 데이터와 적합한지, 미화가 없는지, 유저의 선택 흐름과 개연성이 맞는지 평가"""
         if self.client is None:
             return {}
             
         ending_str = json.dumps(generated_ending, ensure_ascii=False, indent=2)
+        user_story_context = f"\n[유저의 플레이 기록 및 선택 흐름]\n{user_compiled_story}\n" if user_compiled_story else ""
         
-        prompt = f"""너는 역사 게임의 사전 빌드 엔딩을 심사하는 전문 역사 감사관이야.
-제공된 [역사 자료 (RAG Context)]를 기준으로 생성된 [엔딩 데이터 JSON]의 고증 상태와 미화 여부를 엄격히 평가해 줘.
+        prompt = f"""너는 역사 게임의 사전 빌드 엔딩을 심사하는 전문 역사 감사관이자 게임 시나리오 감수관이야.
+제공된 [역사 자료 (RAG Context)] 및 [유저의 플레이 기록 및 선택 흐름]을 기준으로 생성된 [엔딩 데이터 JSON]의 고증 상태, 미화 여부 및 스토리 흐름의 개연성을 엄격히 평가해 줘.
 
 [대상 인물]
 이름: {character_name}
 
 [역사 자료 (RAG Context)]
 {rag_context}
-
+{user_story_context}
 [엔딩 데이터 JSON]
 {ending_str}
 
-아래 4가지 지표에 대해 1점(매우 나쁨/심각한 왜곡)부터 5점(매우 좋음/완벽한 고증)까지 정수 점수를 부여하고, 명확한 채점 근거를 한국어로 작성해 줘.
+아래 5가지 지표에 대해 1점(매우 나쁨/심각한 왜곡 및 모순)부터 5점(매우 좋음/완벽한 고증 및 매끄러운 흐름)까지 정수 점수를 부여하고, 명확한 채점 근거를 한국어로 작성해 줘.
 
 1. facts_consistency (역사적 사실 정합성): RAG 자료와 대조했을 때 날조(Hallucination)되거나 왜곡된 팩트가 있는지 검증.
 2. glorification_bias (과오 미화도): 행적이나 오류에 대한 합리화, 변명, 감정적 미화 뉘앙스가 포함되어 있는지 검증 (미화가 없으면 5점, 심각하면 1~2점).
 3. actor_attribution (주어 귀속 적합성): 타인의 업적을 주인공 본인의 업적으로 왜곡 표기했는지 여부.
 4. era_consistency (시대적/용어 정합성): 생몰년도를 벗어난 사건이나 당대에 불가능한 현대식 개념/단어가 투영되었는지 여부.
+5. story_flow_coherence (스토리 흐름 개연성): 생성된 가상 분기 엔딩 텍스트(story_contents 및 title)가 [유저의 플레이 기록 및 선택 흐름]과 논리적으로 모순 없이 연결되는지 검증. 유저의 누적된 선택 결과에 따른 타당하고 설득력 있는 서사적 결말이면 5점, 선택들과 전혀 무관하거나 앞뒤 맥락이 깨지는 엉뚱한 결말이면 1~2점.
 
 출력은 반드시 다른 마크다운 텍스트 없이 아래 JSON 형식으로만 응답해:
 {{
@@ -296,7 +299,9 @@ Output your evaluation STRICTLY in JSON format:
     "actor_attribution": <int: 1-5>,
     "actor_attribution_reason": "<채점 근거 한국어>",
     "era_consistency": <int: 1-5>,
-    "era_consistency_reason": "<채점 근거 한국어>"
+    "era_consistency_reason": "<채점 근거 한국어>",
+    "story_flow_coherence": <int: 1-5>,
+    "story_flow_coherence_reason": "<채점 근거 한국어>"
 }}"""
 
         try:
@@ -316,7 +321,9 @@ Output your evaluation STRICTLY in JSON format:
                 "actor_attribution": 3,
                 "actor_attribution_reason": f"평가 오류: {e}",
                 "era_consistency": 3,
-                "era_consistency_reason": f"평가 오류: {e}"
+                "era_consistency_reason": f"평가 오류: {e}",
+                "story_flow_coherence": 3,
+                "story_flow_coherence_reason": f"평가 오류: {e}"
             }
             
         return self._write_metrics_log(character_name, "ending_quality", eval_data)
