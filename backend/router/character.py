@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/characters", tags=["Character"])
 
 @router.get("", response_model=List[CharacterCard])
 async def get_characters(
-    category: Optional[str] = Query(None, description="인물 분류 카테고리 ('정치 / 외교', '독립 / 호국', '예술 / 문학', '실학 / 학문')")
+    category: Optional[str] = Query(None, description="인물 분류 카테고리 ('정치 / 외교', '독립 / 호국', '예술 / 문학', '사상 / 학문')")
 ):
     """
     모든 가용 인물 리스트를 반환합니다. category 파라미터가 있으면 필터링을 수행.

@@ -50,15 +50,15 @@ const KEYWORDS: Keyword[] = [
   },
   {
     id: "sirhak",
-    label: "실학 / 학문",
+    label: "사상 / 학문",
     sublabel: "지식으로 세상을 바꾸다",
     hanja: "學",
     accent: "#28506E",
-    category: "실학 / 학문",
+    category: "사상 / 학문",
   },
 ];
 
-type CharacterCategory = "정치 / 외교" | "독립 / 호국" | "예술 / 문학" | "실학 / 학문";
+type CharacterCategory = "정치 / 외교" | "독립 / 호국" | "예술 / 문학" | "사상 / 학문";
 
 interface ApiCharacter {
   name: string;

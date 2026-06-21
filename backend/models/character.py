@@ -47,7 +47,7 @@ class StoryItem(BaseModel):
 
 class CharacterCard(BaseModel):
     name: str
-    category: str        # "정치 / 외교", "독립 / 호국", "예술 / 문학", "실학 / 학문"
+    category: str        # "정치 / 외교", "독립 / 호국", "예술 / 문학", "사상 / 학문"
     era: str
     era_tag: str         # "조선 후기", "일제강점기"
     role: str            # "왕", "독립운동가"
