@@ -35,6 +35,7 @@ class CharacterCategory(ManagedContentMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     characters: Mapped[list["Character"]] = relationship(back_populates="character_category")

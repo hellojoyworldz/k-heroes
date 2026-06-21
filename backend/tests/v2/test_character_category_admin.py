@@ -21,8 +21,11 @@ def test_list_character_categories_public(client):
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 4
+    assert set(data[0].keys()) == {"id", "title", "description", "length"}
     assert data[0]["title"] == "정치 / 외교"
-    assert all(item["is_active"] is True for item in data)
+    assert data[0]["description"] == "나라를 이끄는 결단"
+    assert data[0]["length"] >= 1
+    assert sum(item["length"] for item in data) == 12
 
 
 def test_list_character_categories_admin(admin_client):
@@ -56,13 +59,14 @@ def test_list_character_categories_admin_filter_is_active(admin_client, db_sessi
 def test_create_character_category(admin_client):
     response = admin_client.post(
         "/api/v2/admin/character-categories",
-        json={"title": "신규 카테고리"},
+        json={"title": "신규 카테고리", "description": "신규 설명"},
         headers=admin_headers(),
     )
 
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "신규 카테고리"
+    assert data["description"] == "신규 설명"
     assert data["sort_order"] == 4
     assert data["is_active"] is True
 
@@ -70,7 +74,7 @@ def test_create_character_category(admin_client):
 def test_create_character_category_rejects_sort_order(admin_client):
     response = admin_client.post(
         "/api/v2/admin/character-categories",
-        json={"title": "순서 지정 시도", "sort_order": 0},
+        json={"title": "순서 지정 시도", "description": "설명", "sort_order": 0},
         headers=admin_headers(),
     )
 
@@ -78,7 +82,7 @@ def test_create_character_category_rejects_sort_order(admin_client):
 
 
 def test_create_character_category_duplicate(admin_client):
-    payload = {"title": "중복 카테고리"}
+    payload = {"title": "중복 카테고리", "description": "설명"}
 
     first = admin_client.post(
         "/api/v2/admin/character-categories",
@@ -101,13 +105,14 @@ def test_update_character_category(admin_client, db_session):
 
     response = admin_client.patch(
         f"/api/v2/admin/character-categories/{category.id}",
-        json={"title": "예술 / 문학 (수정)", "is_active": False},
+        json={"title": "예술 / 문학 (수정)", "description": "수정된 설명", "is_active": False},
         headers=admin_headers(),
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "예술 / 문학 (수정)"
+    assert data["description"] == "수정된 설명"
     assert data["is_active"] is False
 
 
@@ -130,7 +135,7 @@ def test_update_character_category_rejects_sort_order(admin_client, db_session):
 def test_delete_character_category_soft(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/character-categories",
-        json={"title": "삭제 카테고리"},
+        json={"title": "삭제 카테고리", "description": "삭제 대상"},
         headers=admin_headers(),
     )
     category_id = create_response.json()["id"]
@@ -170,5 +175,5 @@ def test_inactive_category_hidden_from_public_list(client, db_session):
     db_session.flush()
 
     response = client.get("/api/v2/character-categories")
-    labels = [item["title"] for item in response.json()]
-    assert "실학 / 학문" not in labels
+    titles = [item["title"] for item in response.json()]
+    assert "실학 / 학문" not in titles

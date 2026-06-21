@@ -1,11 +1,16 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from db.models import CharacterCategory
-from models.character_category import CharacterCategoryCreate, CharacterCategoryReorderRequest, CharacterCategoryUpdate
+from db.models import Character, CharacterCategory
+from models.character_category import (
+    CharacterCategoryCreate,
+    CharacterCategoryPublicItem,
+    CharacterCategoryReorderRequest,
+    CharacterCategoryUpdate,
+)
 
 
 class CharacterCategoryDuplicateError(Exception):
@@ -45,6 +50,42 @@ def _next_sort_order(db: Session) -> int:
     return (current_max or -1) + 1
 
 
+def _active_character_join():
+    return and_(
+        Character.category_id == CharacterCategory.id,
+        Character.is_active.is_(True),
+        Character.deleted_at.is_(None),
+    )
+
+
+def list_public_categories(db: Session) -> List[CharacterCategoryPublicItem]:
+    rows = db.execute(
+        select(
+            CharacterCategory.id,
+            CharacterCategory.title,
+            CharacterCategory.description,
+            func.count(Character.id).label("length"),
+        )
+        .outerjoin(Character, _active_character_join())
+        .where(
+            CharacterCategory.is_active.is_(True),
+            CharacterCategory.deleted_at.is_(None),
+        )
+        .group_by(CharacterCategory.id)
+        .order_by(CharacterCategory.sort_order, CharacterCategory.id)
+    ).all()
+
+    return [
+        CharacterCategoryPublicItem(
+            id=row.id,
+            title=row.title,
+            description=row.description,
+            length=row.length,
+        )
+        for row in rows
+    ]
+
+
 def list_categories(db: Session, *, is_active: Optional[bool] = None) -> List[CharacterCategory]:
     query = (
         select(CharacterCategory)
@@ -74,6 +115,7 @@ def create_category(db: Session, data: CharacterCategoryCreate) -> CharacterCate
 
     category = CharacterCategory(
         title=data.title,
+        description=data.description,
         sort_order=_next_sort_order(db),
         is_active=True,
     )

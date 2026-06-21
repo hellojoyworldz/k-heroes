@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from repositories import character_category as character_category_repository
 from db.database import get_db
 from models.character_category import (
+    CharacterCategoryAdminResponse,
     CharacterCategoryCreate,
+    CharacterCategoryPublicItem,
     CharacterCategoryReorderRequest,
-    CharacterCategoryResponse,
     CharacterCategoryUpdate,
 )
 from router.v2.deps import verify_admin_token
@@ -21,13 +22,13 @@ admin_router = APIRouter(
 )
 
 
-@router.get("", response_model=List[CharacterCategoryResponse])
+@router.get("", response_model=List[CharacterCategoryPublicItem])
 def list_character_categories(db: Session = Depends(get_db)):
     """공개 API — 활성 카테고리 목록."""
-    return character_category_repository.list_categories(db, is_active=True)
+    return character_category_repository.list_public_categories(db)
 
 
-@admin_router.get("", response_model=List[CharacterCategoryResponse])
+@admin_router.get("", response_model=List[CharacterCategoryAdminResponse])
 def list_character_categories_admin(
     is_active: Optional[bool] = Query(None, description="true=활성만, false=비활성만, 생략=전체"),
     db: Session = Depends(get_db),
@@ -36,7 +37,7 @@ def list_character_categories_admin(
     return character_category_repository.list_categories(db, is_active=is_active)
 
 
-@admin_router.patch("/reorder", response_model=List[CharacterCategoryResponse])
+@admin_router.patch("/reorder", response_model=List[CharacterCategoryAdminResponse])
 def reorder_character_categories(
     body: CharacterCategoryReorderRequest,
     db: Session = Depends(get_db),
@@ -52,7 +53,7 @@ def reorder_character_categories(
     return categories
 
 
-@admin_router.get("/{category_id}", response_model=CharacterCategoryResponse)
+@admin_router.get("/{category_id}", response_model=CharacterCategoryAdminResponse)
 def get_character_category(category_id: int, db: Session = Depends(get_db)):
     """어드민 — 카테고리 상세."""
     try:
@@ -61,7 +62,7 @@ def get_character_category(category_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@admin_router.post("", response_model=CharacterCategoryResponse, status_code=201)
+@admin_router.post("", response_model=CharacterCategoryAdminResponse, status_code=201)
 def create_character_category(
     body: CharacterCategoryCreate,
     db: Session = Depends(get_db),
@@ -77,7 +78,7 @@ def create_character_category(
     return category
 
 
-@admin_router.patch("/{category_id}", response_model=CharacterCategoryResponse)
+@admin_router.patch("/{category_id}", response_model=CharacterCategoryAdminResponse)
 def update_character_category(
     category_id: int,
     body: CharacterCategoryUpdate,
@@ -97,7 +98,7 @@ def update_character_category(
     return category
 
 
-@admin_router.delete("/{category_id}", response_model=CharacterCategoryResponse)
+@admin_router.delete("/{category_id}", response_model=CharacterCategoryAdminResponse)
 def delete_character_category(category_id: int, db: Session = Depends(get_db)):
     """어드민 — 카테고리 소프트 삭제."""
     try:
@@ -108,4 +109,3 @@ def delete_character_category(category_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return category
-

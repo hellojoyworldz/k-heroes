@@ -57,6 +57,7 @@ def seed_character_categories(session) -> dict[str, int]:
     for item in DEFAULT_CHARACTER_CATEGORIES:
         category = CharacterCategory(
             title=item["title"],
+            description=item["description"],
             sort_order=item["sort_order"],
             is_active=True,
         )
