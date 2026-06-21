@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # 프로젝트 루트의 .env 파일 존재 여부 확인
 if [ ! -f ../.env ]; then
