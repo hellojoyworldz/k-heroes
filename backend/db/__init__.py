@@ -1,6 +1,7 @@
 from db.database import Base, SessionLocal, engine, get_db
 from db.models import (
     Character,
+    CharacterCategory,
     CharacterStat,
     Choice,
     Ending,
@@ -21,6 +22,7 @@ __all__ = [
     "ManagedContentMixin",
     "SoftDeleteMixin",
     "Character",
+    "CharacterCategory",
     "CharacterStat",
     "Scenario",
     "Turn",

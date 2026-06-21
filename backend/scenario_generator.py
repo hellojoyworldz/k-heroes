@@ -1076,20 +1076,27 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
             # 1.5. Calculate history_score & current_stats
             total_turns = len(scenario.turns)
             historical_choices_count = 0
-            current_stats = {stat.name: stat.value for stat in character_card.stats}
-            
+            stat_lookup = {stat.id: stat for stat in character_card.stats}
+            current_by_id = {stat.id: stat.value for stat in character_card.stats}
+
             for idx, turn in enumerate(scenario.turns):
                 user_choice_id = choices_path[idx]
                 user_choice = turn.choices.get(user_choice_id)
                 if not user_choice:
                     user_choice = list(turn.choices.values())[0]
-                    
+
                 if user_choice.is_historical:
                     historical_choices_count += 1
-                    
-                for name, val in user_choice.stats.items():
-                    if name in current_stats:
-                        current_stats[name] += val
+
+                for item in user_choice.turn_stats:
+                    if item.stat_id in current_by_id:
+                        current_by_id[item.stat_id] += item.delta
+
+            current_stats = {
+                stat_lookup[stat_id].name: value
+                for stat_id, value in current_by_id.items()
+                if stat_id in stat_lookup
+            }
                         
             history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
             is_all_historical = (historical_choices_count == total_turns)
@@ -1797,8 +1804,9 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                             choice_val["title"] = choice_val.get("text", "")
                         if "description" not in choice_val:
                             choice_val["description"] = ""
-                        if "stats" not in choice_val:
-                            choice_val["stats"] = {}
+                        if "turn_stats" not in choice_val:
+                            choice_val["turn_stats"] = []
+                        choice_val.pop("stats", None)
         
         # 키 순서 재배치 및 DB 갱신
         ordered_profile = {

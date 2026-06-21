@@ -5,10 +5,11 @@ from typing import Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Character, Choice, Ending, Scenario, Turn
+from db.models import Character, CharacterCategory, Choice, Ending, Scenario, Turn
 from models.character import (
     CharacterCard,
     ChoiceItem,
+    ChoiceTurnStatItem,
     MBTIDetails,
     ScenarioItem,
     StatItem,
@@ -54,7 +55,10 @@ def _map_choice(choice: Choice) -> ChoiceItem:
         title=choice.title,
         description=choice.description,
         choice_image=choice.choice_image or "",
-        stats=choice.stats or {},
+        turn_stats=[
+            ChoiceTurnStatItem(stat_id=item["stat_id"], delta=item["delta"])
+            for item in (choice.turn_stats or [])
+        ],
         result_text=choice.result_text,
         is_historical=choice.is_historical,
     )
@@ -98,8 +102,9 @@ def _map_character(
     lightweight: bool = False,
 ) -> CharacterCard:
     stats = [
-        StatItem(name=s.name, value=s.value, desc=s.desc)
+        StatItem(id=s.id, name=s.name, value=s.value, desc=s.desc)
         for s in sorted(character.stats, key=lambda s: s.sort_order)
+        if s.deleted_at is None and s.is_active
     ]
 
     scenarios: List[ScenarioItem] = []
@@ -112,6 +117,7 @@ def _map_character(
             scenarios.append(_map_scenario(scenario))
 
     return CharacterCard(
+        id=character.id,
         name=character.name,
         category=character.category,
         era=character.era,
@@ -138,28 +144,37 @@ def _map_character(
     )
 
 
-def _character_query():
-    return (
+def _character_query(*, active_category_only: bool = True):
+    query = (
         select(Character)
+        .join(Character.character_category)
         .where(Character.is_active.is_(True), Character.deleted_at.is_(None))
         .options(
+            selectinload(Character.character_category),
             selectinload(Character.stats),
             selectinload(Character.scenarios)
             .selectinload(Scenario.turns)
             .selectinload(Turn.choices),
         )
     )
+    if active_category_only:
+        query = query.where(
+            CharacterCategory.is_active.is_(True),
+            CharacterCategory.deleted_at.is_(None),
+        )
+    return query
 
 
-def list_characters(db: Session, category: Optional[str] = None) -> List[CharacterCard]:
-    characters = db.scalars(_character_query().order_by(Character.name)).all()
-    result: List[CharacterCard] = []
-    for character in characters:
-        card = _map_character(character, lightweight=True)
-        if category and category not in ("전체", "all") and card.category != category:
-            continue
-        result.append(card)
-    return result
+def _character_list_order():
+    return (CharacterCategory.sort_order, Character.sort_order, Character.name)
+
+
+def list_characters(db: Session, category_id: Optional[int] = None) -> List[CharacterCard]:
+    query = _character_query().order_by(*_character_list_order())
+    if category_id is not None:
+        query = query.where(Character.category_id == category_id)
+    characters = db.scalars(query).all()
+    return [_map_character(character, lightweight=True) for character in characters]
 
 
 def get_character_card(
@@ -171,10 +186,30 @@ def get_character_card(
     character = db.scalar(_character_query().where(Character.name == name))
     if not character:
         raise CharacterNotFoundError(f"Character '{name}' not found.")
+    return _get_character_card_from_row(character, scenario_id=scenario_id)
+
+
+def get_character_card_by_id(
+    db: Session,
+    character_id: int,
+    *,
+    scenario_id: Optional[int] = None,
+) -> CharacterCard:
+    character = db.scalar(_character_query().where(Character.id == character_id))
+    if not character:
+        raise CharacterNotFoundError(f"Character id={character_id} not found.")
+    return _get_character_card_from_row(character, scenario_id=scenario_id)
+
+
+def _get_character_card_from_row(
+    character: Character,
+    *,
+    scenario_id: Optional[int] = None,
+) -> CharacterCard:
     card = _map_character(character, scenario_id=scenario_id)
     if scenario_id is not None and not card.scenarios:
         raise ScenarioNotFoundError(
-            f"시나리오 ID {scenario_id}를 인물 '{name}'에게서 찾을 수 없습니다."
+            f"시나리오 ID {scenario_id}를 인물 '{character.name}'에게서 찾을 수 없습니다."
         )
     return card
 
@@ -263,7 +298,8 @@ def compute_play_results(
 ) -> tuple[int, Dict[str, int], int]:
     total_turns = len(scenario.turns)
     historical_choices_count = 0
-    current_stats = {stat.name: stat.value for stat in character_card.stats}
+    stat_lookup = {stat.id: stat for stat in character_card.stats}
+    current_by_id = {stat.id: stat.value for stat in character_card.stats}
 
     for idx, turn in enumerate(scenario.turns):
         user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
@@ -274,9 +310,15 @@ def compute_play_results(
         if user_choice.is_historical:
             historical_choices_count += 1
 
-        for name, val in user_choice.stats.items():
-            if name in current_stats:
-                current_stats[name] += val
+        for item in user_choice.turn_stats:
+            if item.stat_id in current_by_id:
+                current_by_id[item.stat_id] += item.delta
+
+    current_stats = {
+        stat_lookup[stat_id].name: value
+        for stat_id, value in current_by_id.items()
+        if stat_id in stat_lookup
+    }
 
     history_score = (
         int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100

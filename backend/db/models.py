@@ -30,12 +30,24 @@ class SoftDeleteMixin:
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
+class CharacterCategory(ManagedContentMixin, Base):
+    __tablename__ = "character_categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    label: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    characters: Mapped[list["Character"]] = relationship(back_populates="character_category")
+
+
 class Character(ManagedContentMixin, Base):
     __tablename__ = "characters"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("character_categories.id", ondelete="RESTRICT"), nullable=False
+    )
     era: Mapped[str] = mapped_column(String(100), nullable=False)
     era_tag: Mapped[str] = mapped_column(String(100), nullable=False)
     role: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -53,7 +65,9 @@ class Character(ManagedContentMixin, Base):
     intro_desc: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[list] = mapped_column(JSON, default=list)
     associated_stories: Mapped[dict] = mapped_column(JSON, default=dict)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    character_category: Mapped["CharacterCategory"] = relationship(back_populates="characters")
     stats: Mapped[list["CharacterStat"]] = relationship(
         back_populates="character", cascade="all, delete-orphan", order_by="CharacterStat.sort_order"
     )
@@ -61,8 +75,12 @@ class Character(ManagedContentMixin, Base):
         back_populates="character", cascade="all, delete-orphan"
     )
 
+    @property
+    def category(self) -> str:
+        return self.character_category.label if self.character_category else ""
 
-class CharacterStat(Base):
+
+class CharacterStat(ManagedContentMixin, Base):
     __tablename__ = "character_stats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -70,7 +88,7 @@ class CharacterStat(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[int] = mapped_column(Integer, nullable=False)
     desc: Mapped[str] = mapped_column(Text, nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     character: Mapped["Character"] = relationship(back_populates="stats")
 
@@ -127,7 +145,7 @@ class Choice(SoftDeleteMixin, Base):
     choice_image: Mapped[str] = mapped_column(String(500), default="")
     result_text: Mapped[str] = mapped_column(Text, nullable=False)
     is_historical: Mapped[bool] = mapped_column(Boolean, default=False)
-    stats: Mapped[dict] = mapped_column(JSON, default=dict)
+    turn_stats: Mapped[list] = mapped_column(JSON, default=list)
 
     turn: Mapped["Turn"] = relationship(back_populates="choices")
 
