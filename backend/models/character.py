@@ -30,7 +30,7 @@ class ChoiceItem(BaseModel):
     is_historical: bool
 
 class TurnItem(BaseModel):
-    turn_no: int
+    sort_order: int
     title: str
     situation: str
     turn_image: str = ""

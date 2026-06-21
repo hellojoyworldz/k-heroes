@@ -71,7 +71,7 @@ def _map_turn(turn: Turn) -> TurnItem:
         if _is_visible_choice(choice)
     }
     return TurnItem(
-        turn_no=turn.turn_no,
+        sort_order=turn.sort_order,
         title=turn.title,
         situation=turn.situation,
         turn_image=turn.turn_image or "",
@@ -83,7 +83,7 @@ def _map_turn(turn: Turn) -> TurnItem:
 
 def _map_scenario(scenario: Scenario) -> ScenarioItem:
     turns = [_map_turn(turn) for turn in scenario.turns if _is_visible_turn(turn)]
-    turns.sort(key=lambda t: t.turn_no)
+    turns.sort(key=lambda t: t.sort_order)
     return ScenarioItem(
         scenario_id=scenario.scenario_id,
         title=scenario.title,

@@ -28,6 +28,12 @@ CONTENT_TABLES = (
 )
 
 
+def _turn_sort_order(turn_data: dict) -> int:
+    if "sort_order" in turn_data:
+        return turn_data["sort_order"]
+    return turn_data["turn_no"] - 1
+
+
 def tables_exist() -> bool:
     inspector = inspect(engine)
     existing = set(inspector.get_table_names())
@@ -146,7 +152,7 @@ def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str,
             for turn_data in scenario_data.get("turns", []):
                 turn = Turn(
                     scenario_id=scenario.id,
-                    turn_no=turn_data["turn_no"],
+                    sort_order=_turn_sort_order(turn_data),
                     title=turn_data["title"],
                     situation=turn_data["situation"],
                     turn_image=turn_data.get("turn_image", ""),

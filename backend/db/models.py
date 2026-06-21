@@ -110,7 +110,7 @@ class Scenario(ManagedContentMixin, Base):
 
     character: Mapped["Character"] = relationship(back_populates="scenarios")
     turns: Mapped[list["Turn"]] = relationship(
-        back_populates="scenario", cascade="all, delete-orphan", order_by="Turn.turn_no"
+        back_populates="scenario", cascade="all, delete-orphan", order_by="Turn.sort_order"
     )
     endings: Mapped[list["Ending"]] = relationship(
         back_populates="scenario", cascade="all, delete-orphan"
@@ -119,11 +119,11 @@ class Scenario(ManagedContentMixin, Base):
 
 class Turn(SoftDeleteMixin, Base):
     __tablename__ = "turns"
-    __table_args__ = (UniqueConstraint("scenario_id", "turn_no", name="uq_scenario_turn"),)
+    __table_args__ = (UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_turn"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id", ondelete="CASCADE"), nullable=False)
-    turn_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     situation: Mapped[str] = mapped_column(Text, nullable=False)
     turn_image: Mapped[str] = mapped_column(String(500), default="")
