@@ -129,10 +129,11 @@ def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str,
         stat_name_to_id = {row.name: row.id for row in stat_rows}
         profile_stat_names = [row.name for row in stat_rows]
 
-        for scenario_data in profile.get("scenarios", []):
+        for scenario_idx, scenario_data in enumerate(profile.get("scenarios", [])):
             scenario = Scenario(
                 character_id=character.id,
                 scenario_id=scenario_data["scenario_id"],
+                sort_order=scenario_idx,
                 title=scenario_data["title"],
                 description=scenario_data["description"],
                 historical_facts=scenario_data["historical_facts"],

@@ -5,14 +5,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CharacterCategoryCreate(BaseModel):
-    label: str = Field(..., min_length=1, max_length=100)
+    label: str = Field(..., min_length=1, max_length=100, description="카테고리명 (예: 정치 / 외교)")
 
     model_config = ConfigDict(extra="forbid")
 
 
 class CharacterCategoryUpdate(BaseModel):
-    label: Optional[str] = Field(None, min_length=1, max_length=100)
-    is_active: Optional[bool] = None
+    label: Optional[str] = Field(None, min_length=1, max_length=100, description="카테고리명")
+    is_active: Optional[bool] = Field(None, description="true=사용, false=미사용")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -28,4 +28,4 @@ class CharacterCategoryResponse(BaseModel):
 
 
 class CharacterCategoryReorderRequest(BaseModel):
-    ids: List[int] = Field(..., min_length=1)
+    ids: List[int] = Field(..., min_length=1, description="카테고리 DB id 배열 (index=sort_order)")

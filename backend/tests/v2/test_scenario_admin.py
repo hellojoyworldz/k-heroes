@@ -1,0 +1,285 @@
+import pytest
+from sqlalchemy import func, select
+
+from db.models import Scenario
+from tests.helpers import get_character, get_scenario
+
+ADMIN_TOKEN = "test-admin-token"
+SCENARIOS_URL = "/api/v2/admin/scenarios"
+
+
+@pytest.fixture
+def admin_client(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", ADMIN_TOKEN)
+    return client
+
+
+def admin_headers():
+    return {"Authorization": f"Bearer {ADMIN_TOKEN}"}
+
+
+def test_list_scenarios_admin(admin_client):
+    response = admin_client.get(SCENARIOS_URL, headers=admin_headers())
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert "character_name" in data[0]
+    assert data[0]["character_name"]
+
+
+def test_list_scenarios_filter_by_character_name(admin_client):
+    response = admin_client.get(
+        f"{SCENARIOS_URL}?name=이순신",
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert all("이순신" in item["character_name"] for item in data)
+    assert all(item["scenario_id"] >= 1 for item in data)
+
+    other_response = admin_client.get(
+        f"{SCENARIOS_URL}?name=없는인물",
+        headers=admin_headers(),
+    )
+    assert other_response.json() == []
+
+
+def test_list_scenarios_filter_is_active(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 1)
+    assert scenario is not None
+    scenario.is_active = False
+    db_session.flush()
+
+    active_response = admin_client.get(
+        f"{SCENARIOS_URL}?name=이순신&is_active=true",
+        headers=admin_headers(),
+    )
+    inactive_response = admin_client.get(
+        f"{SCENARIOS_URL}?name=이순신&is_active=false",
+        headers=admin_headers(),
+    )
+
+    assert 1 not in [item["scenario_id"] for item in active_response.json()]
+    assert any(item["scenario_id"] == 1 for item in inactive_response.json())
+
+
+def test_create_scenario(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+    current_max = db_session.scalar(
+        select(func.max(Scenario.scenario_id)).where(Scenario.character_id == character.id)
+    )
+    expected_scenario_id = (current_max or 0) + 1
+
+    response = admin_client.post(
+        SCENARIOS_URL,
+        json={
+            "character_id": character.id,
+            "title": "신규 시나리오",
+            "description": "설명",
+            "historical_facts": "역사적 사실",
+            "source_story_ids": [1, 2],
+        },
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["character_id"] == character.id
+    assert data["scenario_id"] == expected_scenario_id
+    assert data["title"] == "신규 시나리오"
+    assert data["source_story_ids"] == [1, 2]
+    assert data["is_active"] is True
+    assert data["sort_order"] >= 0
+
+
+def test_create_scenario_rejects_scenario_id(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    response = admin_client.post(
+        SCENARIOS_URL,
+        json={
+            "character_id": character.id,
+            "scenario_id": 99,
+            "title": "논리 id 지정 시도",
+            "description": "설명",
+            "historical_facts": "역사적 사실",
+        },
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_scenario_rejects_sort_order(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    response = admin_client.post(
+        SCENARIOS_URL,
+        json={
+            "character_id": character.id,
+            "title": "순서 지정 시도",
+            "description": "설명",
+            "historical_facts": "역사적 사실",
+            "sort_order": 0,
+        },
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_scenario_character_not_found(admin_client):
+    response = admin_client.post(
+        SCENARIOS_URL,
+        json={
+            "character_id": 99999,
+            "title": "시나리오",
+            "description": "설명",
+            "historical_facts": "역사적 사실",
+        },
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_scenario_duplicate_scenario_id(admin_client, db_session):
+    first = get_scenario(db_session, "이순신", 1)
+    second = get_scenario(db_session, "이순신", 2)
+    if not first or not second:
+        pytest.skip("이순신 시나리오 2개 필요")
+
+    response = admin_client.patch(
+        f"{SCENARIOS_URL}/{second.id}",
+        json={"scenario_id": first.scenario_id},
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 409
+
+
+def test_get_scenario(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 1)
+    assert scenario is not None
+
+    response = admin_client.get(
+        f"{SCENARIOS_URL}/{scenario.id}",
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == scenario.id
+    assert response.json()["scenario_id"] == 1
+
+
+def test_get_scenario_not_found(admin_client):
+    response = admin_client.get(f"{SCENARIOS_URL}/99999", headers=admin_headers())
+    assert response.status_code == 404
+
+
+def test_update_scenario(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 1)
+    assert scenario is not None
+
+    response = admin_client.patch(
+        f"{SCENARIOS_URL}/{scenario.id}",
+        json={"title": "수정된 제목", "is_active": False},
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "수정된 제목"
+    assert data["is_active"] is False
+
+
+def test_update_scenario_rejects_sort_order(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 1)
+    assert scenario is not None
+    original_sort_order = scenario.sort_order
+
+    response = admin_client.patch(
+        f"{SCENARIOS_URL}/{scenario.id}",
+        json={"sort_order": 99},
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 422
+    db_session.refresh(scenario)
+    assert scenario.sort_order == original_sort_order
+
+
+def test_delete_scenario_soft(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    create_response = admin_client.post(
+        SCENARIOS_URL,
+        json={
+            "character_id": character.id,
+            "title": "삭제 대상",
+            "description": "설명",
+            "historical_facts": "역사적 사실",
+        },
+        headers=admin_headers(),
+    )
+    scenario_db_id = create_response.json()["id"]
+
+    delete_response = admin_client.delete(
+        f"{SCENARIOS_URL}/{scenario_db_id}",
+        headers=admin_headers(),
+    )
+
+    assert delete_response.status_code == 200
+    assert delete_response.json()["deleted_at"] is not None
+
+    list_response = admin_client.get(
+        f"{SCENARIOS_URL}?name=이순신",
+        headers=admin_headers(),
+    )
+    assert scenario_db_id not in [item["id"] for item in list_response.json()]
+
+
+def test_reorder_scenarios(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    scenarios = admin_client.get(
+        f"{SCENARIOS_URL}?name=이순신",
+        headers=admin_headers(),
+    ).json()
+    if len(scenarios) < 2:
+        pytest.skip("이순신 시나리오가 2개 이상 필요합니다")
+
+    first = scenarios[0]
+    second = scenarios[1]
+
+    response = admin_client.patch(
+        f"{SCENARIOS_URL}/reorder",
+        json={"character_id": character.id, "ids": [second["id"], first["id"]]},
+        headers=admin_headers(),
+    )
+
+    assert response.status_code == 200
+    reordered = {item["id"]: item["sort_order"] for item in response.json()}
+    assert reordered[first["id"]] == 1
+    assert reordered[second["id"]] == 0
+
+
+def test_inactive_scenario_hidden_from_public_detail(client, db_session):
+    character = get_character(db_session, "이순신")
+    scenario = get_scenario(db_session, "이순신", 1)
+    assert character is not None
+    assert scenario is not None
+    scenario.is_active = False
+    db_session.flush()
+
+    response = client.get(f"/api/v2/characters/{character.id}")
+    scenario_ids = [item["scenario_id"] for item in response.json()["scenarios"]]
+    assert 1 not in scenario_ids

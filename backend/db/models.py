@@ -72,7 +72,9 @@ class Character(ManagedContentMixin, Base):
         back_populates="character", cascade="all, delete-orphan", order_by="CharacterStat.sort_order"
     )
     scenarios: Mapped[list["Scenario"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan"
+        back_populates="character",
+        cascade="all, delete-orphan",
+        order_by="Scenario.sort_order",
     )
 
     @property
@@ -100,6 +102,7 @@ class Scenario(ManagedContentMixin, Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=False)
     scenario_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     historical_facts: Mapped[str] = mapped_column(Text, nullable=False)

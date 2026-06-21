@@ -79,15 +79,16 @@ def _sync_turn_stats(db: Session, character: Character, items: List[TurnStatWrit
     kept_ids: set[int] = set()
 
     for index, item in enumerate(items):
-        if item.id is not None:
-            stat = existing_by_id.get(item.id)
+        stat_id = getattr(item, "id", None)
+        if stat_id is not None:
+            stat = existing_by_id.get(stat_id)
             if not stat or stat.character_id != character.id:
-                raise TurnStatNotFoundError(item.id)
+                raise TurnStatNotFoundError(stat_id)
             stat.name = item.name
             stat.value = item.value
             stat.sort_order = index
             stat.is_active = True
-            kept_ids.add(item.id)
+            kept_ids.add(stat_id)
         else:
             db.add(
                 CharacterStat(
@@ -155,7 +156,7 @@ def create_character(db: Session, data: CharacterCreate) -> Character:
         intro_quote=data.intro_quote,
         intro_desc=data.intro_desc,
         keywords=data.keywords,
-        associated_stories=data.associated_stories,
+        associated_stories=data.associated_stories.to_storage_dict(),
         is_active=True,
     )
     db.add(character)
@@ -175,6 +176,8 @@ def update_character(db: Session, character_id: int, data: CharacterUpdate) -> C
         _ensure_unique_name(db, updates["name"], exclude_id=character_id)
     if "category_id" in updates:
         character_category.get_category_by_id(db, updates["category_id"])
+    if "associated_stories" in data.model_fields_set and data.associated_stories is not None:
+        updates["associated_stories"] = data.associated_stories.to_storage_dict()
 
     for field, value in updates.items():
         setattr(character, field, value)

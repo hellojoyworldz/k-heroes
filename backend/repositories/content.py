@@ -110,7 +110,7 @@ def _map_character(
     scenarios: List[ScenarioItem] = []
     if include_scenarios and not lightweight:
         active_scenarios = [s for s in character.scenarios if _is_active_scenario(s)]
-        active_scenarios.sort(key=lambda s: s.scenario_id)
+        active_scenarios.sort(key=lambda s: (s.sort_order, s.scenario_id))
         for scenario in active_scenarios:
             if scenario_id is not None and scenario.scenario_id != scenario_id:
                 continue

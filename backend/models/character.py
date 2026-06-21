@@ -77,11 +77,34 @@ class CharacterCard(BaseModel):
 
 
 class TurnStatWrite(BaseModel):
-    id: Optional[int] = Field(None, ge=1)
-    name: str = Field(..., min_length=1, max_length=100)
-    value: int
+    id: Optional[int] = Field(None, ge=1, description="기존 능력치 DB id. 수정·유지 시 필수, 신규 추가 시 생략")
+    name: str = Field(..., min_length=1, max_length=100, description="능력치 이름")
+    value: int = Field(..., description="능력치 값")
 
     model_config = ConfigDict(extra="forbid")
+
+
+class TurnStatCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="능력치 이름")
+    value: int = Field(..., description="능력치 값")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class AssociatedStoriesWrite(BaseModel):
+    prsn: List[int] = Field(default_factory=list, description="인물 역사 스토리 ID (RAG data_manage_no)")
+    cltur: List[int] = Field(default_factory=list, description="문화/예술 스토리 ID")
+    history_textbook: List[int] = Field(
+        default_factory=list,
+        serialization_alias="국사교과서",
+        validation_alias="국사교과서",
+        description="국사교과서 스토리 ID",
+    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    def to_storage_dict(self) -> Dict[str, List[int]]:
+        return self.model_dump(by_alias=True, exclude_defaults=True)
 
 
 class TurnStatItem(BaseModel):
@@ -91,59 +114,70 @@ class TurnStatItem(BaseModel):
 
 
 class CharacterCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    category_id: int = Field(..., ge=1)
-    era: str = Field(..., min_length=1, max_length=100)
-    era_tag: str = Field(..., min_length=1, max_length=100)
-    role: str = Field(..., min_length=1, max_length=100)
-    years: str = Field(..., min_length=1, max_length=50)
-    situation: str = Field(..., min_length=1)
-    one_line_summary: str = Field(..., min_length=1)
-    mbti: str = Field(..., min_length=1, max_length=10)
-    mbti_nickname: str = Field(..., min_length=1, max_length=100)
-    intro_quote: str = Field(..., min_length=1)
-    intro_desc: str = Field(..., min_length=1)
-    mbti_e_i: str = ""
-    mbti_s_n: str = ""
-    mbti_t_f: str = ""
-    mbti_j_p: str = ""
-    image_url: str = ""
-    keywords: List[str] = Field(default_factory=list)
-    associated_stories: Dict[str, List[int]] = Field(default_factory=dict)
-    turn_stats: List[TurnStatWrite] = Field(default_factory=list)
+    name: str = Field(..., min_length=1, max_length=100, description="인물 이름")
+    category_id: int = Field(..., ge=1, description="카테고리 DB id (GET /api/v2/character-categories)")
+    era: str = Field(..., min_length=1, max_length=100, description="활동 시대 (예: 조선)")
+    era_tag: str = Field(..., min_length=1, max_length=100, description="시대 태그 (예: 조선 후기)")
+    role: str = Field(..., min_length=1, max_length=100, description="역할 (예: 장군, 왕)")
+    years: str = Field(..., min_length=1, max_length=50, description="생몰년 (예: 1545-1598)")
+    situation: str = Field(..., min_length=1, description="인물 상황 설명")
+    one_line_summary: str = Field(..., min_length=1, description="한 줄 요약")
+    mbti: str = Field(..., min_length=1, max_length=10, description="MBTI (예: ISTJ)")
+    mbti_nickname: str = Field(..., min_length=1, max_length=100, description="MBTI 별명")
+    intro_quote: str = Field(..., min_length=1, description="소개 인용문")
+    intro_desc: str = Field(..., min_length=1, description="소개 본문")
+    mbti_e_i: str = Field(default="", description="MBTI E/I 축 설명 (선택)")
+    mbti_s_n: str = Field(default="", description="MBTI S/N 축 설명 (선택)")
+    mbti_t_f: str = Field(default="", description="MBTI T/F 축 설명 (선택)")
+    mbti_j_p: str = Field(default="", description="MBTI J/P 축 설명 (선택)")
+    image_url: str = Field(default="", description="프로필 이미지 URL (선택)")
+    keywords: List[str] = Field(default_factory=list, description="키워드 태그 (선택)")
+    associated_stories: AssociatedStoriesWrite = Field(
+        default_factory=AssociatedStoriesWrite,
+        description="연관 역사 스토리 ID (선택)",
+    )
+    turn_stats: List[TurnStatCreate] = Field(
+        default_factory=list,
+        description="능력치 목록 (선택). 생성 시 name·value만",
+    )
 
     model_config = ConfigDict(extra="forbid")
 
 
 class CharacterUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    category_id: Optional[int] = Field(None, ge=1)
-    era: Optional[str] = Field(None, min_length=1, max_length=100)
-    era_tag: Optional[str] = Field(None, min_length=1, max_length=100)
-    role: Optional[str] = Field(None, min_length=1, max_length=100)
-    years: Optional[str] = Field(None, min_length=1, max_length=50)
-    situation: Optional[str] = Field(None, min_length=1)
-    one_line_summary: Optional[str] = Field(None, min_length=1)
-    mbti: Optional[str] = Field(None, min_length=1, max_length=10)
-    mbti_nickname: Optional[str] = Field(None, min_length=1, max_length=100)
-    intro_quote: Optional[str] = Field(None, min_length=1)
-    intro_desc: Optional[str] = Field(None, min_length=1)
-    mbti_e_i: Optional[str] = None
-    mbti_s_n: Optional[str] = None
-    mbti_t_f: Optional[str] = None
-    mbti_j_p: Optional[str] = None
-    image_url: Optional[str] = None
-    keywords: Optional[List[str]] = None
-    is_active: Optional[bool] = None
-    associated_stories: Optional[Dict[str, List[int]]] = None
-    turn_stats: Optional[List[TurnStatWrite]] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="인물 이름")
+    category_id: Optional[int] = Field(None, ge=1, description="카테고리 DB id")
+    era: Optional[str] = Field(None, min_length=1, max_length=100, description="활동 시대")
+    era_tag: Optional[str] = Field(None, min_length=1, max_length=100, description="시대 태그")
+    role: Optional[str] = Field(None, min_length=1, max_length=100, description="역할")
+    years: Optional[str] = Field(None, min_length=1, max_length=50, description="생몰년")
+    situation: Optional[str] = Field(None, min_length=1, description="인물 상황 설명")
+    one_line_summary: Optional[str] = Field(None, min_length=1, description="한 줄 요약")
+    mbti: Optional[str] = Field(None, min_length=1, max_length=10, description="MBTI")
+    mbti_nickname: Optional[str] = Field(None, min_length=1, max_length=100, description="MBTI 별명")
+    intro_quote: Optional[str] = Field(None, min_length=1, description="소개 인용문")
+    intro_desc: Optional[str] = Field(None, min_length=1, description="소개 본문")
+    mbti_e_i: Optional[str] = Field(None, description="MBTI E/I 축 설명")
+    mbti_s_n: Optional[str] = Field(None, description="MBTI S/N 축 설명")
+    mbti_t_f: Optional[str] = Field(None, description="MBTI T/F 축 설명")
+    mbti_j_p: Optional[str] = Field(None, description="MBTI J/P 축 설명")
+    image_url: Optional[str] = Field(None, description="프로필 이미지 URL")
+    keywords: Optional[List[str]] = Field(None, description="키워드 태그")
+    is_active: Optional[bool] = Field(None, description="true=사용, false=미사용")
+    associated_stories: Optional[AssociatedStoriesWrite] = Field(
+        None, description="연관 역사 스토리 ID"
+    )
+    turn_stats: Optional[List[TurnStatWrite]] = Field(
+        None,
+        description="능력치 전체 sync. id 있으면 수정, 없으면 추가, 배열에서 빠지면 삭제",
+    )
 
     model_config = ConfigDict(extra="forbid")
 
 
 class CharacterReorderRequest(BaseModel):
-    category_id: int = Field(..., ge=1)
-    ids: List[int] = Field(..., min_length=1)
+    category_id: int = Field(..., ge=1, description="카테고리 DB id")
+    ids: List[int] = Field(..., min_length=1, description="인물 DB id 배열 (index=sort_order)")
 
 
 class CharacterAdminResponse(BaseModel):
