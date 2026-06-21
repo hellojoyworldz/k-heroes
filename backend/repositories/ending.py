@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from db.models import Character, Ending, Scenario
 from models.ending import EndingCreate, EndingUpdate
@@ -21,9 +21,17 @@ class EndingDuplicateError(Exception):
         super().__init__(f"Ending path_key='{path_key}' already exists for this scenario")
 
 
+def _ending_query():
+    return select(Ending).options(
+        joinedload(Ending.scenario)
+        .joinedload(Scenario.character)
+        .joinedload(Character.character_category),
+    )
+
+
 def _get_ending_or_raise(db: Session, ending_id: int) -> Ending:
     ending = db.scalar(
-        select(Ending).where(
+        _ending_query().where(
             Ending.id == ending_id,
             Ending.deleted_at.is_(None),
         )
@@ -61,7 +69,7 @@ def _serialize_recommended_places(items: List) -> List[dict]:
 
 def list_endings(db: Session, *, scenario_id: Optional[int] = None) -> List[Ending]:
     query = (
-        select(Ending)
+        _ending_query()
         .join(Ending.scenario)
         .join(Scenario.character)
         .where(Ending.deleted_at.is_(None))
@@ -70,7 +78,7 @@ def list_endings(db: Session, *, scenario_id: Optional[int] = None) -> List[Endi
     if scenario_id is not None:
         _get_scenario_or_raise(db, scenario_id)
         query = query.where(Ending.scenario_id == scenario_id)
-    return list(db.scalars(query))
+    return list(db.scalars(query).unique())
 
 
 def get_ending_by_id(db: Session, ending_id: int) -> Ending:
@@ -96,8 +104,7 @@ def create_ending(db: Session, data: EndingCreate) -> Ending:
     )
     db.add(ending)
     db.flush()
-    db.refresh(ending)
-    return ending
+    return get_ending_by_id(db, ending.id)
 
 
 def update_ending(db: Session, ending_id: int, data: EndingUpdate) -> Ending:
@@ -122,13 +129,11 @@ def update_ending(db: Session, ending_id: int, data: EndingUpdate) -> Ending:
         setattr(ending, field, value)
 
     db.flush()
-    db.refresh(ending)
-    return ending
+    return get_ending_by_id(db, ending_id)
 
 
 def delete_ending(db: Session, ending_id: int) -> Ending:
     ending = _get_ending_or_raise(db, ending_id)
     ending.deleted_at = datetime.now(timezone.utc)
     db.flush()
-    db.refresh(ending)
-    return ending
+    return db.scalar(_ending_query().where(Ending.id == ending_id))

@@ -14,8 +14,8 @@ def get_character(db: Session, name: str) -> Optional[Character]:
     )
 
 
-def get_category(db: Session, label: str) -> Optional[CharacterCategory]:
-    return db.scalar(select(CharacterCategory).where(CharacterCategory.label == label))
+def get_category(db: Session, title: str) -> Optional[CharacterCategory]:
+    return db.scalar(select(CharacterCategory).where(CharacterCategory.title == title))
 
 
 def get_character_stat(db: Session, character_name: str, stat_name: str) -> Optional[CharacterStat]:

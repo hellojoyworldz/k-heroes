@@ -3,6 +3,13 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from db.models import Ending
+from models.admin_refs import (
+    AdminCharacterRef,
+    AdminScenarioRef,
+    character_ref_from_scenario,
+    scenario_ref_from_scenario,
+)
 from models.simulation import RecommendedPlace, SummaryItem
 
 
@@ -40,6 +47,8 @@ class EndingUpdate(BaseModel):
 class EndingAdminResponse(BaseModel):
     id: int
     scenario_id: int
+    scenario: AdminScenarioRef
+    character: AdminCharacterRef
     path_key: str
     ending_type: str
     title: str
@@ -55,10 +64,13 @@ class EndingAdminResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @classmethod
-    def from_orm_row(cls, ending) -> "EndingAdminResponse":
+    def from_orm_row(cls, ending: Ending) -> "EndingAdminResponse":
+        scenario = ending.scenario
         return cls(
             id=ending.id,
             scenario_id=ending.scenario_id,
+            scenario=scenario_ref_from_scenario(scenario),
+            character=character_ref_from_scenario(scenario),
             path_key=ending.path_key,
             ending_type=ending.ending_type,
             title=ending.title,

@@ -39,7 +39,9 @@ def _next_sort_order(db: Session, character_id: int) -> int:
 
 
 def _scenario_query():
-    return select(Scenario).options(joinedload(Scenario.character))
+    return select(Scenario).options(
+        joinedload(Scenario.character).joinedload(Character.character_category),
+    )
 
 
 def list_scenarios(
@@ -78,8 +80,7 @@ def create_scenario(db: Session, data: ScenarioCreate) -> Scenario:
     )
     db.add(scenario)
     db.flush()
-    db.refresh(scenario)
-    return scenario
+    return get_scenario_by_id(db, scenario.id)
 
 
 def update_scenario(db: Session, scenario_db_id: int, data: ScenarioUpdate) -> Scenario:
@@ -90,15 +91,13 @@ def update_scenario(db: Session, scenario_db_id: int, data: ScenarioUpdate) -> S
         setattr(scenario, field, value)
 
     db.flush()
-    db.refresh(scenario)
-    return scenario
+    return get_scenario_by_id(db, scenario_db_id)
 
 
 def delete_scenario(db: Session, scenario_db_id: int) -> Scenario:
     scenario = _get_scenario_or_raise(db, scenario_db_id)
     scenario.deleted_at = datetime.now(timezone.utc)
     db.flush()
-    db.refresh(scenario)
     return scenario
 
 
@@ -114,8 +113,4 @@ def reorder_scenarios(db: Session, data: ScenarioReorderRequest) -> List[Scenari
         scenarios.append(scenario)
 
     db.flush()
-    for scenario in scenarios:
-        db.refresh(scenario)
-
-    scenarios.sort(key=lambda s: s.sort_order)
-    return scenarios
+    return [get_scenario_by_id(db, scenario.id) for scenario in sorted(scenarios, key=lambda s: s.sort_order)]

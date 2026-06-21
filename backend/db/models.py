@@ -34,7 +34,7 @@ class CharacterCategory(ManagedContentMixin, Base):
     __tablename__ = "character_categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    label: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     characters: Mapped[list["Character"]] = relationship(back_populates="character_category")
@@ -79,7 +79,7 @@ class Character(ManagedContentMixin, Base):
 
     @property
     def category(self) -> str:
-        return self.character_category.label if self.character_category else ""
+        return self.character_category.title if self.character_category else ""
 
 
 class CharacterStat(ManagedContentMixin, Base):

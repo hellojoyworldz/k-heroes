@@ -24,8 +24,10 @@ def test_list_scenarios_admin(admin_client):
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
-    assert "character_name" in data[0]
-    assert data[0]["character_name"]
+    assert "character" in data[0]
+    assert data[0]["character"]["name"]
+    assert "category" in data[0]["character"]
+    assert data[0]["character"]["category"]["title"]
 
 
 def test_list_scenarios_filter_by_character_name(admin_client):
@@ -37,7 +39,7 @@ def test_list_scenarios_filter_by_character_name(admin_client):
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
-    assert all("이순신" in item["character_name"] for item in data)
+    assert all("이순신" in item["character"]["name"] for item in data)
     assert all(item["id"] >= 1 for item in data)
 
     other_response = admin_client.get(
@@ -140,6 +142,7 @@ def test_get_scenario(admin_client, db_session):
 
     assert response.status_code == 200
     assert response.json()["id"] == scenario.id
+    assert response.json()["character"]["name"] == "이순신"
     assert "scenario_id" not in response.json()
 
 

@@ -1,7 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
+
+from db.models import Scenario
+from models.admin_refs import AdminCharacterRef, character_ref_from_character
 
 
 class ScenarioCreate(BaseModel):
@@ -30,7 +33,7 @@ class ScenarioUpdate(BaseModel):
 class ScenarioAdminResponse(BaseModel):
     id: int
     character_id: int
-    character_name: str = ""
+    character: AdminCharacterRef
     sort_order: int
     title: str
     description: str
@@ -41,13 +44,20 @@ class ScenarioAdminResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode="wrap")
     @classmethod
-    def attach_character_name(cls, value, handler):
-        if hasattr(value, "character"):
-            result = handler(value)
-            return result.model_copy(update={"character_name": value.character.name})
-        return handler(value)
+    def from_orm_row(cls, scenario: Scenario) -> "ScenarioAdminResponse":
+        return cls(
+            id=scenario.id,
+            character_id=scenario.character_id,
+            character=character_ref_from_character(scenario.character),
+            sort_order=scenario.sort_order,
+            title=scenario.title,
+            description=scenario.description,
+            historical_facts=scenario.historical_facts,
+            source_story_ids=scenario.source_story_ids or [],
+            is_active=scenario.is_active,
+            deleted_at=scenario.deleted_at,
+        )
 
 
 class ScenarioReorderRequest(BaseModel):

@@ -17,7 +17,12 @@ class TurnNotFoundError(Exception):
 
 
 def _turn_query():
-    return select(Turn).options(selectinload(Turn.choices))
+    return select(Turn).options(
+        selectinload(Turn.choices),
+        selectinload(Turn.scenario)
+        .selectinload(Scenario.character)
+        .selectinload(Character.character_category),
+    )
 
 
 def _get_turn_or_raise(db: Session, turn_id: int) -> Turn:
@@ -198,8 +203,7 @@ def delete_turn(db: Session, turn_id: int) -> Turn:
         if choice.deleted_at is None:
             choice.deleted_at = now
     db.flush()
-    db.refresh(turn)
-    return turn
+    return db.scalar(_turn_query().where(Turn.id == turn_id))
 
 
 def reorder_turns(db: Session, data: TurnReorderRequest) -> List[Turn]:
@@ -222,8 +226,12 @@ def reorder_turns(db: Session, data: TurnReorderRequest) -> List[Turn]:
         turn.sort_order = index
     db.flush()
 
-    for turn in turns:
-        db.refresh(turn)
-
-    turns.sort(key=lambda item: item.sort_order)
-    return turns
+    turn_ids = [turn.id for turn in turns]
+    reloaded = list(
+        db.scalars(
+            _turn_query()
+            .where(Turn.id.in_(turn_ids))
+            .order_by(Turn.sort_order, Turn.id)
+        )
+    )
+    return reloaded

@@ -3,6 +3,13 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from db.models import Turn
+from models.admin_refs import (
+    AdminCharacterRef,
+    AdminScenarioRef,
+    character_ref_from_scenario,
+    scenario_ref_from_scenario,
+)
 from models.character import ChoiceTurnStatItem
 
 
@@ -64,6 +71,8 @@ class ChoiceAdminResponse(BaseModel):
 class TurnAdminResponse(BaseModel):
     id: int
     scenario_id: int
+    scenario: AdminScenarioRef
+    character: AdminCharacterRef
     sort_order: int
     title: str
     situation: str
@@ -75,28 +84,34 @@ class TurnAdminResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @classmethod
+    def from_orm_row(cls, turn: Turn) -> "TurnAdminResponse":
+        scenario = turn.scenario
+        choices = {
+            choice.choice_key: ChoiceAdminResponse.model_validate(choice)
+            for choice in turn.choices
+            if choice.deleted_at is None
+        }
+        return cls(
+            id=turn.id,
+            scenario_id=turn.scenario_id,
+            scenario=scenario_ref_from_scenario(scenario),
+            character=character_ref_from_scenario(scenario),
+            sort_order=turn.sort_order,
+            title=turn.title,
+            situation=turn.situation,
+            turn_image=turn.turn_image or "",
+            tip_title=turn.tip_title,
+            tip_desc=turn.tip_desc,
+            choices=choices,
+            deleted_at=turn.deleted_at,
+        )
+
     @model_validator(mode="wrap")
     @classmethod
     def attach_choices(cls, value, handler):
-        if hasattr(value, "choices") and not isinstance(value, dict):
-            choices = {
-                choice.choice_key: ChoiceAdminResponse.model_validate(choice)
-                for choice in value.choices
-                if choice.deleted_at is None
-            }
-            payload = {
-                "id": value.id,
-                "scenario_id": value.scenario_id,
-                "sort_order": value.sort_order,
-                "title": value.title,
-                "situation": value.situation,
-                "turn_image": value.turn_image or "",
-                "tip_title": value.tip_title,
-                "tip_desc": value.tip_desc,
-                "choices": choices,
-                "deleted_at": value.deleted_at,
-            }
-            return handler(payload)
+        if isinstance(value, Turn):
+            return cls.from_orm_row(value)
         return handler(value)
 
 

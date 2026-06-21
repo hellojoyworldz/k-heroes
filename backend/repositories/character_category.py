@@ -9,9 +9,9 @@ from models.character_category import CharacterCategoryCreate, CharacterCategory
 
 
 class CharacterCategoryDuplicateError(Exception):
-    def __init__(self, label: str):
-        self.label = label
-        super().__init__(f"Category '{label}' already exists")
+    def __init__(self, title: str):
+        self.title = title
+        super().__init__(f"Category '{title}' already exists")
 
 
 class CharacterCategoryNotFoundError(Exception):
@@ -27,15 +27,15 @@ def _get_category_or_raise(db: Session, category_id: int) -> CharacterCategory:
     return category
 
 
-def _ensure_unique_label(db: Session, label: str, exclude_id: Optional[int] = None) -> None:
+def _ensure_unique_title(db: Session, title: str, exclude_id: Optional[int] = None) -> None:
     existing = db.scalar(
         select(CharacterCategory).where(
-            CharacterCategory.label == label,
+            CharacterCategory.title == title,
             CharacterCategory.deleted_at.is_(None),
         )
     )
     if existing and existing.id != exclude_id:
-        raise CharacterCategoryDuplicateError(label)
+        raise CharacterCategoryDuplicateError(title)
 
 
 def _next_sort_order(db: Session) -> int:
@@ -60,20 +60,20 @@ def get_category_by_id(db: Session, category_id: int) -> CharacterCategory:
     return _get_category_or_raise(db, category_id)
 
 
-def get_category_by_label(db: Session, label: str) -> Optional[CharacterCategory]:
+def get_category_by_title(db: Session, title: str) -> Optional[CharacterCategory]:
     return db.scalar(
         select(CharacterCategory).where(
-            CharacterCategory.label == label,
+            CharacterCategory.title == title,
             CharacterCategory.deleted_at.is_(None),
         )
     )
 
 
 def create_category(db: Session, data: CharacterCategoryCreate) -> CharacterCategory:
-    _ensure_unique_label(db, data.label)
+    _ensure_unique_title(db, data.title)
 
     category = CharacterCategory(
-        label=data.label,
+        title=data.title,
         sort_order=_next_sort_order(db),
         is_active=True,
     )
@@ -89,8 +89,8 @@ def update_category(
     category = _get_category_or_raise(db, category_id)
     updates = data.model_dump(exclude_unset=True)
 
-    if "label" in updates:
-        _ensure_unique_label(db, updates["label"], exclude_id=category_id)
+    if "title" in updates:
+        _ensure_unique_title(db, updates["title"], exclude_id=category_id)
 
     for field, value in updates.items():
         setattr(category, field, value)

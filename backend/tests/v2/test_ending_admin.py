@@ -45,6 +45,9 @@ def test_list_endings_all(admin_client):
     data = response.json()
     assert len(data) >= 176
     assert "path_key" in data[0]
+    assert data[0]["character"]["name"]
+    assert data[0]["character"]["category"]["title"]
+    assert data[0]["scenario"]["title"]
 
 
 def test_list_endings_filter_by_scenario(admin_client, db_session):

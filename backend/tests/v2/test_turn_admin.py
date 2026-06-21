@@ -57,6 +57,9 @@ def test_list_turns_admin_all(admin_client):
     assert len(data) >= 66
     assert "choices" in data[0]
     assert "A" in data[0]["choices"]
+    assert data[0]["character"]["name"]
+    assert data[0]["character"]["category"]["title"]
+    assert data[0]["scenario"]["title"]
 
 
 def test_list_turns_filter_by_scenario(admin_client, db_session):

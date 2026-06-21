@@ -40,9 +40,9 @@ def test_list_characters_without_category_returns_all(client):
     assert len(filtered_response.json()) < len(all_response.json())
 
 
-def get_category_id(client, label: str) -> int:
+def get_category_id(client, title: str) -> int:
     categories = client.get("/api/v2/character-categories").json()
-    return next(item["id"] for item in categories if item["label"] == label)
+    return next(item["id"] for item in categories if item["title"] == title)
 
 
 def test_get_character_detail(client, db_session):

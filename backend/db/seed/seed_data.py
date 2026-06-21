@@ -52,18 +52,18 @@ def clear_content_data(session) -> None:
 
 
 def seed_character_categories(session) -> dict[str, int]:
-    """기본 카테고리 4개를 시드하고 label -> id 매핑을 반환."""
-    label_to_id: dict[str, int] = {}
+    """기본 카테고리 4개를 시드하고 title -> id 매핑을 반환."""
+    title_to_id: dict[str, int] = {}
     for item in DEFAULT_CHARACTER_CATEGORIES:
         category = CharacterCategory(
-            label=item["label"],
+            title=item["title"],
             sort_order=item["sort_order"],
             is_active=True,
         )
         session.add(category)
         session.flush()
-        label_to_id[item["label"]] = category.id
-    return label_to_id
+        title_to_id[item["title"]] = category.id
+    return title_to_id
 
 
 def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str, int], int]:
@@ -75,10 +75,10 @@ def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str,
     category_sort_counters: dict[int, int] = defaultdict(int)
 
     for name, profile in characters_data.items():
-        category_label = profile["category"]
-        category_id = category_lookup.get(category_label)
+        category_title = profile["category"]
+        category_id = category_lookup.get(category_title)
         if category_id is None:
-            raise ValueError(f"Unknown category label in characters.json: {category_label}")
+            raise ValueError(f"Unknown category title in characters.json: {category_title}")
 
         sort_order = category_sort_counters[category_id]
         category_sort_counters[category_id] += 1
@@ -175,7 +175,7 @@ def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str,
                                 stat_name_to_id,
                                 choice_data,
                                 profile_stat_names=profile_stat_names,
-                                category_label=category_label,
+                                category_label=category_title,
                             ),
                         )
                     )

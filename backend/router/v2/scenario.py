@@ -21,6 +21,10 @@ admin_router = APIRouter(
 )
 
 
+def _map_scenarios(scenarios) -> List[ScenarioAdminResponse]:
+    return [ScenarioAdminResponse.from_orm_row(scenario) for scenario in scenarios]
+
+
 @admin_router.get("", response_model=List[ScenarioAdminResponse])
 def list_scenarios_admin(
     name: Optional[str] = Query(None, description="인물 이름 부분 일치"),
@@ -28,7 +32,8 @@ def list_scenarios_admin(
     db: Session = Depends(get_db),
 ):
     """어드민 — 시나리오 목록."""
-    return scenario_repository.list_scenarios(db, name=name, is_active=is_active)
+    scenarios = scenario_repository.list_scenarios(db, name=name, is_active=is_active)
+    return _map_scenarios(scenarios)
 
 
 @admin_router.patch("/reorder", response_model=List[ScenarioAdminResponse])
@@ -47,16 +52,18 @@ def reorder_scenarios(
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return scenarios
+    return _map_scenarios(scenarios)
 
 
 @admin_router.get("/{scenario_id}", response_model=ScenarioAdminResponse)
 def get_scenario(scenario_id: int, db: Session = Depends(get_db)):
     """어드민 — 시나리오 상세."""
     try:
-        return scenario_repository.get_scenario_by_id(db, scenario_id)
+        scenario = scenario_repository.get_scenario_by_id(db, scenario_id)
     except scenario_repository.ScenarioNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return ScenarioAdminResponse.from_orm_row(scenario)
 
 
 @admin_router.post("", response_model=ScenarioAdminResponse, status_code=201)
@@ -69,7 +76,7 @@ def create_scenario(body: ScenarioCreate, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return scenario
+    return ScenarioAdminResponse.from_orm_row(scenario)
 
 
 @admin_router.patch("/{scenario_id}", response_model=ScenarioAdminResponse)
@@ -86,7 +93,7 @@ def update_scenario(
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return scenario
+    return ScenarioAdminResponse.from_orm_row(scenario)
 
 
 @admin_router.delete("/{scenario_id}", response_model=ScenarioAdminResponse)
@@ -99,4 +106,4 @@ def delete_scenario(scenario_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return scenario
+    return ScenarioAdminResponse.from_orm_row(scenario)
