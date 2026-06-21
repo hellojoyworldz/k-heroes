@@ -12,12 +12,12 @@ from models.scenario import (
 )
 from repositories import character as character_repository
 from repositories import scenario as scenario_repository
-from router.v2.deps import verify_admin_token
+from router.v2.deps import require_content_admin
 
 admin_router = APIRouter(
     prefix="/api/v2/admin/scenarios",
     tags=["Scenario v2 Admin"],
-    dependencies=[Depends(verify_admin_token)],
+    dependencies=[Depends(require_content_admin)],
 )
 
 

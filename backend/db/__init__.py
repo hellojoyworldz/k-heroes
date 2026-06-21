@@ -1,5 +1,7 @@
 from db.database import Base, SessionLocal, engine, get_db
 from db.models import (
+    AdminRole,
+    AdminUser,
     Character,
     CharacterCategory,
     CharacterStat,
@@ -21,6 +23,8 @@ __all__ = [
     "get_db",
     "ManagedContentMixin",
     "SoftDeleteMixin",
+    "AdminRole",
+    "AdminUser",
     "Character",
     "CharacterCategory",
     "CharacterStat",

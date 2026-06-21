@@ -1,9 +1,11 @@
 from datetime import datetime
+import enum
 from typing import Optional
 
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -170,6 +172,30 @@ class Ending(SoftDeleteMixin, Base):
     recommended_places: Mapped[list] = mapped_column(JSON, default=list)
 
     scenario: Mapped["Scenario"] = relationship(back_populates="endings")
+
+
+class AdminRole(str, enum.Enum):
+    SUPERADMIN = "superadmin"
+    ADMIN = "admin"
+    PARTNER = "partner"
+
+
+class AdminUser(SoftDeleteMixin, Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[AdminRole] = mapped_column(
+        Enum(AdminRole, native_enum=False, length=20),
+        nullable=False,
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class User(Base):

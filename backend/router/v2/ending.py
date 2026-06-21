@@ -7,12 +7,12 @@ from db.database import get_db
 from models.ending import EndingAdminResponse, EndingCreate, EndingUpdate
 from repositories import ending as ending_repository
 from repositories.scenario import ScenarioNotFoundError
-from router.v2.deps import verify_admin_token
+from router.v2.deps import require_content_admin
 
 admin_router = APIRouter(
     prefix="/api/v2/admin/endings",
     tags=["Ending v2 Admin"],
-    dependencies=[Depends(verify_admin_token)],
+    dependencies=[Depends(require_content_admin)],
 )
 
 

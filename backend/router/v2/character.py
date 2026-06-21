@@ -18,13 +18,13 @@ from models.character import (
     CharacterReorderRequest,
     CharacterUpdate,
 )
-from router.v2.deps import verify_admin_token
+from router.v2.deps import require_content_admin
 
 router = APIRouter(prefix="/api/v2/characters", tags=["Character v2"])
 admin_router = APIRouter(
     prefix="/api/v2/admin/characters",
     tags=["Character v2 Admin"],
-    dependencies=[Depends(verify_admin_token)],
+    dependencies=[Depends(require_content_admin)],
 )
 
 

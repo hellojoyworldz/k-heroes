@@ -2,20 +2,10 @@ import pytest
 from sqlalchemy import func, select
 
 from db.models import Turn
+from tests.admin_auth_helpers import admin_headers
 from tests.helpers import get_character, get_character_stat, get_scenario
 
-ADMIN_TOKEN = "test-admin-token"
 TURNS_URL = "/api/v2/admin/turns"
-
-
-@pytest.fixture
-def admin_client(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", ADMIN_TOKEN)
-    return client
-
-
-def admin_headers():
-    return {"Authorization": f"Bearer {ADMIN_TOKEN}"}
 
 
 def sample_turn_payload(db_session, scenario_id: int, character_name: str = "이순신"):
@@ -50,7 +40,7 @@ def sample_turn_payload(db_session, scenario_id: int, character_name: str = "이
 
 
 def test_list_turns_admin_all(admin_client):
-    response = admin_client.get(TURNS_URL, headers=admin_headers())
+    response = admin_client.get(TURNS_URL, headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     data = response.json()
@@ -68,7 +58,7 @@ def test_list_turns_filter_by_scenario(admin_client, db_session):
 
     response = admin_client.get(
         f"{TURNS_URL}?scenario_id={scenario.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -78,7 +68,7 @@ def test_list_turns_filter_by_scenario(admin_client, db_session):
 
 
 def test_list_turns_scenario_not_found(admin_client):
-    response = admin_client.get(f"{TURNS_URL}?scenario_id=99999", headers=admin_headers())
+    response = admin_client.get(f"{TURNS_URL}?scenario_id=99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -96,7 +86,7 @@ def test_create_turn(admin_client, db_session):
     response = admin_client.post(
         TURNS_URL,
         json=sample_turn_payload(db_session, scenario.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 201
@@ -112,7 +102,7 @@ def test_create_turn_rejects_sort_order(admin_client, db_session):
     payload = sample_turn_payload(db_session, scenario.id)
     payload["sort_order"] = 0
 
-    response = admin_client.post(TURNS_URL, json=payload, headers=admin_headers())
+    response = admin_client.post(TURNS_URL, json=payload, headers=admin_headers(admin_client))
     assert response.status_code == 422
 
 
@@ -129,7 +119,7 @@ def test_create_turn_requires_choices(admin_client, db_session):
             "tip_title": "팁",
             "tip_desc": "답",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 422
@@ -141,7 +131,7 @@ def test_create_turn_unknown_stat(admin_client, db_session):
     payload = sample_turn_payload(db_session, scenario.id)
     payload["choices"]["A"]["turn_stats"] = [{"stat_id": 99999, "delta": 1}]
 
-    response = admin_client.post(TURNS_URL, json=payload, headers=admin_headers())
+    response = admin_client.post(TURNS_URL, json=payload, headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -156,14 +146,14 @@ def test_get_turn(admin_client, db_session):
     )
     assert turn is not None
 
-    response = admin_client.get(f"{TURNS_URL}/{turn.id}", headers=admin_headers())
+    response = admin_client.get(f"{TURNS_URL}/{turn.id}", headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     assert response.json()["id"] == turn.id
 
 
 def test_get_turn_not_found(admin_client):
-    response = admin_client.get(f"{TURNS_URL}/99999", headers=admin_headers())
+    response = admin_client.get(f"{TURNS_URL}/99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -174,14 +164,14 @@ def test_update_turn(admin_client, db_session):
     create_response = admin_client.post(
         TURNS_URL,
         json=sample_turn_payload(db_session, scenario.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     turn_id = create_response.json()["id"]
 
     response = admin_client.patch(
         f"{TURNS_URL}/{turn_id}",
         json={"title": "수정된 턴"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -197,7 +187,7 @@ def test_update_turn_choices_sync(admin_client, db_session):
     create_response = admin_client.post(
         TURNS_URL,
         json=sample_turn_payload(db_session, scenario.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     turn_id = create_response.json()["id"]
     choice_a_id = create_response.json()["choices"]["A"]["id"]
@@ -222,7 +212,7 @@ def test_update_turn_choices_sync(admin_client, db_session):
                 },
             }
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -245,7 +235,7 @@ def test_update_turn_rejects_sort_order(admin_client, db_session):
     response = admin_client.patch(
         f"{TURNS_URL}/{turn.id}",
         json={"sort_order": 99},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 422
@@ -258,18 +248,18 @@ def test_delete_turn_soft(admin_client, db_session):
     create_response = admin_client.post(
         TURNS_URL,
         json=sample_turn_payload(db_session, scenario.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     turn_id = create_response.json()["id"]
 
-    delete_response = admin_client.delete(f"{TURNS_URL}/{turn_id}", headers=admin_headers())
+    delete_response = admin_client.delete(f"{TURNS_URL}/{turn_id}", headers=admin_headers(admin_client))
 
     assert delete_response.status_code == 200
     assert delete_response.json()["deleted_at"] is not None
 
     list_response = admin_client.get(
         f"{TURNS_URL}?scenario_id={scenario.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     assert turn_id not in [item["id"] for item in list_response.json()]
 
@@ -286,25 +276,25 @@ def test_reorder_turns(admin_client, db_session):
             "description": "설명",
             "historical_facts": "역사",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     scenario_id = scenario_response.json()["id"]
 
     first = admin_client.post(
         TURNS_URL,
         json={**sample_turn_payload(db_session, scenario_id), "title": "첫 번째"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
     second = admin_client.post(
         TURNS_URL,
         json={**sample_turn_payload(db_session, scenario_id), "title": "두 번째"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
 
     response = admin_client.patch(
         f"{TURNS_URL}/reorder",
         json={"scenario_id": scenario_id, "ids": [second["id"], first["id"]]},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -326,11 +316,11 @@ def test_deleted_turn_hidden_from_public_detail(client, db_session, admin_client
     create_response = admin_client.post(
         TURNS_URL,
         json=sample_turn_payload(db_session, scenario.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     turn_id = create_response.json()["id"]
 
-    admin_client.delete(f"{TURNS_URL}/{turn_id}", headers=admin_headers())
+    admin_client.delete(f"{TURNS_URL}/{turn_id}", headers=admin_headers(admin_client))
 
     assert len(
         client.get(f"/api/v2/characters/{character.id}").json()["scenarios"][0]["turns"]

@@ -2,24 +2,14 @@ import pytest
 from sqlalchemy import func, select
 
 from db.models import Scenario
+from tests.admin_auth_helpers import admin_headers
 from tests.helpers import get_character, get_scenario
 
-ADMIN_TOKEN = "test-admin-token"
 SCENARIOS_URL = "/api/v2/admin/scenarios"
 
 
-@pytest.fixture
-def admin_client(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", ADMIN_TOKEN)
-    return client
-
-
-def admin_headers():
-    return {"Authorization": f"Bearer {ADMIN_TOKEN}"}
-
-
 def test_list_scenarios_admin(admin_client):
-    response = admin_client.get(SCENARIOS_URL, headers=admin_headers())
+    response = admin_client.get(SCENARIOS_URL, headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     data = response.json()
@@ -33,7 +23,7 @@ def test_list_scenarios_admin(admin_client):
 def test_list_scenarios_filter_by_character_name(admin_client):
     response = admin_client.get(
         f"{SCENARIOS_URL}?name=이순신",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -44,7 +34,7 @@ def test_list_scenarios_filter_by_character_name(admin_client):
 
     other_response = admin_client.get(
         f"{SCENARIOS_URL}?name=없는인물",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     assert other_response.json() == []
 
@@ -57,11 +47,11 @@ def test_list_scenarios_filter_is_active(admin_client, db_session):
 
     active_response = admin_client.get(
         f"{SCENARIOS_URL}?name=이순신&is_active=true",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     inactive_response = admin_client.get(
         f"{SCENARIOS_URL}?name=이순신&is_active=false",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert scenario.id not in [item["id"] for item in active_response.json()]
@@ -85,7 +75,7 @@ def test_create_scenario(admin_client, db_session):
             "historical_facts": "역사적 사실",
             "source_story_ids": [1, 2],
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 201
@@ -110,7 +100,7 @@ def test_create_scenario_rejects_sort_order(admin_client, db_session):
             "historical_facts": "역사적 사실",
             "sort_order": 0,
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 422
@@ -125,7 +115,7 @@ def test_create_scenario_character_not_found(admin_client):
             "description": "설명",
             "historical_facts": "역사적 사실",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 404
@@ -137,7 +127,7 @@ def test_get_scenario(admin_client, db_session):
 
     response = admin_client.get(
         f"{SCENARIOS_URL}/{scenario.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -147,7 +137,7 @@ def test_get_scenario(admin_client, db_session):
 
 
 def test_get_scenario_not_found(admin_client):
-    response = admin_client.get(f"{SCENARIOS_URL}/99999", headers=admin_headers())
+    response = admin_client.get(f"{SCENARIOS_URL}/99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -158,7 +148,7 @@ def test_update_scenario(admin_client, db_session):
     response = admin_client.patch(
         f"{SCENARIOS_URL}/{scenario.id}",
         json={"title": "수정된 제목", "is_active": False},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -175,7 +165,7 @@ def test_update_scenario_rejects_sort_order(admin_client, db_session):
     response = admin_client.patch(
         f"{SCENARIOS_URL}/{scenario.id}",
         json={"sort_order": 99},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 422
@@ -195,13 +185,13 @@ def test_delete_scenario_soft(admin_client, db_session):
             "description": "설명",
             "historical_facts": "역사적 사실",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     scenario_db_id = create_response.json()["id"]
 
     delete_response = admin_client.delete(
         f"{SCENARIOS_URL}/{scenario_db_id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert delete_response.status_code == 200
@@ -209,7 +199,7 @@ def test_delete_scenario_soft(admin_client, db_session):
 
     list_response = admin_client.get(
         f"{SCENARIOS_URL}?name=이순신",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     assert scenario_db_id not in [item["id"] for item in list_response.json()]
 
@@ -220,7 +210,7 @@ def test_reorder_scenarios(admin_client, db_session):
 
     scenarios = admin_client.get(
         f"{SCENARIOS_URL}?name=이순신",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
     if len(scenarios) < 2:
         pytest.skip("이순신 시나리오가 2개 이상 필요합니다")
@@ -231,7 +221,7 @@ def test_reorder_scenarios(admin_client, db_session):
     response = admin_client.patch(
         f"{SCENARIOS_URL}/reorder",
         json={"character_id": character.id, "ids": [second["id"], first["id"]]},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200

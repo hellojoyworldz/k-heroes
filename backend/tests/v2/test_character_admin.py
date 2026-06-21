@@ -1,18 +1,7 @@
 import pytest
 
+from tests.admin_auth_helpers import admin_headers
 from tests.helpers import get_category
-
-ADMIN_TOKEN = "test-admin-token"
-
-
-@pytest.fixture
-def admin_client(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", ADMIN_TOKEN)
-    return client
-
-
-def admin_headers():
-    return {"Authorization": f"Bearer {ADMIN_TOKEN}"}
 
 
 def sample_character_payload(name: str = "테스트인물", category_id: int = 1) -> dict:
@@ -42,7 +31,7 @@ def test_create_character_success(admin_client, db_session):
     category = get_category(db_session, "정치 / 외교")
     payload = sample_character_payload("신규인물", category_id=category.id)
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 201
     data = response.json()
@@ -61,7 +50,7 @@ def test_create_character_rejects_sort_order(admin_client, db_session):
     payload = sample_character_payload("순서지정", category_id=category.id)
     payload["sort_order"] = 0
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 422
 
@@ -72,7 +61,7 @@ def test_create_character_without_optional_fields(admin_client, db_session):
     del payload["image_url"]
     del payload["keywords"]
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 201
     data = response.json()
@@ -86,7 +75,7 @@ def test_create_character_with_associated_stories(admin_client, db_session):
     payload = sample_character_payload("연관스토리인물", category_id=category.id)
     payload["associated_stories"] = {"prsn": [370, 371], "cltur": [380]}
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 201
     assert response.json()["associated_stories"] == {"prsn": [370, 371], "cltur": [380]}
@@ -97,14 +86,14 @@ def test_update_character_associated_stories(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("연관수정", category_id=category.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character_id}",
         json={"associated_stories": {"prsn": [100, 101]}},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -115,15 +104,15 @@ def test_create_character_duplicate_name(admin_client, db_session):
     category = get_category(db_session, "정치 / 외교")
     payload = sample_character_payload("중복인물", category_id=category.id)
 
-    first = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
-    second = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    first = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
+    second = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert first.status_code == 201
     assert second.status_code == 409
 
 
 def test_list_characters_admin(admin_client):
-    response = admin_client.get("/api/v2/admin/characters", headers=admin_headers())
+    response = admin_client.get("/api/v2/admin/characters", headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     data = response.json()
@@ -137,7 +126,7 @@ def test_list_characters_admin_with_category_filter(admin_client, db_session):
     response = admin_client.get(
         "/api/v2/admin/characters",
         params={"category_id": category.id},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -151,25 +140,25 @@ def test_list_characters_admin_filter_is_active(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("비활성인물", category_id=category.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
     admin_client.patch(
         f"/api/v2/admin/characters/{character_id}",
         json={"is_active": False},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
-    all_response = admin_client.get("/api/v2/admin/characters", headers=admin_headers())
+    all_response = admin_client.get("/api/v2/admin/characters", headers=admin_headers(admin_client))
     active_response = admin_client.get(
         "/api/v2/admin/characters",
         params={"is_active": True},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     inactive_response = admin_client.get(
         "/api/v2/admin/characters",
         params={"is_active": False},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert character_id in [item["id"] for item in all_response.json()]
@@ -183,7 +172,7 @@ def test_list_characters_admin_search_by_name(admin_client):
     response = admin_client.get(
         "/api/v2/admin/characters",
         params={"name": "고종"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -196,7 +185,7 @@ def test_list_characters_admin_search_by_tag(admin_client):
     response = admin_client.get(
         "/api/v2/admin/characters",
         params={"tag": "개혁"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -210,12 +199,12 @@ def test_list_characters_admin_search_by_name_and_tag(admin_client):
     matched = admin_client.get(
         "/api/v2/admin/characters",
         params={"name": "고", "tag": "외교"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     name_only = admin_client.get(
         "/api/v2/admin/characters",
         params={"name": "고"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert matched.status_code == 200
@@ -231,18 +220,18 @@ def test_get_character_admin(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("조회인물", category_id=category.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
 
-    response = admin_client.get(f"/api/v2/admin/characters/{character_id}", headers=admin_headers())
+    response = admin_client.get(f"/api/v2/admin/characters/{character_id}", headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     assert response.json()["name"] == "조회인물"
 
 
 def test_get_character_admin_not_found(admin_client):
-    response = admin_client.get("/api/v2/admin/characters/999999", headers=admin_headers())
+    response = admin_client.get("/api/v2/admin/characters/999999", headers=admin_headers(admin_client))
 
     assert response.status_code == 404
 
@@ -252,14 +241,14 @@ def test_update_character(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("수정전", category_id=category.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character_id}",
         json={"one_line_summary": "수정된 요약", "is_active": False},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -274,7 +263,7 @@ def test_reorder_characters_in_category(admin_client, db_session):
     characters = admin_client.get(
         "/api/v2/admin/characters",
         params={"category_id": category.id},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
     assert len(characters) >= 2
 
@@ -287,7 +276,7 @@ def test_reorder_characters_in_category(admin_client, db_session):
             "category_id": category.id,
             "ids": [second["id"], first["id"]],
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -302,7 +291,7 @@ def test_reorder_characters_wrong_category(admin_client, db_session):
     character = admin_client.get(
         "/api/v2/admin/characters",
         params={"category_id": independence.id},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()[0]
 
     response = admin_client.patch(
@@ -311,7 +300,7 @@ def test_reorder_characters_wrong_category(admin_client, db_session):
             "category_id": politics.id,
             "ids": [character["id"]],
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 400
@@ -322,29 +311,28 @@ def test_delete_character_soft(admin_client, db_session):
     create_response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("삭제대상", category_id=category.id),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
 
     delete_response = admin_client.delete(
         f"/api/v2/admin/characters/{character_id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert delete_response.status_code == 200
     assert delete_response.json()["deleted_at"] is not None
 
-    hidden = admin_client.get("/api/v2/admin/characters", headers=admin_headers())
+    hidden = admin_client.get("/api/v2/admin/characters", headers=admin_headers(admin_client))
     assert character_id not in [item["id"] for item in hidden.json()]
 
 
 def test_create_character_requires_auth(admin_client, monkeypatch):
-    monkeypatch.delenv("ADMIN_TOKEN", raising=False)
+    monkeypatch.delenv("JWT_SECRET", raising=False)
 
     response = admin_client.post(
         "/api/v2/admin/characters",
         json=sample_character_payload("인증없음", category_id=1),
-        headers=admin_headers(),
     )
 
     assert response.status_code == 503
@@ -379,7 +367,7 @@ def test_get_character_admin_includes_turn_stats(admin_client, db_session):
 
     response = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -398,7 +386,7 @@ def test_create_character_with_turn_stats(admin_client, db_session):
         {"name": "외교", "value": 60},
     ]
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 201
     turn_stats = response.json()["turn_stats"]
@@ -413,7 +401,7 @@ def test_create_character_turn_stats_rejects_sort_order(admin_client, db_session
     payload = sample_character_payload("능력치422", category_id=category.id)
     payload["turn_stats"] = [{"name": "국력", "value": 50, "sort_order": 0}]
 
-    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers())
+    response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 422
 
@@ -426,7 +414,7 @@ def test_update_character_turn_stats(admin_client, db_session):
 
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()["turn_stats"]
     first = current[0]
 
@@ -438,7 +426,7 @@ def test_update_character_turn_stats(admin_client, db_session):
                 *current[1:],
             ]
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -454,7 +442,7 @@ def test_update_character_turn_stats_reorder(admin_client, db_session):
     character = get_character(db_session, "이순신")
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()["turn_stats"]
     assert len(current) >= 2
     reordered = [current[1], current[0], *current[2:]]
@@ -462,7 +450,7 @@ def test_update_character_turn_stats_reorder(admin_client, db_session):
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character.id}",
         json={"turn_stats": reordered},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -482,7 +470,7 @@ def test_update_character_turn_stats_soft_delete(admin_client, db_session):
                 {"name": "삭제", "value": 20},
             ],
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
     stats = create_response.json()["turn_stats"]
@@ -490,7 +478,7 @@ def test_update_character_turn_stats_soft_delete(admin_client, db_session):
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character_id}",
         json={"turn_stats": [stats[0]]},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -504,13 +492,13 @@ def test_update_character_turn_stats_unknown_id(admin_client, db_session):
     character = get_character(db_session, "이순신")
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()["turn_stats"]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character.id}",
         json={"turn_stats": [{**current[0], "id": 99999}]},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 404

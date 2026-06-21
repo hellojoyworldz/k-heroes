@@ -9,6 +9,8 @@ import db.models  # noqa: F401
 from db.seed import seed_character_categories, seed_characters, seed_endings
 from main import app
 
+pytest_plugins = ["tests.admin_auth_helpers"]
+
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -52,3 +54,8 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_client(client, jwt_env, superadmin_user):
+    return client

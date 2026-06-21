@@ -8,12 +8,12 @@ from models.turn import TurnAdminResponse, TurnCreate, TurnReorderRequest, TurnU
 from repositories import turn as turn_repository
 from repositories.character import TurnStatNotFoundError
 from repositories.scenario import ScenarioNotFoundError
-from router.v2.deps import verify_admin_token
+from router.v2.deps import require_content_admin
 
 admin_router = APIRouter(
     prefix="/api/v2/admin/turns",
     tags=["Turn v2 Admin"],
-    dependencies=[Depends(verify_admin_token)],
+    dependencies=[Depends(require_content_admin)],
 )
 
 

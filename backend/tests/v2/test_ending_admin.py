@@ -1,19 +1,9 @@
 import pytest
 
+from tests.admin_auth_helpers import admin_headers
 from tests.helpers import get_character, get_ending, get_scenario
 
-ADMIN_TOKEN = "test-admin-token"
 ENDINGS_URL = "/api/v2/admin/endings"
-
-
-@pytest.fixture
-def admin_client(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", ADMIN_TOKEN)
-    return client
-
-
-def admin_headers():
-    return {"Authorization": f"Bearer {ADMIN_TOKEN}"}
 
 
 def sample_ending_payload(scenario_id: int, path_key: str = "A-A-A"):
@@ -39,7 +29,7 @@ def sample_ending_payload(scenario_id: int, path_key: str = "A-A-A"):
 
 
 def test_list_endings_all(admin_client):
-    response = admin_client.get(ENDINGS_URL, headers=admin_headers())
+    response = admin_client.get(ENDINGS_URL, headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     data = response.json()
@@ -56,7 +46,7 @@ def test_list_endings_filter_by_scenario(admin_client, db_session):
 
     response = admin_client.get(
         f"{ENDINGS_URL}?scenario_id={scenario.id}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -66,7 +56,7 @@ def test_list_endings_filter_by_scenario(admin_client, db_session):
 
 
 def test_list_endings_scenario_not_found(admin_client):
-    response = admin_client.get(f"{ENDINGS_URL}?scenario_id=99999", headers=admin_headers())
+    response = admin_client.get(f"{ENDINGS_URL}?scenario_id=99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -82,13 +72,13 @@ def test_create_ending(admin_client, db_session):
             "description": "설명",
             "historical_facts": "역사",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
 
     response = admin_client.post(
         ENDINGS_URL,
         json=sample_ending_payload(scenario["id"], "A-B-A"),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 201
@@ -106,7 +96,7 @@ def test_create_ending_duplicate_path_key(admin_client, db_session):
     response = admin_client.post(
         ENDINGS_URL,
         json=sample_ending_payload(scenario.id, "A-A-A"),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 409
@@ -116,14 +106,14 @@ def test_get_ending(admin_client, db_session):
     ending = get_ending(db_session, "이순신", 1, "A-A-A")
     assert ending is not None
 
-    response = admin_client.get(f"{ENDINGS_URL}/{ending.id}", headers=admin_headers())
+    response = admin_client.get(f"{ENDINGS_URL}/{ending.id}", headers=admin_headers(admin_client))
 
     assert response.status_code == 200
     assert response.json()["path_key"] == "A-A-A"
 
 
 def test_get_ending_not_found(admin_client):
-    response = admin_client.get(f"{ENDINGS_URL}/99999", headers=admin_headers())
+    response = admin_client.get(f"{ENDINGS_URL}/99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
 
 
@@ -139,20 +129,20 @@ def test_update_ending(admin_client, db_session):
             "description": "설명",
             "historical_facts": "역사",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
 
     create_response = admin_client.post(
         ENDINGS_URL,
         json=sample_ending_payload(scenario["id"], "B-B-B"),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     ending_id = create_response.json()["id"]
 
     response = admin_client.patch(
         f"{ENDINGS_URL}/{ending_id}",
         json={"title": "수정된 엔딩"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
@@ -168,7 +158,7 @@ def test_update_ending_duplicate_path_key(admin_client, db_session):
     response = admin_client.patch(
         f"{ENDINGS_URL}/{ending.id}",
         json={"path_key": "A-A-A"},
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 409
@@ -186,24 +176,24 @@ def test_delete_ending_soft(admin_client, db_session):
             "description": "설명",
             "historical_facts": "역사",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
 
     create_response = admin_client.post(
         ENDINGS_URL,
         json=sample_ending_payload(scenario["id"], "A-A-C"),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     ending_id = create_response.json()["id"]
 
-    delete_response = admin_client.delete(f"{ENDINGS_URL}/{ending_id}", headers=admin_headers())
+    delete_response = admin_client.delete(f"{ENDINGS_URL}/{ending_id}", headers=admin_headers(admin_client))
 
     assert delete_response.status_code == 200
     assert delete_response.json()["deleted_at"] is not None
 
     list_response = admin_client.get(
         f"{ENDINGS_URL}?scenario_id={scenario['id']}",
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
     assert ending_id not in [item["id"] for item in list_response.json()]
 
@@ -220,13 +210,13 @@ def test_created_ending_used_by_simulation(admin_client, client, db_session):
             "description": "설명",
             "historical_facts": "역사",
         },
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     ).json()
 
     admin_client.post(
         ENDINGS_URL,
         json=sample_ending_payload(scenario["id"], "A-A-A"),
-        headers=admin_headers(),
+        headers=admin_headers(admin_client),
     )
 
     response = client.post(
