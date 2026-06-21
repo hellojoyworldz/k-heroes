@@ -60,7 +60,7 @@ def test_list_turns_admin_all(admin_client):
 
 
 def test_list_turns_filter_by_scenario(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.get(
@@ -80,7 +80,7 @@ def test_list_turns_scenario_not_found(admin_client):
 
 
 def test_create_turn(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     current_max = db_session.scalar(
         select(func.max(Turn.sort_order)).where(
@@ -104,7 +104,7 @@ def test_create_turn(admin_client, db_session):
 
 
 def test_create_turn_rejects_sort_order(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     payload = sample_turn_payload(db_session, scenario.id)
     payload["sort_order"] = 0
@@ -114,7 +114,7 @@ def test_create_turn_rejects_sort_order(admin_client, db_session):
 
 
 def test_create_turn_requires_choices(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.post(
@@ -133,7 +133,7 @@ def test_create_turn_requires_choices(admin_client, db_session):
 
 
 def test_create_turn_unknown_stat(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     payload = sample_turn_payload(db_session, scenario.id)
     payload["choices"]["A"]["turn_stats"] = [{"stat_id": 99999, "delta": 1}]
@@ -143,7 +143,7 @@ def test_create_turn_unknown_stat(admin_client, db_session):
 
 
 def test_get_turn(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     turn = db_session.scalar(
         select(Turn).where(
@@ -165,7 +165,7 @@ def test_get_turn_not_found(admin_client):
 
 
 def test_update_turn(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     create_response = admin_client.post(
@@ -186,7 +186,7 @@ def test_update_turn(admin_client, db_session):
 
 
 def test_update_turn_choices_sync(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     stat = get_character_stat(db_session, "이순신", "전술력")
     assert stat is not None
@@ -229,7 +229,7 @@ def test_update_turn_choices_sync(admin_client, db_session):
 
 
 def test_update_turn_rejects_sort_order(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     turn = db_session.scalar(
         select(Turn).where(
@@ -249,7 +249,7 @@ def test_update_turn_rejects_sort_order(admin_client, db_session):
 
 
 def test_delete_turn_soft(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     create_response = admin_client.post(
@@ -311,7 +311,7 @@ def test_reorder_turns(admin_client, db_session):
 
 
 def test_deleted_turn_hidden_from_public_detail(client, db_session, admin_client):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     character = get_character(db_session, "이순신")
     assert scenario is not None
     assert character is not None

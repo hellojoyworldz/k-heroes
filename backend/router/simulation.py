@@ -44,7 +44,7 @@ async def start_simulation(payload: StartRequest):
         character_card = get_character_card(character_name)
         
         # Filter scenarios
-        filtered_scenarios = [s for s in character_card.scenarios if s.scenario_id == scenario_id]
+        filtered_scenarios = [s for s in character_card.scenarios if s.id == scenario_id]
         if not filtered_scenarios:
             raise HTTPException(status_code=404, detail=f"시나리오 ID {scenario_id}를 인물 '{character_name}'에게서 찾을 수 없습니다.")
         character_card.scenarios = filtered_scenarios
@@ -81,7 +81,7 @@ async def play_turn(payload: TurnRequest):
         # 1. Find the scenario matching scenario_id
         scenario = None
         for s in character_card.scenarios:
-            if s.scenario_id == scenario_id:
+            if s.id == scenario_id:
                 scenario = s
                 break
         if not scenario:
@@ -169,7 +169,7 @@ async def generate_ending(payload: EndingRequest):
         # 1. Find scenario
         scenario = None
         for s in character_card.scenarios:
-            if s.scenario_id == scenario_id:
+            if s.id == scenario_id:
                 scenario = s
                 break
         if not scenario:

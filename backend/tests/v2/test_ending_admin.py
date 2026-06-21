@@ -48,7 +48,7 @@ def test_list_endings_all(admin_client):
 
 
 def test_list_endings_filter_by_scenario(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.get(
@@ -97,7 +97,7 @@ def test_create_ending(admin_client, db_session):
 
 
 def test_create_ending_duplicate_path_key(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.post(
@@ -157,7 +157,7 @@ def test_update_ending(admin_client, db_session):
 
 
 def test_update_ending_duplicate_path_key(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     ending = get_ending(db_session, "이순신", 1, "A-A-B")
     assert scenario is not None
     assert ending is not None
@@ -230,7 +230,7 @@ def test_created_ending_used_by_simulation(admin_client, client, db_session):
         "/api/v2/simulation/ending",
         json={
             "character_name": "이순신",
-            "scenario_id": scenario["scenario_id"],
+            "scenario_id": scenario["id"],
             "choices_path": ["A", "A", "A"],
         },
     )

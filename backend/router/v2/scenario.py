@@ -68,9 +68,6 @@ def create_scenario(body: ScenarioCreate, db: Session = Depends(get_db)):
     except character_repository.CharacterNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except scenario_repository.ScenarioDuplicateError as exc:
-        db.rollback()
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return scenario
 
@@ -88,9 +85,6 @@ def update_scenario(
     except scenario_repository.ScenarioNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except scenario_repository.ScenarioDuplicateError as exc:
-        db.rollback()
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return scenario
 

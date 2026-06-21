@@ -38,7 +38,7 @@ def test_list_scenarios_filter_by_character_name(admin_client):
     data = response.json()
     assert len(data) >= 1
     assert all("이순신" in item["character_name"] for item in data)
-    assert all(item["scenario_id"] >= 1 for item in data)
+    assert all(item["id"] >= 1 for item in data)
 
     other_response = admin_client.get(
         f"{SCENARIOS_URL}?name=없는인물",
@@ -48,7 +48,7 @@ def test_list_scenarios_filter_by_character_name(admin_client):
 
 
 def test_list_scenarios_filter_is_active(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     scenario.is_active = False
     db_session.flush()
@@ -62,17 +62,17 @@ def test_list_scenarios_filter_is_active(admin_client, db_session):
         headers=admin_headers(),
     )
 
-    assert 1 not in [item["scenario_id"] for item in active_response.json()]
-    assert any(item["scenario_id"] == 1 for item in inactive_response.json())
+    assert scenario.id not in [item["id"] for item in active_response.json()]
+    assert scenario.id in [item["id"] for item in inactive_response.json()]
 
 
 def test_create_scenario(admin_client, db_session):
     character = get_character(db_session, "이순신")
     assert character is not None
     current_max = db_session.scalar(
-        select(func.max(Scenario.scenario_id)).where(Scenario.character_id == character.id)
+        select(func.max(Scenario.sort_order)).where(Scenario.character_id == character.id)
     )
-    expected_scenario_id = (current_max or 0) + 1
+    expected_sort_order = (current_max or -1) + 1
 
     response = admin_client.post(
         SCENARIOS_URL,
@@ -89,30 +89,10 @@ def test_create_scenario(admin_client, db_session):
     assert response.status_code == 201
     data = response.json()
     assert data["character_id"] == character.id
-    assert data["scenario_id"] == expected_scenario_id
+    assert data["sort_order"] == expected_sort_order
     assert data["title"] == "신규 시나리오"
     assert data["source_story_ids"] == [1, 2]
     assert data["is_active"] is True
-    assert data["sort_order"] >= 0
-
-
-def test_create_scenario_rejects_scenario_id(admin_client, db_session):
-    character = get_character(db_session, "이순신")
-    assert character is not None
-
-    response = admin_client.post(
-        SCENARIOS_URL,
-        json={
-            "character_id": character.id,
-            "scenario_id": 99,
-            "title": "논리 id 지정 시도",
-            "description": "설명",
-            "historical_facts": "역사적 사실",
-        },
-        headers=admin_headers(),
-    )
-
-    assert response.status_code == 422
 
 
 def test_create_scenario_rejects_sort_order(admin_client, db_session):
@@ -149,23 +129,8 @@ def test_create_scenario_character_not_found(admin_client):
     assert response.status_code == 404
 
 
-def test_update_scenario_duplicate_scenario_id(admin_client, db_session):
-    first = get_scenario(db_session, "이순신", 1)
-    second = get_scenario(db_session, "이순신", 2)
-    if not first or not second:
-        pytest.skip("이순신 시나리오 2개 필요")
-
-    response = admin_client.patch(
-        f"{SCENARIOS_URL}/{second.id}",
-        json={"scenario_id": first.scenario_id},
-        headers=admin_headers(),
-    )
-
-    assert response.status_code == 409
-
-
 def test_get_scenario(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.get(
@@ -175,7 +140,7 @@ def test_get_scenario(admin_client, db_session):
 
     assert response.status_code == 200
     assert response.json()["id"] == scenario.id
-    assert response.json()["scenario_id"] == 1
+    assert "scenario_id" not in response.json()
 
 
 def test_get_scenario_not_found(admin_client):
@@ -184,7 +149,7 @@ def test_get_scenario_not_found(admin_client):
 
 
 def test_update_scenario(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
 
     response = admin_client.patch(
@@ -200,7 +165,7 @@ def test_update_scenario(admin_client, db_session):
 
 
 def test_update_scenario_rejects_sort_order(admin_client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     original_sort_order = scenario.sort_order
 
@@ -274,12 +239,12 @@ def test_reorder_scenarios(admin_client, db_session):
 
 def test_inactive_scenario_hidden_from_public_detail(client, db_session):
     character = get_character(db_session, "이순신")
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     assert character is not None
     assert scenario is not None
     scenario.is_active = False
     db_session.flush()
 
     response = client.get(f"/api/v2/characters/{character.id}")
-    scenario_ids = [item["scenario_id"] for item in response.json()["scenarios"]]
-    assert 1 not in scenario_ids
+    scenario_ids = [item["id"] for item in response.json()["scenarios"]]
+    assert scenario.id not in scenario_ids

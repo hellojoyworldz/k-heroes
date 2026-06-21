@@ -85,7 +85,8 @@ def _map_scenario(scenario: Scenario) -> ScenarioItem:
     turns = [_map_turn(turn) for turn in scenario.turns if _is_visible_turn(turn)]
     turns.sort(key=lambda t: t.sort_order)
     return ScenarioItem(
-        scenario_id=scenario.scenario_id,
+        id=scenario.id,
+        sort_order=scenario.sort_order,
         title=scenario.title,
         description=scenario.description,
         historical_facts=scenario.historical_facts,
@@ -110,9 +111,9 @@ def _map_character(
     scenarios: List[ScenarioItem] = []
     if include_scenarios and not lightweight:
         active_scenarios = [s for s in character.scenarios if _is_active_scenario(s)]
-        active_scenarios.sort(key=lambda s: (s.sort_order, s.scenario_id))
+        active_scenarios.sort(key=lambda s: (s.sort_order, s.id))
         for scenario in active_scenarios:
-            if scenario_id is not None and scenario.scenario_id != scenario_id:
+            if scenario_id is not None and scenario.id != scenario_id:
                 continue
             scenarios.append(_map_scenario(scenario))
 
@@ -243,8 +244,8 @@ def get_ending_by_path(
 
     scenario = db.scalar(
         select(Scenario).where(
+            Scenario.id == scenario_id,
             Scenario.character_id == character.id,
-            Scenario.scenario_id == scenario_id,
             Scenario.is_active.is_(True),
             Scenario.deleted_at.is_(None),
         )

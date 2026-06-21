@@ -138,7 +138,6 @@ def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str,
         for scenario_idx, scenario_data in enumerate(profile.get("scenarios", [])):
             scenario = Scenario(
                 character_id=character.id,
-                scenario_id=scenario_data["scenario_id"],
                 sort_order=scenario_idx,
                 title=scenario_data["title"],
                 description=scenario_data["description"],

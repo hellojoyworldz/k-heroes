@@ -38,30 +38,31 @@ def test_soft_deleted_character_hidden(client, db_session):
 
 def test_inactive_scenario_excluded_from_detail(client, db_session):
     character = get_character(db_session, "이순신")
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     scenario.is_active = False
     db_session.flush()
 
     response = client.get(f"/api/v2/characters/{character.id}")
     assert response.status_code == 200
-    scenario_ids = [item["scenario_id"] for item in response.json()["scenarios"]]
-    assert 1 not in scenario_ids
+    scenario_ids = [item["id"] for item in response.json()["scenarios"]]
+    assert scenario.id not in scenario_ids
 
 
 def test_inactive_scenario_cannot_start(client, db_session):
-    scenario = get_scenario(db_session, "이순신", 1)
+    scenario = get_scenario(db_session, "이순신", 0)
     scenario.is_active = False
     db_session.flush()
 
     response = client.post(
         "/api/v2/simulation/start",
-        json={"character_name": "이순신", "scenario_id": 1},
+        json={"character_name": "이순신", "scenario_id": scenario.id},
     )
     assert response.status_code == 404
 
 
 def test_soft_deleted_ending_returns_404(client, db_session):
-    ending = get_ending(db_session, "이순신", 1, "A-A-A")
+    scenario = get_scenario(db_session, "이순신", 0)
+    ending = get_ending(db_session, "이순신", 0, "A-A-A")
     ending.deleted_at = datetime.now(timezone.utc)
     db_session.flush()
 
@@ -69,7 +70,7 @@ def test_soft_deleted_ending_returns_404(client, db_session):
         "/api/v2/simulation/ending",
         json={
             "character_name": "이순신",
-            "scenario_id": 1,
+            "scenario_id": scenario.id,
             "choices_path": ["A", "A", "A"],
         },
     )

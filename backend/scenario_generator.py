@@ -1026,7 +1026,7 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
                 combinations.append([c1, c2, c3])
                 
     for scenario in character_card.scenarios:
-        s_id = scenario.scenario_id
+        s_id = scenario.sort_order + 1
         if target_scenario_id is not None and s_id != target_scenario_id:
             continue
             
@@ -1311,7 +1311,7 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
     character_card = CharacterCard(**db_char)
     
     for scenario in character_card.scenarios:
-        s_id = scenario.scenario_id
+        s_id = scenario.sort_order + 1
         if target_scenario_id is not None and s_id != target_scenario_id:
             continue
             

@@ -10,12 +10,6 @@ from repositories.character import _get_character_or_raise
 from repositories.character_search import apply_character_search_filters
 
 
-class ScenarioDuplicateError(Exception):
-    def __init__(self, scenario_id: int):
-        self.scenario_id = scenario_id
-        super().__init__(f"Scenario scenario_id={scenario_id} already exists for this character")
-
-
 class ScenarioNotFoundError(Exception):
     def __init__(self, scenario_id: int):
         self.scenario_id = scenario_id
@@ -34,24 +28,6 @@ def _get_scenario_or_raise(db: Session, scenario_db_id: int) -> Scenario:
     return scenario
 
 
-def _ensure_unique_scenario_id(
-    db: Session,
-    character_id: int,
-    scenario_id: int,
-    *,
-    exclude_db_id: Optional[int] = None,
-) -> None:
-    existing = db.scalar(
-        select(Scenario).where(
-            Scenario.character_id == character_id,
-            Scenario.scenario_id == scenario_id,
-            Scenario.deleted_at.is_(None),
-        )
-    )
-    if existing and existing.id != exclude_db_id:
-        raise ScenarioDuplicateError(scenario_id)
-
-
 def _next_sort_order(db: Session, character_id: int) -> int:
     current_max = db.scalar(
         select(func.max(Scenario.sort_order)).where(
@@ -60,13 +36,6 @@ def _next_sort_order(db: Session, character_id: int) -> int:
         )
     )
     return (current_max or -1) + 1
-
-
-def _next_scenario_id(db: Session, character_id: int) -> int:
-    current_max = db.scalar(
-        select(func.max(Scenario.scenario_id)).where(Scenario.character_id == character_id)
-    )
-    return (current_max or 0) + 1
 
 
 def _scenario_query():
@@ -97,11 +66,9 @@ def get_scenario_by_id(db: Session, scenario_db_id: int) -> Scenario:
 
 def create_scenario(db: Session, data: ScenarioCreate) -> Scenario:
     _get_character_or_raise(db, data.character_id)
-    logical_scenario_id = _next_scenario_id(db, data.character_id)
 
     scenario = Scenario(
         character_id=data.character_id,
-        scenario_id=logical_scenario_id,
         sort_order=_next_sort_order(db, data.character_id),
         title=data.title,
         description=data.description,
@@ -118,14 +85,6 @@ def create_scenario(db: Session, data: ScenarioCreate) -> Scenario:
 def update_scenario(db: Session, scenario_db_id: int, data: ScenarioUpdate) -> Scenario:
     scenario = _get_scenario_or_raise(db, scenario_db_id)
     updates = data.model_dump(exclude_unset=True)
-
-    if "scenario_id" in updates:
-        _ensure_unique_scenario_id(
-            db,
-            scenario.character_id,
-            updates["scenario_id"],
-            exclude_db_id=scenario_db_id,
-        )
 
     for field, value in updates.items():
         setattr(scenario, field, value)

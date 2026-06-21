@@ -39,7 +39,8 @@ class TurnItem(BaseModel):
     choices: Dict[str, ChoiceItem]  # e.g., {"A": ChoiceItem, "B": ChoiceItem}
 
 class ScenarioItem(BaseModel):
-    scenario_id: int
+    id: int
+    sort_order: int
     title: str
     description: str
     historical_facts: str

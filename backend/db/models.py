@@ -97,11 +97,9 @@ class CharacterStat(ManagedContentMixin, Base):
 
 class Scenario(ManagedContentMixin, Base):
     __tablename__ = "scenarios"
-    __table_args__ = (UniqueConstraint("character_id", "scenario_id", name="uq_character_scenario"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=False)
-    scenario_id: Mapped[int] = mapped_column(Integer, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)

@@ -18,9 +18,6 @@ class ScenarioCreate(BaseModel):
 
 
 class ScenarioUpdate(BaseModel):
-    scenario_id: Optional[int] = Field(
-        None, ge=1, description="시뮬레이션용 논리 id (인물 내 유니크). 보통 수정하지 않음"
-    )
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="시나리오 제목")
     description: Optional[str] = Field(None, min_length=1, description="시나리오 설명")
     historical_facts: Optional[str] = Field(None, min_length=1, description="역사적 사실")
@@ -34,7 +31,6 @@ class ScenarioAdminResponse(BaseModel):
     id: int
     character_id: int
     character_name: str = ""
-    scenario_id: int
     sort_order: int
     title: str
     description: str
