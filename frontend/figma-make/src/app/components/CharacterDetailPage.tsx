@@ -238,7 +238,7 @@ function PageHeader({
 }) {
   return (
     <header
-      className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
+      className="sticky top-0 z-10 h-14 border-b"
       style={{
         background: 'rgba(248,242,230,0.32)',
         backdropFilter: 'blur(8px)',
@@ -246,18 +246,20 @@ function PageHeader({
         borderColor: 'rgba(42,66,50,0.08)',
       }}
     >
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
-        style={{ color: '#5A5248', fontSize: '13px', fontFamily: "'Noto Sans KR', sans-serif" }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="hidden sm:inline">{backLabel ?? '돌아가기'}</span>
-      </button>
+      <div className="mx-auto flex h-full max-w-[820px] items-center justify-between px-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
+          style={{ color: '#5A5248', fontSize: '13px', fontFamily: "'Noto Sans KR', sans-serif" }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">{backLabel ?? '돌아가기'}</span>
+        </button>
 
-      <div className="flex items-center">{centerContent}</div>
+        <div className="flex items-center">{centerContent}</div>
 
-      <BrandLogo compact />
+        <BrandLogo compact />
+      </div>
     </header>
   );
 }

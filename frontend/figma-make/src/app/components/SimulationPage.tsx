@@ -610,7 +610,7 @@ export function SimulationPage({
     >
       {/* ── 헤더 ── */}
       <header
-        className="sticky top-0 z-10 flex items-center justify-between px-5 h-14 border-b"
+        className="sticky top-0 z-10 h-14 border-b"
         style={{
           background: "rgba(248,242,230,0.32)",
           backdropFilter: "blur(8px)",
@@ -618,18 +618,20 @@ export function SimulationPage({
           borderColor: "rgba(42,66,50,0.08)",
         }}
       >
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
-          style={{ color: "#5A5248", fontSize: "13px", fontFamily: "'Noto Sans KR', sans-serif" }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">돌아가기</span>
-        </button>
+        <div className="mx-auto flex h-full max-w-[860px] items-center justify-between px-4 sm:px-6">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1.5 hover:opacity-60 transition-opacity"
+            style={{ color: "#5A5248", fontSize: "13px", fontFamily: "'Noto Sans KR', sans-serif" }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">돌아가기</span>
+          </button>
 
-        <ProgressIndicator current={currentStep + 1} total={STEPS.length} />
+          <ProgressIndicator current={currentStep + 1} total={STEPS.length} />
 
-        <BrandLogo compact />
+          <BrandLogo compact />
+        </div>
       </header>
 
       {/* ── 본문 ── */}

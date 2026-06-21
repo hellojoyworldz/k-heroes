@@ -68,7 +68,14 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        fontFamily: "'Noto Sans KR', sans-serif",
+        background:
+          "linear-gradient(rgba(244,239,228,0.2), rgba(244,239,228,0.2)), url('/story-background.png') center/cover fixed",
+      }}
+    >
       <NavBar onStart={() => setPage("select")} />
       <HeroSection onStart={() => setPage("select")} />
       <JourneySection />

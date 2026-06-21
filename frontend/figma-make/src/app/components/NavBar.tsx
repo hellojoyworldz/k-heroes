@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { Play, Menu, X } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
-const NAV_LINKS = ["서비스 소개", "지역 선택", "역사 아카이브", "공지사항"];
+const NAV_LINKS = [
+  { label: "서비스 소개", target: "service" },
+  { label: "대표 인물", target: "characters" },
+  { label: "활용 데이터", target: "data" },
+  { label: "공지사항", target: "footer" },
+];
 
 export function NavBar({ onStart }: { onStart?: () => void }) {
   const [scrolled, setScrolled] = useState(false);
@@ -13,6 +18,11 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  const scrollToSection = (target: string) => {
+    document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileOpen(false);
+  };
 
   return (
     <nav
@@ -32,14 +42,15 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map((item) => (
-            <a
-              key={item}
-              href="#"
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => scrollToSection(item.target)}
               className="transition-colors text-sm"
               style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
             >
-              {item}
-            </a>
+              {item.label}
+            </button>
           ))}
         </div>
 
@@ -75,18 +86,21 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
           style={{ background: "rgba(253,250,244,0.97)", borderTop: "1px solid rgba(42,66,50,0.08)" }}
         >
           {NAV_LINKS.map((item) => (
-            <a
-              key={item}
-              href="#"
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => scrollToSection(item.target)}
               className="block py-3 text-sm border-b"
               style={{
+                width: "100%",
+                textAlign: "left",
                 color: "#4A4438",
                 borderColor: "rgba(42,66,50,0.08)",
                 fontFamily: "'Noto Sans KR', sans-serif",
               }}
             >
-              {item}
-            </a>
+              {item.label}
+            </button>
           ))}
           <button
             onClick={onStart}

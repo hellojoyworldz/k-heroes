@@ -1,5 +1,8 @@
+"use client";
+
 import { Play, ChevronRight } from "lucide-react";
 import heroImg from "../../imports/image-16.png";
+import { useRevealOnView } from "../hooks/useRevealOnView";
 
 const STATS = [
   { value: "47개", label: "역사 시나리오" },
@@ -8,8 +11,31 @@ const STATS = [
 ];
 
 export function HeroSection({ onStart }: { onStart?: () => void }) {
+  const { ref, isVisible } = useRevealOnView<HTMLElement>();
+
+  const scrollToService = () => {
+    document.getElementById("service")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <section className="relative min-h-screen flex flex-col">
+    <section
+      ref={ref}
+      id="top"
+      data-visible={isVisible}
+      className="kh-hero-section relative min-h-screen flex flex-col"
+    >
+      <style>{`
+        @keyframes khSoftRise {
+          from { opacity: 0; transform: translateY(18px); filter: blur(4px); }
+          to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        .kh-hero-section [data-reveal] {
+          opacity: 0;
+        }
+        .kh-hero-section[data-visible="true"] [data-reveal] {
+          animation: khSoftRise 0.78s cubic-bezier(0.22, 0.8, 0.28, 1) both;
+        }
+      `}</style>
       {/* ── 배경: 한국 전통 수채화 ── */}
       <div className="absolute inset-0 overflow-hidden">
         <img
@@ -39,6 +65,7 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
       <div className="relative flex-1 flex flex-col justify-center items-center text-center px-6 pt-24 pb-0">
         {/* 배지 */}
         <div
+          data-reveal
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
           style={{
             background: "rgba(42,66,50,0.07)",
@@ -63,8 +90,10 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
 
         {/* 메인 헤드라인 */}
         <h1
+          data-reveal
           className="mb-6"
           style={{
+            animationDelay: "90ms",
             fontFamily: "'Noto Serif KR', serif",
             fontWeight: 600,
             lineHeight: 1.28,
@@ -93,8 +122,10 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
 
         {/* 부제 */}
         <p
+          data-reveal
           className="max-w-xl mb-10 leading-relaxed"
           style={{
+            animationDelay: "180ms",
             color: "#5A5248",
             fontFamily: "'Noto Sans KR', sans-serif",
             fontSize: "0.93rem",
@@ -107,9 +138,11 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
         {/* CTA 버튼 */}
         <div className="flex flex-col sm:flex-row gap-3 items-center">
           <button
+            data-reveal
             onClick={onStart}
             className="flex items-center gap-2.5 px-7 py-3 rounded-xl text-white transition-all hover:opacity-90 hover:shadow-lg"
             style={{
+              animationDelay: "270ms",
               background: "linear-gradient(135deg, #2A4232 0%, #3D6B52 100%)",
               fontFamily: "'Noto Sans KR', sans-serif",
               fontWeight: 500,
@@ -121,8 +154,10 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
             지금 시작하기
           </button>
           <button
+            data-reveal
             className="flex items-center gap-1.5 px-6 py-3 rounded-xl transition-all"
             style={{
+              animationDelay: "330ms",
               color: "#2A4232",
               border: "1px solid rgba(42,66,50,0.28)",
               fontFamily: "'Noto Sans KR', sans-serif",
@@ -135,6 +170,7 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
             onMouseLeave={(e) =>
               (e.currentTarget.style.background = "rgba(253,250,244,0.5)")
             }
+            onClick={scrollToService}
           >
             서비스 소개 보기
             <ChevronRight className="w-4 h-4" />
@@ -145,8 +181,10 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
       {/* ── 하단 통계 바 ── */}
       <div className="relative mt-16 px-6">
         <div
+          data-reveal
           className="max-w-2xl mx-auto flex items-center justify-center gap-0 rounded-2xl overflow-hidden"
           style={{
+            animationDelay: "420ms",
             background: "rgba(253,250,244,0.82)",
             backdropFilter: "blur(16px)",
             border: "1px solid rgba(42,66,50,0.12)",
