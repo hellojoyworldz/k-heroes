@@ -29,15 +29,12 @@ export default function AdminLoginPage() {
       });
 
       if (!response.ok) {
-        const message =
-          response.status === 401
-            ? "아이디 또는 비밀번호가 올바르지 않습니다."
-            : response.status === 403
-              ? "관리자 페이지 접근 권한이 없습니다."
-              : response.status === 503
-                ? "관리자 인증이 설정되지 않았습니다."
-                : "로그인 요청을 처리하지 못했습니다.";
-        setErrorMessage(message);
+        const data = (await response.json()) as { detail?: unknown };
+        setErrorMessage(
+          typeof data.detail === "string"
+            ? data.detail
+            : "로그인 요청을 처리하지 못했습니다.",
+        );
         return;
       }
 

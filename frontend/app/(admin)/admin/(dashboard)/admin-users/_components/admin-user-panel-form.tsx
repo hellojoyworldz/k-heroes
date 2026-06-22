@@ -1,18 +1,11 @@
-import type { AdminRole } from "@/app/(admin)/_components/admin-badge";
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
-
-export type AdminUserFormUser = {
-  id: number;
-  username: string;
-  role: AdminRole;
-  is_active: boolean;
-};
+import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
 
 type AdminUserPanelFormProps = {
   mode: "create" | "edit";
-  user?: AdminUserFormUser;
+  user?: AdminUserListItem;
 };
 
 const panelInputClassName =
@@ -57,6 +50,7 @@ export function AdminUserPanelForm({ mode, user }: AdminUserPanelFormProps) {
           defaultValue={user?.username}
           disabled={!isCreate}
           id="admin-username"
+          maxLength={50}
           name="username"
           placeholder="아이디를 입력하세요"
           required={isCreate}
@@ -73,6 +67,7 @@ export function AdminUserPanelForm({ mode, user }: AdminUserPanelFormProps) {
           className={panelInputClassName}
           id="admin-password"
           minLength={8}
+          maxLength={128}
           name="password"
           placeholder={isCreate ? "8자 이상 입력" : "변경 시에만 입력"}
           required={isCreate}

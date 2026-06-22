@@ -12,13 +12,13 @@ from models.admin_user import AdminUserCreate, AdminUserUpdate
 class AdminUserNotFoundError(Exception):
     def __init__(self, admin_user_id: int):
         self.admin_user_id = admin_user_id
-        super().__init__(f"Admin user id={admin_user_id} not found")
+        super().__init__(f"어드민 회원을 찾을 수 없습니다. (ID: {admin_user_id})")
 
 
 class AdminUserDuplicateError(Exception):
     def __init__(self, username: str):
         self.username = username
-        super().__init__(f"Admin user '{username}' already exists")
+        super().__init__(f"이미 사용 중인 아이디입니다. ({username})")
 
 
 class AdminUserForbiddenError(Exception):
@@ -28,7 +28,7 @@ class AdminUserForbiddenError(Exception):
 
 class LastSuperadminError(Exception):
     def __init__(self):
-        super().__init__("Cannot remove or demote the last superadmin")
+        super().__init__("마지막 최고 관리자는 권한을 변경하거나 삭제할 수 없습니다.")
 
 
 def _get_admin_user_or_raise(db: Session, admin_user_id: int) -> AdminUser:
@@ -53,18 +53,18 @@ def _ensure_actor_can_manage_target(actor: AdminUser, target: AdminUser) -> None
     if actor.role == AdminRole.SUPERADMIN:
         return
     if actor.role != AdminRole.ADMIN:
-        raise AdminUserForbiddenError("Insufficient permissions")
+        raise AdminUserForbiddenError("해당 작업을 수행할 권한이 없습니다.")
     if target.role == AdminRole.SUPERADMIN:
-        raise AdminUserForbiddenError("Cannot manage superadmin accounts")
+        raise AdminUserForbiddenError("최고 관리자 계정은 관리할 수 없습니다.")
 
 
 def _ensure_actor_can_assign_role(actor: AdminUser, role: AdminRole) -> None:
     if actor.role == AdminRole.SUPERADMIN:
         return
     if actor.role != AdminRole.ADMIN:
-        raise AdminUserForbiddenError("Insufficient permissions")
+        raise AdminUserForbiddenError("해당 작업을 수행할 권한이 없습니다.")
     if role == AdminRole.SUPERADMIN:
-        raise AdminUserForbiddenError("Cannot assign superadmin role")
+        raise AdminUserForbiddenError("최고 관리자 역할을 부여할 수 없습니다.")
 
 
 def _ensure_unique_username(db: Session, username: str) -> None:

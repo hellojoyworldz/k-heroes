@@ -37,6 +37,7 @@ def test_login_invalid_password(client):
     )
 
     assert response.status_code == 401
+    assert response.json()["detail"] == "아이디 또는 비밀번호가 올바르지 않습니다."
 
 
 @pytest.mark.usefixtures("jwt_env", "superadmin_user")
@@ -78,3 +79,4 @@ def test_login_without_jwt_secret(client, superadmin_user):
     )
 
     assert response.status_code == 503
+    assert response.json()["detail"] == "관리자 인증이 설정되지 않았습니다."

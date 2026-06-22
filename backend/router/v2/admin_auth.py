@@ -26,9 +26,9 @@ router = APIRouter(prefix="/api/v2/admin/auth", tags=["Admin Auth v2"])
 def authenticate_admin(body: AdminLoginRequest, db: Session) -> AdminUser:
     admin_user = admin_user_repository.get_admin_user_by_username(db, body.username)
     if not admin_user or not admin_user.is_active:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
     if not verify_password(body.password, admin_user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
     return admin_user
 
 
@@ -39,7 +39,7 @@ def issue_token(admin_user: AdminUser) -> str:
             role=admin_user.role.value,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail="Admin auth is not configured") from exc
+        raise HTTPException(status_code=503, detail="관리자 인증이 설정되지 않았습니다.") from exc
 
 
 def record_login(db: Session, admin_user: AdminUser) -> None:
@@ -70,7 +70,7 @@ def create_session(
     """어드민 — 브라우저 세션 로그인."""
     admin_user = authenticate_admin(body, db)
     if admin_user.role.value not in {"superadmin", "admin"}:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+        raise HTTPException(status_code=403, detail="관리자 페이지 접근 권한이 없습니다.")
 
     access_token = issue_token(admin_user)
     record_login(db, admin_user)

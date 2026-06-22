@@ -92,6 +92,7 @@ def test_create_superadmin_as_admin_forbidden(client):
     )
 
     assert response.status_code == 403
+    assert response.json()["detail"] == "최고 관리자 역할을 부여할 수 없습니다."
 
 
 @pytest.mark.usefixtures("jwt_env", "superadmin_user", "admin_user")
@@ -107,6 +108,7 @@ def test_create_duplicate_username(client):
     )
 
     assert response.status_code == 409
+    assert response.json()["detail"] == f"이미 사용 중인 아이디입니다. ({ADMIN_USERNAME})"
 
 
 @pytest.mark.usefixtures("jwt_env")
@@ -171,6 +173,7 @@ def test_delete_last_superadmin_forbidden(client, db_session, superadmin_user):
     )
 
     assert response.status_code == 409
+    assert response.json()["detail"] == "마지막 최고 관리자는 권한을 변경하거나 삭제할 수 없습니다."
 
 
 @pytest.mark.usefixtures("jwt_env", "superadmin_user", "partner_user")
