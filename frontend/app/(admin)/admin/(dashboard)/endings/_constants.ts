@@ -6,5 +6,8 @@ export const ENDING_TYPE_OPTIONS = [
 export type EndingTypeValue = (typeof ENDING_TYPE_OPTIONS)[number]["value"];
 
 export function formatEndingTypeLabel(endingType: string) {
-  return ENDING_TYPE_OPTIONS.find((option) => option.value === endingType)?.label ?? endingType;
+  return (
+    ENDING_TYPE_OPTIONS.find((option) => option.value === endingType)?.label ??
+    endingType
+  );
 }
