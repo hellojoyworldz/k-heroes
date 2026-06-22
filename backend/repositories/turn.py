@@ -21,6 +21,9 @@ def _turn_query():
         selectinload(Turn.choices),
         selectinload(Turn.scenario)
         .selectinload(Scenario.character)
+        .selectinload(Character.stats),
+        selectinload(Turn.scenario)
+        .selectinload(Scenario.character)
         .selectinload(Character.character_category),
     )
 

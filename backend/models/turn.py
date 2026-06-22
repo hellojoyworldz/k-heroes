@@ -10,7 +10,7 @@ from models.admin_refs import (
     character_ref_from_scenario,
     scenario_ref_from_scenario,
 )
-from models.character import ChoiceTurnStatItem
+from models.character import ChoiceTurnStatItem, TurnStatItem
 
 
 class ChoiceWrite(BaseModel):
@@ -54,13 +54,21 @@ class TurnUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class ChoiceTurnStatAdminItem(BaseModel):
+    stat_id: int
+    name: str
+    delta: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ChoiceAdminResponse(BaseModel):
     id: int
     choice_key: str
     title: str
     description: str
     choice_image: str
-    turn_stats: List[ChoiceTurnStatItem]
+    turn_stats: List[ChoiceTurnStatAdminItem]
     result_text: str
     is_historical: bool
     deleted_at: Optional[datetime] = None
@@ -73,6 +81,10 @@ class TurnAdminResponse(BaseModel):
     scenario_id: int
     scenario: AdminScenarioRef
     character: AdminCharacterRef
+    character_stats: List[TurnStatItem] = Field(
+        default_factory=list,
+        description="소속 인물 능력치 목록 (선택지 편집용)",
+    )
     sort_order: int
     title: str
     situation: str
@@ -84,11 +96,50 @@ class TurnAdminResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @staticmethod
+    def _character_stats(character) -> List[TurnStatItem]:
+        active = sorted(
+            (stat for stat in character.stats if stat.deleted_at is None),
+            key=lambda stat: stat.sort_order,
+        )
+        return [
+            TurnStatItem(id=stat.id, name=stat.name, value=stat.value) for stat in active
+        ]
+
+    @staticmethod
+    def _choice_turn_stats_admin(choice, character_stats: List[TurnStatItem]) -> List[ChoiceTurnStatAdminItem]:
+        delta_by_id = {
+            item["stat_id"]: item["delta"] for item in (choice.turn_stats or [])
+        }
+        return [
+            ChoiceTurnStatAdminItem(
+                stat_id=stat.id,
+                name=stat.name,
+                delta=delta_by_id.get(stat.id, 0),
+            )
+            for stat in character_stats
+        ]
+
+    @classmethod
+    def _choice_admin_response(cls, choice, character_stats: List[TurnStatItem]) -> ChoiceAdminResponse:
+        return ChoiceAdminResponse(
+            id=choice.id,
+            choice_key=choice.choice_key,
+            title=choice.title,
+            description=choice.description,
+            choice_image=choice.choice_image or "",
+            turn_stats=cls._choice_turn_stats_admin(choice, character_stats),
+            result_text=choice.result_text,
+            is_historical=choice.is_historical,
+            deleted_at=choice.deleted_at,
+        )
+
     @classmethod
     def from_orm_row(cls, turn: Turn) -> "TurnAdminResponse":
         scenario = turn.scenario
+        character_stats = cls._character_stats(scenario.character)
         choices = {
-            choice.choice_key: ChoiceAdminResponse.model_validate(choice)
+            choice.choice_key: cls._choice_admin_response(choice, character_stats)
             for choice in turn.choices
             if choice.deleted_at is None
         }
@@ -97,6 +148,7 @@ class TurnAdminResponse(BaseModel):
             scenario_id=turn.scenario_id,
             scenario=scenario_ref_from_scenario(scenario),
             character=character_ref_from_scenario(scenario),
+            character_stats=character_stats,
             sort_order=turn.sort_order,
             title=turn.title,
             situation=turn.situation,
