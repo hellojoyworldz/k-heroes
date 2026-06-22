@@ -1111,6 +1111,12 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
         
         for choices_path in combinations:
             path_key = "-".join(choices_path)
+            
+            if path_key in existing_endings and "title" in existing_endings[path_key]:
+                print(f"   ➔ 경로 {path_key}는 이미 생성되어 있어 패스합니다.")
+                scenario_endings[path_key] = existing_endings[path_key]
+                continue
+                
             print(f"   ➔ 경로 {path_key} 엔딩 텍스트 생성 중...")
             
             # 1.5. Calculate history_score & current_stats
