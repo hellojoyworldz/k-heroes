@@ -50,6 +50,27 @@ def test_get_me(client):
     assert response.json()["username"] == SUPERADMIN_USERNAME
 
 
+@pytest.mark.usefixtures("jwt_env", "superadmin_user")
+def test_browser_session(client):
+    login_response = client.post(
+        "/api/v2/admin/auth/session",
+        json={"username": SUPERADMIN_USERNAME, "password": SUPERADMIN_PASSWORD},
+    )
+
+    assert login_response.status_code == 200
+    assert login_response.json()["admin_user"]["username"] == SUPERADMIN_USERNAME
+    assert "access_token" not in login_response.json()
+    assert login_response.cookies.get("k_heroes_admin_session")
+
+    me_response = client.get("/api/v2/admin/auth/me")
+    assert me_response.status_code == 200
+    assert me_response.json()["username"] == SUPERADMIN_USERNAME
+
+    logout_response = client.post("/api/v2/admin/auth/session/logout")
+    assert logout_response.status_code == 204
+    assert not client.cookies.get("k_heroes_admin_session")
+
+
 def test_login_without_jwt_secret(client, superadmin_user):
     response = client.post(
         "/api/v2/admin/auth/login",

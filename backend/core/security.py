@@ -7,6 +7,7 @@ import bcrypt
 
 JWT_ALGORITHM = "HS256"
 DEFAULT_JWT_EXPIRE_HOURS = 8
+ADMIN_SESSION_COOKIE = "k_heroes_admin_session"
 
 
 def get_jwt_secret() -> str:
