@@ -116,9 +116,14 @@ def test_list_characters_admin(admin_client):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) >= 1
-    assert "id" in data[0]
-    assert "is_active" in data[0]
+    assert len(data["items"]) >= 1
+    assert "id" in data["items"][0]
+    assert "is_active" in data["items"][0]
+    assert data["page"] == 1
+    assert data["page_size"] == 20
+    assert data["total"] >= 1
+    ids = [item["id"] for item in data["items"]]
+    assert ids == sorted(ids)
 
 
 def test_list_characters_admin_with_category_filter(admin_client, db_session):
@@ -130,9 +135,12 @@ def test_list_characters_admin_with_category_filter(admin_client, db_session):
     )
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["items"]
     assert len(data) >= 1
     assert all(item["category_id"] == category.id for item in data)
+    assert [item["sort_order"] for item in data] == sorted(
+        item["sort_order"] for item in data
+    )
 
 
 def test_list_characters_admin_filter_is_active(admin_client, db_session):
@@ -161,11 +169,11 @@ def test_list_characters_admin_filter_is_active(admin_client, db_session):
         headers=admin_headers(admin_client),
     )
 
-    assert character_id in [item["id"] for item in all_response.json()]
-    assert character_id not in [item["id"] for item in active_response.json()]
-    assert character_id in [item["id"] for item in inactive_response.json()]
-    assert all(item["is_active"] is True for item in active_response.json())
-    assert all(item["is_active"] is False for item in inactive_response.json())
+    assert character_id in [item["id"] for item in all_response.json()["items"]]
+    assert character_id not in [item["id"] for item in active_response.json()["items"]]
+    assert character_id in [item["id"] for item in inactive_response.json()["items"]]
+    assert all(item["is_active"] is True for item in active_response.json()["items"])
+    assert all(item["is_active"] is False for item in inactive_response.json()["items"])
 
 
 def test_list_characters_admin_search_by_name(admin_client):
@@ -176,7 +184,7 @@ def test_list_characters_admin_search_by_name(admin_client):
     )
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["items"]
     assert len(data) >= 1
     assert all("고종" in item["name"] for item in data)
 
@@ -189,7 +197,7 @@ def test_list_characters_admin_search_by_tag(admin_client):
     )
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["items"]
     assert len(data) >= 1
     assert any(item["name"] == "고종" for item in data)
     assert all(any("개혁" in keyword for keyword in item["keywords"]) for item in data)
@@ -208,11 +216,22 @@ def test_list_characters_admin_search_by_name_and_tag(admin_client):
     )
 
     assert matched.status_code == 200
-    matched_names = {item["name"] for item in matched.json()}
+    matched_items = matched.json()["items"]
+    name_only_items = name_only.json()["items"]
+    matched_names = {item["name"] for item in matched_items}
     assert "고종" in matched_names
     assert all("고" in name for name in matched_names)
-    assert all(any("외교" in keyword for keyword in item["keywords"]) for item in matched.json())
-    assert len(matched.json()) <= len(name_only.json())
+    assert all(any("외교" in keyword for keyword in item["keywords"]) for item in matched_items)
+    assert len(matched_items) <= len(name_only_items)
+
+
+def test_list_characters_admin_rejects_invalid_page_size(admin_client):
+    response = admin_client.get(
+        "/api/v2/admin/characters?page_size=30",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 422
 
 
 def test_get_character_admin(admin_client, db_session):
@@ -264,7 +283,7 @@ def test_reorder_characters_in_category(admin_client, db_session):
         "/api/v2/admin/characters",
         params={"category_id": category.id},
         headers=admin_headers(admin_client),
-    ).json()
+    ).json()["items"]
     assert len(characters) >= 2
 
     first = characters[0]
@@ -292,7 +311,7 @@ def test_reorder_characters_wrong_category(admin_client, db_session):
         "/api/v2/admin/characters",
         params={"category_id": independence.id},
         headers=admin_headers(admin_client),
-    ).json()[0]
+    ).json()["items"][0]
 
     response = admin_client.patch(
         "/api/v2/admin/characters/reorder",
@@ -324,7 +343,7 @@ def test_delete_character_soft(admin_client, db_session):
     assert delete_response.json()["deleted_at"] is not None
 
     hidden = admin_client.get("/api/v2/admin/characters", headers=admin_headers(admin_client))
-    assert character_id not in [item["id"] for item in hidden.json()]
+    assert character_id not in [item["id"] for item in hidden.json()["items"]]
 
 
 def test_create_character_requires_auth(admin_client, monkeypatch):

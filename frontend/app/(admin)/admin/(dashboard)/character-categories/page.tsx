@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AdminActiveFilter,
   type ActiveFilterValue,
@@ -15,7 +16,15 @@ import {
 } from "@/app/(admin)/_components/admin-pagination";
 import { AdminPageHeader } from "@/app/(admin)/_components/admin-page-header";
 import { AdminSlidePanel } from "@/app/(admin)/_components/admin-slide-panel";
-import { fetchAdminApi, type PaginatedResponse } from "@/app/(admin)/_lib/admin-api";
+import {
+  fetchAdminCategoryOptions,
+  useAdminCategories,
+  useCreateAdminCategory,
+  useDeleteAdminCategory,
+  useReorderAdminCategories,
+  useUpdateAdminCategory,
+} from "@/app/(admin)/_hooks/use-admin-categories";
+import { AdminApiError } from "@/app/(admin)/_lib/admin-api";
 import { CharacterCategoryPanelForm } from "@/app/(admin)/admin/(dashboard)/character-categories/_components/character-category-panel-form";
 import {
   applyCategoryOrder,
@@ -26,156 +35,60 @@ import type { CharacterCategoryListItem } from "@/app/(admin)/admin/(dashboard)/
 
 type PanelMode = "create" | "edit" | null;
 
-const reorderConfirmMessage = "순서를 변경하시겠습니까?";
-
-function getCategoriesPath(filter: ActiveFilterValue, page: number, pageSize: AdminPageSize) {
-  const params = new URLSearchParams({
-    page: String(page),
-    page_size: String(pageSize),
-  });
-  if (filter === "active") params.set("is_active", "true");
-  if (filter === "inactive") params.set("is_active", "false");
-  return `/api/v2/admin/character-categories?${params.toString()}`;
-}
-
-function requestCategories(
-  filter: ActiveFilterValue,
-  page: number,
-  pageSize: AdminPageSize,
-  signal?: AbortSignal,
-) {
-  return fetchAdminApi(getCategoriesPath(filter, page, pageSize), {
-    cache: "no-store",
-    signal,
-  });
-}
-
-async function getApiError(response: Response, fallback: string) {
-  if (response.status === 401) return "로그인이 만료되었습니다.";
-  if (response.status === 422) return "입력 내용을 확인해 주세요.";
-
-  try {
-    const data = (await response.json()) as { detail?: unknown };
-    if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
-  } catch {
-    // 응답 본문이 JSON이 아니면 기본 메시지를 사용합니다.
-  }
-
-  return fallback;
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export default function CharacterCategoriesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const formRef = useRef<HTMLFormElement>(null);
-  const [categories, setCategories] = useState<CharacterCategoryListItem[]>([]);
   const [panelMode, setPanelMode] = useState<PanelMode>(null);
   const [selectedCategory, setSelectedCategory] = useState<CharacterCategoryListItem | null>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilterValue>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<AdminPageSize>(20);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draftCategories, setDraftCategories] = useState<CharacterCategoryListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isReordering, setIsReordering] = useState(false);
   const [isPreparingReorder, setIsPreparingReorder] = useState(false);
   const [pageError, setPageError] = useState("");
   const [panelError, setPanelError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
+  const categoriesQuery = useAdminCategories(activeFilter, page, pageSize);
+  const createCategory = useCreateAdminCategory();
+  const updateCategory = useUpdateAdminCategory();
+  const deleteCategory = useDeleteAdminCategory();
+  const reorderCategories = useReorderAdminCategories();
+
+  const categories = categoriesQuery.data?.items ?? [];
+  const total = categoriesQuery.data?.total ?? 0;
+  const totalPages = categoriesQuery.data?.total_pages ?? 0;
+  const isLoading = categoriesQuery.isFetching;
+  const isSaving = createCategory.isPending || updateCategory.isPending;
+  const isDeleting = deleteCategory.isPending;
+  const tableError = pageError || (categoriesQuery.error?.message ?? "");
   const displayCategories = isReorderMode ? draftCategories : categories;
   const showReorderButton =
-    activeFilter === "all" &&
-    categories.length > 0 &&
-    !isLoading &&
-    !isReorderMode &&
-    !panelMode;
+    activeFilter === "all" && total > 0 && !isLoading && !isReorderMode && !panelMode;
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadCategories() {
-      try {
-        const response = await requestCategories(
-          activeFilter,
-          page,
-          pageSize,
-          controller.signal,
-        );
-
-        if (response.status === 401) {
-          router.replace("/admin/login");
-          return;
-        }
-        if (!response.ok) {
-          throw new Error(await getApiError(response, "카테고리 목록을 불러오지 못했습니다."));
-        }
-
-        const data = (await response.json()) as PaginatedResponse<CharacterCategoryListItem>;
-        setCategories(data.items);
-        setTotal(data.total);
-        setTotalPages(data.total_pages);
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          setPageError(
-            error instanceof Error
-              ? error.message
-              : "카테고리 목록을 불러오지 못했습니다.",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
+    if (categoriesQuery.error instanceof AdminApiError && categoriesQuery.error.status === 401) {
+      router.replace("/admin/login");
     }
-
-    void loadCategories();
-    return () => controller.abort();
-  }, [activeFilter, page, pageSize, reloadKey, router]);
+  }, [categoriesQuery.error, router]);
 
   function reloadCategories() {
     setIsReorderMode(false);
     setDraftCategories([]);
-    setIsLoading(true);
     setPageError("");
-    setReloadKey((current) => current + 1);
+    void categoriesQuery.refetch();
   }
 
   function changeActiveFilter(filter: ActiveFilterValue) {
     if (filter === activeFilter) return;
-    setIsLoading(true);
-    setPageError("");
     setPage(1);
+    setPageError("");
     setActiveFilter(filter);
-  }
-
-  function changePage(nextPage: number) {
-    if (nextPage === page) return;
-    setIsLoading(true);
-    setPageError("");
-    setPage(nextPage);
-  }
-
-  function changePageSize(nextPageSize: AdminPageSize) {
-    if (nextPageSize === pageSize) return;
-    setIsLoading(true);
-    setPageError("");
-    setPage(1);
-    setPageSize(nextPageSize);
-  }
-
-  function openCreatePanel() {
-    setPanelMode("create");
-    setSelectedCategory(null);
-    setPanelError("");
-  }
-
-  function openEditPanel(category: CharacterCategoryListItem) {
-    setSelectedCategory(category);
-    setPanelMode("edit");
-    setPanelError("");
   }
 
   function resetPanel() {
@@ -192,66 +105,25 @@ export default function CharacterCategoriesPage() {
   async function startReorderMode() {
     setIsPreparingReorder(true);
     setPageError("");
-
     try {
-      const response = await requestCategories("all", 1, 100);
-
-      if (!response.ok) {
-        setPageError(await getApiError(response, "정렬할 카테고리를 불러오지 못했습니다."));
-        if (response.status === 401) router.replace("/admin/login");
-        return;
-      }
-
-      const data = (await response.json()) as PaginatedResponse<CharacterCategoryListItem>;
-      setDraftCategories(data.items);
+      setDraftCategories(await fetchAdminCategoryOptions(queryClient));
       setIsReorderMode(true);
-    } catch {
-      setPageError("API 서버에 연결할 수 없습니다.");
+    } catch (error) {
+      setPageError(errorMessage(error, "정렬할 카테고리를 불러오지 못했습니다."));
     } finally {
       setIsPreparingReorder(false);
     }
   }
 
-  function cancelReorderMode() {
-    setDraftCategories([]);
-    setIsReorderMode(false);
-  }
-
-  function handleDraftReorder(fromIndex: number, toIndex: number) {
-    if (isReordering) return;
-    setDraftCategories((current) =>
-      applyCategoryOrder(reorderCategoryItems(current, fromIndex, toIndex)),
-    );
-  }
-
   async function applyReorder() {
-    if (!window.confirm(reorderConfirmMessage)) {
-      return;
-    }
-
-    setIsReordering(true);
+    if (!window.confirm("순서를 변경하시겠습니까?")) return;
     setPageError("");
-
     try {
-      const response = await fetchAdminApi("/api/v2/admin/character-categories/reorder", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: draftCategories.map((category) => category.id) }),
-      });
-
-      if (!response.ok) {
-        setPageError(await getApiError(response, "순서를 변경하지 못했습니다."));
-        if (response.status === 401) router.replace("/admin/login");
-        return;
-      }
-
+      await reorderCategories.mutateAsync(draftCategories.map((category) => category.id));
       setIsReorderMode(false);
       setDraftCategories([]);
-      reloadCategories();
-    } catch {
-      setPageError("API 서버에 연결할 수 없습니다.");
-    } finally {
-      setIsReordering(false);
+    } catch (error) {
+      setPageError(errorMessage(error, "순서를 변경하지 못했습니다."));
     }
   }
 
@@ -262,7 +134,6 @@ export default function CharacterCategoriesPage() {
     const formData = new FormData(event.currentTarget);
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
-
     if (!title || !description) {
       setPanelError("카테고리명과 설명을 입력해 주세요.");
       return;
@@ -276,67 +147,28 @@ export default function CharacterCategoriesPage() {
         : {}),
     };
 
-    setIsSaving(true);
     setPanelError("");
-
     try {
-      const path =
-        panelMode === "create"
-          ? "/api/v2/admin/character-categories"
-          : `/api/v2/admin/character-categories/${selectedCategory?.id}`;
-      const response = await fetchAdminApi(path, {
-        method: panelMode === "create" ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        setPanelError(await getApiError(response, "카테고리를 저장하지 못했습니다."));
-        if (response.status === 401) router.replace("/admin/login");
-        return;
+      if (panelMode === "create") {
+        await createCategory.mutateAsync(body);
+      } else if (selectedCategory) {
+        await updateCategory.mutateAsync({ id: selectedCategory.id, body });
       }
-
-      await response.json();
       resetPanel();
-      reloadCategories();
-    } catch {
-      setPanelError("API 서버에 연결할 수 없습니다.");
-    } finally {
-      setIsSaving(false);
+    } catch (error) {
+      setPanelError(errorMessage(error, "카테고리를 저장하지 못했습니다."));
     }
   }
 
   async function handleDelete() {
     if (!selectedCategory) return;
-
-    setIsDeleting(true);
     setPanelError("");
-
     try {
-      const response = await fetchAdminApi(
-        `/api/v2/admin/character-categories/${selectedCategory.id}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        setPanelError(await getApiError(response, "카테고리를 삭제하지 못했습니다."));
-        if (response.status === 401) router.replace("/admin/login");
-        return;
-      }
-
-      const shouldMoveToPreviousPage = categories.length === 1 && page > 1;
+      await deleteCategory.mutateAsync(selectedCategory.id);
+      if (categories.length === 1 && page > 1) setPage((current) => current - 1);
       resetPanel();
-      setIsLoading(true);
-      setPageError("");
-      if (shouldMoveToPreviousPage) {
-        setPage((current) => current - 1);
-      } else {
-        setReloadKey((current) => current + 1);
-      }
-    } catch {
-      setPanelError("API 서버에 연결할 수 없습니다.");
-    } finally {
-      setIsDeleting(false);
+    } catch (error) {
+      setPanelError(errorMessage(error, "카테고리를 삭제하지 못했습니다."));
     }
   }
 
@@ -347,7 +179,11 @@ export default function CharacterCategoriesPage() {
           <AdminButton
             className="h-11 w-auto gap-2 px-5"
             disabled={isReorderMode}
-            onClick={openCreatePanel}
+            onClick={() => {
+              setSelectedCategory(null);
+              setPanelError("");
+              setPanelMode("create");
+            }}
             type="button"
           >
             <Plus aria-hidden="true" className="size-4" />
@@ -372,8 +208,11 @@ export default function CharacterCategoriesPage() {
           <div className="flex gap-2">
             <AdminButton
               className="w-auto"
-              disabled={isReordering}
-              onClick={cancelReorderMode}
+              disabled={reorderCategories.isPending}
+              onClick={() => {
+                setDraftCategories([]);
+                setIsReorderMode(false);
+              }}
               size="sm"
               type="button"
               variant="secondary"
@@ -382,7 +221,7 @@ export default function CharacterCategoriesPage() {
             </AdminButton>
             <AdminButton
               className="w-auto"
-              isLoading={isReordering}
+              isLoading={reorderCategories.isPending}
               loadingText="변경 중..."
               onClick={applyReorder}
               size="sm"
@@ -411,8 +250,11 @@ export default function CharacterCategoriesPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
-          onPageChange={changePage}
-          onPageSizeChange={changePageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(value) => {
+            setPage(1);
+            setPageSize(value);
+          }}
           onRefresh={reloadCategories}
           page={page}
           pageSize={pageSize}
@@ -424,20 +266,24 @@ export default function CharacterCategoriesPage() {
       <CharacterCategoryTable
         categories={displayCategories}
         emptyMessage="등록된 카테고리가 없습니다."
-        errorMessage={pageError}
+        errorMessage={tableError}
         isLoading={isLoading}
         isReorderMode={isReorderMode}
-        onReorder={handleDraftReorder}
+        onReorder={(fromIndex, toIndex) =>
+          setDraftCategories((current) =>
+            applyCategoryOrder(reorderCategoryItems(current, fromIndex, toIndex)),
+          )
+        }
         onRetry={reloadCategories}
-        onRowClick={openEditPanel}
+        onRowClick={(category) => {
+          setSelectedCategory(category);
+          setPanelError("");
+          setPanelMode("edit");
+        }}
       />
 
       <AdminSlidePanel
-        description={
-          panelMode === "create"
-            ? "새 인물 카테고리를 등록합니다."
-            : "카테고리 정보를 수정합니다."
-        }
+        description={panelMode === "create" ? "새 인물 카테고리를 등록합니다." : "카테고리 정보를 수정합니다."}
         footer={
           panelMode ? (
             <AdminPanelFooter

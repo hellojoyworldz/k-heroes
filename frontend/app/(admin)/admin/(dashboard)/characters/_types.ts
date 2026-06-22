@@ -26,6 +26,8 @@ export type CharacterListItem = {
   intro_quote: string;
   intro_desc: string;
   keywords: string[];
+  associated_stories: Record<string, number[]>;
   turn_stats: CharacterTurnStat[];
   is_active: boolean;
+  deleted_at: string | null;
 };

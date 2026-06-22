@@ -1,7 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
+import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
+import { AdminButton } from "@/app/(admin)/_components/admin-button";
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
@@ -12,6 +14,13 @@ import { formatIdDotLabel } from "@/app/(admin)/_utils";
 type CategoryOption = {
   id: number;
   title: string;
+};
+
+type TurnStatItem = {
+  key: string;
+  id?: number;
+  name: string;
+  value: string;
 };
 
 type CharacterPanelFormProps = {
@@ -79,27 +88,159 @@ function CharacterImageUrlField({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
+function createTurnStat(key: string, item?: Partial<TurnStatItem>): TurnStatItem {
+  return {
+    key,
+    id: item?.id,
+    name: item?.name ?? "",
+    value: item?.value ?? "",
+  };
+}
+
+function TurnStatFields({ items }: { items: TurnStatItem[] }) {
+  const [turnStats, setTurnStats] = useState<TurnStatItem[]>(
+    items.length > 0
+      ? items
+      : [createTurnStat("turn-stat-0"), createTurnStat("turn-stat-1"), createTurnStat("turn-stat-2")],
+  );
+  const [draggedKey, setDraggedKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  function addItem() {
+    setTurnStats((current) => [...current, createTurnStat(`turn-stat-${crypto.randomUUID()}`)]);
+  }
+
+  function removeItem(index: number) {
+    setTurnStats((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function handleDragStart(event: DragEvent<HTMLDivElement>, key: string) {
+    setDraggedKey(key);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", key);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>, key: string) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverKey(key);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, key: string) {
+    event.preventDefault();
+
+    if (!draggedKey || draggedKey === key) {
+      return;
+    }
+
+    setTurnStats((current) => {
+      const fromIndex = current.findIndex((item) => item.key === draggedKey);
+      const toIndex = current.findIndex((item) => item.key === key);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+
+    setDraggedKey(null);
+    setDragOverKey(null);
+  }
+
+  function handleDragEnd() {
+    setDraggedKey(null);
+    setDragOverKey(null);
+  }
+
+  return (
+    <AdminFormRow alignTop label="능력치">
+      <div className="space-y-3">
+        {turnStats.map((item, index) => (
+          <div
+            key={item.key}
+            className={`space-y-3 rounded-lg border border-[#E8E4DC] bg-[#FDFCFA] p-4 cursor-grab active:cursor-grabbing ${
+              dragOverKey === item.key ? "bg-[#F4F1EA]" : ""
+            } ${draggedKey === item.key ? "opacity-50" : ""}`}
+            draggable
+            onDragEnd={handleDragEnd}
+            onDragStart={(event) => handleDragStart(event, item.key)}
+            onDragOver={(event) => handleDragOver(event, item.key)}
+            onDrop={(event) => handleDrop(event, item.key)}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <GripVertical aria-hidden="true" className="size-4 text-[#8A847C]" />
+                <p className="text-xs font-medium text-[#8A847C]">항목 {index + 1}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {turnStats.length > 1 ? (
+                  <AdminButton
+                    className="h-8 w-auto gap-1.5 px-2.5"
+                    onClick={() => removeItem(index)}
+                    size="sm"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Trash2 aria-hidden="true" className="size-3.5" />
+                    삭제
+                  </AdminButton>
+                ) : null}
+              </div>
+            </div>
+
+            {item.id ? <input name={`turn_stats.${index}.id`} type="hidden" value={item.id} /> : null}
+
+            <AdminInput
+              className={panelInputClassName}
+              defaultValue={item.name}
+              name={`turn_stats.${index}.name`}
+              placeholder="능력치명"
+              required
+              type="text"
+            />
+            <AdminInput
+              className={panelInputClassName}
+              defaultValue={item.value}
+              name={`turn_stats.${index}.value`}
+              placeholder="기본값"
+              required
+              type="number"
+            />
+          </div>
+        ))}
+
+        <AdminButton
+          className="h-9 w-auto gap-1.5 px-3"
+          onClick={addItem}
+          size="sm"
+          type="button"
+          variant="secondary"
+        >
+          <Plus aria-hidden="true" className="size-3.5" />
+          능력치 추가
+        </AdminButton>
+      </div>
+    </AdminFormRow>
+  );
+}
+
 export function CharacterPanelForm({ categoryOptions, character, mode }: CharacterPanelFormProps) {
   const isCreate = mode === "create";
   const keywordsValue = character?.keywords.join(", ") ?? "";
+  const turnStats =
+    character?.turn_stats.map((item) => ({
+      key: `existing-${item.id ?? `${item.name}-${item.value}`}`,
+      id: item.id,
+      name: item.name,
+      value: String(item.value),
+    })) ?? [];
 
   return (
     <div className="space-y-6">
       <FormSection title="기본 정보">
-        {!isCreate ? (
-          <AdminFormRow htmlFor="character-id" label="ID">
-            <AdminInput
-              className={panelInputClassName}
-              defaultValue={character?.id}
-              disabled
-              id="character-id"
-              name="id"
-              readOnly
-              type="text"
-            />
-          </AdminFormRow>
-        ) : null}
-
         {!isCreate ? (
           <AdminFormRow label="상태">
             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
@@ -111,6 +252,20 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
               />
               사용
             </label>
+          </AdminFormRow>
+        ) : null}
+
+        {!isCreate ? (
+          <AdminFormRow htmlFor="character-id" label="ID">
+            <AdminInput
+              className={panelInputClassName}
+              defaultValue={character?.id}
+              disabled
+              id="character-id"
+              name="id"
+              readOnly
+              type="text"
+            />
           </AdminFormRow>
         ) : null}
 
@@ -203,33 +358,33 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
           />
         </AdminFormRow>
 
-        <AdminFormRow alignTop htmlFor="character-situation" label="상황" required={isCreate}>
+        <AdminFormRow alignTop htmlFor="character-situation" label="상황" required>
           <AdminTextarea
             className={panelTextareaClassName}
             defaultValue={character?.situation}
             id="character-situation"
             name="situation"
-            required={isCreate}
+            required
           />
         </AdminFormRow>
 
-        <AdminFormRow alignTop htmlFor="character-intro-quote" label="소개 인용" required={isCreate}>
+        <AdminFormRow alignTop htmlFor="character-intro-quote" label="소개 인용" required>
           <AdminTextarea
             className={panelTextareaClassName}
             defaultValue={character?.intro_quote}
             id="character-intro-quote"
             name="intro_quote"
-            required={isCreate}
+            required
           />
         </AdminFormRow>
 
-        <AdminFormRow alignTop htmlFor="character-intro-desc" label="소개 본문" required={isCreate}>
+        <AdminFormRow alignTop htmlFor="character-intro-desc" label="소개 본문" required>
           <AdminTextarea
             className={panelTextareaClassName}
             defaultValue={character?.intro_desc}
             id="character-intro-desc"
             name="intro_desc"
-            required={isCreate}
+            required
           />
         </AdminFormRow>
       </FormSection>
@@ -297,6 +452,10 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
             placeholder="판단(J) / 인식(P) 축 설명"
           />
         </AdminFormRow>
+      </FormSection>
+
+      <FormSection title="능력치">
+        <TurnStatFields items={turnStats} />
       </FormSection>
 
       <FormSection title="기타">

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { adminNavGroups, isAdminNavActive } from "@/app/(admin)/_lib/admin-nav";
 import { fetchAdminApi } from "@/app/(admin)/_lib/admin-api";
@@ -17,6 +18,7 @@ type AdminSidebarProps = {
 export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   async function handleLogout() {
@@ -25,6 +27,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
     try {
       await fetchAdminApi("/api/v2/admin/auth/session/logout", { method: "POST" });
     } finally {
+      queryClient.clear();
       onMobileClose();
       router.replace("/admin/login");
       router.refresh();

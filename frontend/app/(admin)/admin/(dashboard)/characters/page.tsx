@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AdminActiveFilter,
   AdminFilterRow,
@@ -10,193 +12,252 @@ import {
 import { AdminButton } from "@/app/(admin)/_components/admin-button";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminPanelFooter } from "@/app/(admin)/_components/admin-panel-footer";
+import {
+  AdminPagination,
+  type AdminPageSize,
+} from "@/app/(admin)/_components/admin-pagination";
 import { AdminPageHeader } from "@/app/(admin)/_components/admin-page-header";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminSlidePanel } from "@/app/(admin)/_components/admin-slide-panel";
+import { useAdminCategoryOptions } from "@/app/(admin)/_hooks/use-admin-categories";
+import {
+  fetchAdminCharactersForReorder,
+  useAdminCharacters,
+  useCreateAdminCharacter,
+  useDeleteAdminCharacter,
+  useReorderAdminCharacters,
+  useUpdateAdminCharacter,
+} from "@/app/(admin)/_hooks/use-admin-characters";
+import { AdminApiError } from "@/app/(admin)/_lib/admin-api";
 import { CharacterPanelForm } from "@/app/(admin)/admin/(dashboard)/characters/_components/character-panel-form";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
 import {
   applyCharacterOrder,
   CharacterTable,
   reorderCharacterItems,
 } from "@/app/(admin)/admin/(dashboard)/characters/_components/character-table";
 import type { CharacterListItem } from "@/app/(admin)/admin/(dashboard)/characters/_types";
+import { formatIdDotLabel } from "@/app/(admin)/_utils";
 
 type PanelMode = "create" | "edit" | null;
 
-const MOCK_CATEGORY_OPTIONS = [
-  { id: 1, title: "정치 / 외교" },
-  { id: 2, title: "군사 / 국방" },
-  { id: 3, title: "예술 / 문학" },
-];
-
-const MOCK_CHARACTERS: CharacterListItem[] = [
-  {
-    id: 1,
-    name: "이순신",
-    category_id: 2,
-    category: "군사 / 국방",
-    sort_order: 0,
-    era: "조선",
-    era_tag: "조선 중기",
-    role: "장군",
-    years: "1545-1598",
-    image_url: "",
-    situation: "임진왜란 당시 조선 수군을 이끌며 나라를 지킨 명장.",
-    one_line_summary: "바다 위에서 나라를 지킨 충무공",
-    mbti: "ISTJ",
-    mbti_nickname: "철벽의 수호자",
-    mbti_e_i: "전장의 상황을 스스로 판단하고 고독하게 결단하는 내향적 성향.",
-    mbti_s_n: "눈앞의 전황과 실전 경험을 바탕으로 판단하는 감각형.",
-    mbti_t_f: "감정보다 임무와 원칙을 우선하는 사고형.",
-    mbti_j_p: "계획을 세우고 끝까지 밀어붙이는 판단형.",
-    intro_quote: "신에게는 죽음을, 조국에는 영광을.",
-    intro_desc: "조선 중기 무신 출신으로 수군을 이끌며 임진왜란을 막아낸 인물입니다.",
-    keywords: ["장군", "임진왜란", "수군"],
-    turn_stats: [
-      { id: 1, name: "충성", value: 95 },
-      { id: 2, name: "전략", value: 98 },
-    ],
-    is_active: true,
-  },
-  {
-    id: 2,
-    name: "세종대왕",
-    category_id: 1,
-    category: "정치 / 외교",
-    sort_order: 0,
-    era: "조선",
-    era_tag: "조선 전기",
-    role: "왕",
-    years: "1397-1450",
-    image_url: "",
-    situation: "한글 창제와 과학·문화 발전을 이끈 조선의 성군.",
-    one_line_summary: "백성을 사랑한 성군",
-    mbti: "ENFJ",
-    mbti_nickname: "백성의 스승",
-    mbti_e_i: "",
-    mbti_s_n: "",
-    mbti_t_f: "",
-    mbti_j_p: "",
-    intro_quote: "백성이 편히 쓸 문자를 만들어야 하겠다.",
-    intro_desc: "훈민정음 창제와 집현전 학문 진흥으로 조선 문화의 기틀을 다졌습니다.",
-    keywords: ["왕", "한글", "과학"],
-    turn_stats: [
-      { id: 3, name: "지혜", value: 99 },
-      { id: 4, name: "인덕", value: 97 },
-    ],
-    is_active: true,
-  },
-  {
-    id: 3,
-    name: "김홍도",
-    category_id: 3,
-    category: "예술 / 문학",
-    sort_order: 0,
-    era: "조선",
-    era_tag: "조선 후기",
-    role: "화가",
-    years: "1745-1806",
-    image_url: "",
-    situation: "풍속화로 당대 민생을 생생하게 그려낸 화가.",
-    one_line_summary: "민속의 순간을 붓끝에 담은 화가",
-    mbti: "ISFP",
-    mbti_nickname: "거리의 관찰자",
-    mbti_e_i: "",
-    mbti_s_n: "",
-    mbti_t_f: "",
-    mbti_j_p: "",
-    intro_quote: "사람 사는 모습이 곧 그림이다.",
-    intro_desc: "단원 김홍도는 조선 후기 풍속화의 대표 화가로 평가받습니다.",
-    keywords: ["화가", "풍속화", "단원"],
-    turn_stats: [{ id: 5, name: "표현력", value: 96 }],
-    is_active: false,
-  },
-  {
-    id: 4,
-    name: "이이",
-    category_id: 1,
-    category: "정치 / 외교",
-    sort_order: 1,
-    era: "조선",
-    era_tag: "조선 중기",
-    role: "학자",
-    years: "1536-1584",
-    image_url: "",
-    situation: "성리학을 집대성하고 붕당 정치의 기틀을 마련한 율곡.",
-    one_line_summary: "이성과 실천을 강조한 대학자",
-    mbti: "INTJ",
-    mbti_nickname: "이성의 설계자",
-    mbti_e_i: "",
-    mbti_s_n: "",
-    mbti_t_f: "",
-    mbti_j_p: "",
-    intro_quote: "성의가 있으면 산도 통한다.",
-    intro_desc: "퇴계 이황의 제자로 성리학 발전에 크게 기여했습니다.",
-    keywords: ["학자", "성리학", "율곡"],
-    turn_stats: [{ id: 6, name: "학문", value: 94 }],
-    is_active: true,
-  },
-];
-
-const reorderConfirmMessage = "순서를 변경하시겠습니까?";
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export default function CharactersPage() {
-  const [characters, setCharacters] = useState<CharacterListItem[]>(MOCK_CHARACTERS);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const formRef = useRef<HTMLFormElement>(null);
   const [panelMode, setPanelMode] = useState<PanelMode>(null);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterListItem | null>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilterValue>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
   const [nameQuery, setNameQuery] = useState("");
+  const [submittedNameQuery, setSubmittedNameQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<AdminPageSize>(20);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draftCharacters, setDraftCharacters] = useState<CharacterListItem[]>([]);
+  const [isPreparingReorder, setIsPreparingReorder] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [panelError, setPanelError] = useState("");
 
+  const categoryOptionsQuery = useAdminCategoryOptions();
+  const charactersQuery = useAdminCharacters(
+    { active: activeFilter, categoryId: categoryFilter, name: submittedNameQuery },
+    page,
+    pageSize,
+  );
+  const createCharacter = useCreateAdminCharacter();
+  const updateCharacter = useUpdateAdminCharacter();
+  const deleteCharacter = useDeleteAdminCharacter();
+  const reorderCharacters = useReorderAdminCharacters();
+
+  const characters = charactersQuery.data?.items ?? [];
+  const categories = categoryOptionsQuery.data ?? [];
+  const total = charactersQuery.data?.total ?? 0;
+  const totalPages = charactersQuery.data?.total_pages ?? 0;
+  const isLoading = charactersQuery.isFetching;
+  const isSaving = createCharacter.isPending || updateCharacter.isPending;
+  const isDeleting = deleteCharacter.isPending;
+  const tableError = pageError || (charactersQuery.error?.message ?? "");
+  const displayCharacters = isReorderMode ? draftCharacters : characters;
   const showReorderButton =
-    categoryFilter !== "all" && characters.length > 0 && !isReorderMode && !panelMode;
+    categoryFilter !== null && total > 0 && !isLoading && !isReorderMode && !panelMode;
 
-  function openCreatePanel() {
-    setPanelMode("create");
+  useEffect(() => {
+    const error = charactersQuery.error ?? categoryOptionsQuery.error;
+    if (error instanceof AdminApiError && error.status === 401) {
+      router.replace("/admin/login");
+    }
+  }, [categoryOptionsQuery.error, charactersQuery.error, router]);
+
+  function resetPanel() {
+    setPanelMode(null);
     setSelectedCharacter(null);
-  }
-
-  function openEditPanel(character: CharacterListItem) {
-    setSelectedCharacter(character);
-    setPanelMode("edit");
+    setPanelError("");
   }
 
   function closePanel() {
-    setPanelMode(null);
-    setSelectedCharacter(null);
+    if (isSaving || isDeleting) return;
+    resetPanel();
   }
 
-  function startReorderMode() {
-    setDraftCharacters([...characters]);
-    setIsReorderMode(true);
-  }
-
-  function cancelReorderMode() {
-    setDraftCharacters([]);
+  function reloadCharacters() {
     setIsReorderMode(false);
+    setDraftCharacters([]);
+    setPageError("");
+    void charactersQuery.refetch();
   }
 
-  function handleDraftReorder(fromIndex: number, toIndex: number) {
-    setDraftCharacters((current) =>
-      applyCharacterOrder(reorderCharacterItems(current, fromIndex, toIndex)),
-    );
+  async function startReorderMode() {
+    if (categoryFilter === null) return;
+    setIsPreparingReorder(true);
+    setPageError("");
+    try {
+      setDraftCharacters(
+        await fetchAdminCharactersForReorder(queryClient, categoryFilter),
+      );
+      setIsReorderMode(true);
+    } catch (error) {
+      setPageError(errorMessage(error, "정렬할 인물을 불러오지 못했습니다."));
+    } finally {
+      setIsPreparingReorder(false);
+    }
   }
 
-  function applyReorder() {
-    if (!window.confirm(reorderConfirmMessage)) {
+  async function applyReorder() {
+    if (categoryFilter === null || !window.confirm("순서를 변경하시겠습니까?")) return;
+    setPageError("");
+    try {
+      await reorderCharacters.mutateAsync({
+        categoryId: categoryFilter,
+        ids: draftCharacters.map((character) => character.id),
+      });
+      setIsReorderMode(false);
+      setDraftCharacters([]);
+    } catch (error) {
+      setPageError(errorMessage(error, "순서를 변경하지 못했습니다."));
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!panelMode) return;
+
+    const formData = new FormData(event.currentTarget);
+    const text = (name: string) => String(formData.get(name) ?? "").trim();
+    const requiredFields = [
+      "name",
+      "role",
+      "era",
+      "era_tag",
+      "years",
+      "situation",
+      "one_line_summary",
+      "mbti",
+      "mbti_nickname",
+      "intro_quote",
+      "intro_desc",
+    ];
+    if (requiredFields.some((field) => !text(field))) {
+      setPanelError("필수 항목을 모두 입력해 주세요.");
       return;
     }
 
-    const categoryId = Number(categoryFilter);
+    const turnStatMap = new Map<number, { id?: number; name: string; value: number }>();
+    for (const [key, rawValue] of formData.entries()) {
+      const match = /^turn_stats\.(\d+)\.(id|name|value)$/.exec(String(key));
+      if (!match) continue;
 
-    setCharacters(draftCharacters);
-    setIsReorderMode(false);
-    setDraftCharacters([]);
-    // TODO: PATCH /api/v2/admin/characters/reorder
-    // body: { category_id: categoryId, ids: draftCharacters.map((character) => character.id) }
+      const index = Number(match[1]);
+      const field = match[2];
+      const current = turnStatMap.get(index) ?? { name: "", value: 0 };
+
+      if (field === "id") {
+        const id = Number(rawValue);
+        if (Number.isFinite(id) && id > 0) {
+          current.id = id;
+        }
+      } else if (field === "name") {
+        current.name = String(rawValue).trim();
+      } else if (field === "value") {
+        current.value = Number(rawValue);
+      }
+
+      turnStatMap.set(index, current);
+    }
+
+    const turnStats = [...turnStatMap.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, item]) => item);
+
+    if (
+      turnStats.some(
+        (item) => !item.name || !Number.isFinite(item.value),
+      )
+    ) {
+      setPanelError("능력치 이름과 값을 모두 입력해 주세요.");
+      return;
+    }
+
+    const body: Record<string, unknown> = {
+      name: text("name"),
+      category_id: Number(formData.get("category_id")),
+      role: text("role"),
+      era: text("era"),
+      era_tag: text("era_tag"),
+      years: text("years"),
+      situation: text("situation"),
+      one_line_summary: text("one_line_summary"),
+      mbti: text("mbti").toUpperCase(),
+      mbti_nickname: text("mbti_nickname"),
+      mbti_e_i: text("mbti_e_i"),
+      mbti_s_n: text("mbti_s_n"),
+      mbti_t_f: text("mbti_t_f"),
+      mbti_j_p: text("mbti_j_p"),
+      intro_quote: text("intro_quote"),
+      intro_desc: text("intro_desc"),
+      image_url: text("image_url"),
+      keywords: text("keywords")
+        .split(",")
+        .map((keyword) => keyword.trim())
+        .filter(Boolean),
+      turn_stats,
+      ...(panelMode === "edit"
+        ? { is_active: formData.get("is_active") === "on" }
+        : {}),
+    };
+
+    setPanelError("");
+    try {
+      if (panelMode === "create") {
+        await createCharacter.mutateAsync(body);
+      } else if (selectedCharacter) {
+        await updateCharacter.mutateAsync({ id: selectedCharacter.id, body });
+      }
+      resetPanel();
+    } catch (error) {
+      setPanelError(errorMessage(error, "인물을 저장하지 못했습니다."));
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedCharacter) return;
+    setPanelError("");
+    try {
+      await deleteCharacter.mutateAsync(selectedCharacter.id);
+      if (characters.length === 1 && page > 1) setPage((current) => current - 1);
+      resetPanel();
+    } catch (error) {
+      setPanelError(errorMessage(error, "인물을 삭제하지 못했습니다."));
+    }
+  }
+
+  function handleNameSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPage(1);
+    setSubmittedNameQuery(nameQuery.trim());
   }
 
   return (
@@ -205,22 +266,29 @@ export default function CharactersPage() {
         action={
           <AdminButton
             className="h-11 w-auto gap-2 px-5"
-            disabled={isReorderMode}
-            onClick={openCreatePanel}
+            disabled={isReorderMode || categoryOptionsQuery.isLoading || categories.length === 0}
+            onClick={() => {
+              setSelectedCharacter(null);
+              setPanelError("");
+              setPanelMode("create");
+            }}
             type="button"
           >
             <Plus aria-hidden="true" className="size-4" />
             인물 생성
           </AdminButton>
         }
-        description="역사 인물과 능력치(turn_stats)를 관리합니다."
+        description="역사 인물을 관리합니다."
         title="인물"
       />
 
       <div className="mb-4 space-y-4 rounded-xl border border-[#E8E4DC] bg-white px-5 py-4">
         <AdminActiveFilter
           disabled={isReorderMode}
-          onChange={setActiveFilter}
+          onChange={(value) => {
+            setPage(1);
+            setActiveFilter(value);
+          }}
           value={activeFilter}
         />
 
@@ -228,13 +296,16 @@ export default function CharactersPage() {
           <AdminFilterRow htmlFor="character-category-filter" label="카테고리">
             <AdminSelect
               className="h-11"
-              disabled={isReorderMode}
+              disabled={isReorderMode || categoryOptionsQuery.isLoading}
               id="character-category-filter"
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              value={categoryFilter}
+              onChange={(event) => {
+                setPage(1);
+                setCategoryFilter(event.target.value ? Number(event.target.value) : null);
+              }}
+              value={categoryFilter ?? ""}
             >
-              <option value="all">전체</option>
-              {MOCK_CATEGORY_OPTIONS.map((category) => (
+              <option value="">전체</option>
+              {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {formatIdDotLabel(category.id, category.title)}
                 </option>
@@ -243,35 +314,46 @@ export default function CharactersPage() {
           </AdminFilterRow>
 
           <AdminFilterRow htmlFor="character-name-filter" label="이름 검색">
-            <AdminInput
-              className="h-11 rounded-lg border-[#D6D0C6] bg-white text-sm focus:border-[#2A4232] focus:ring-4 focus:ring-[#2A4232]/10"
-              disabled={isReorderMode}
-              id="character-name-filter"
-              onChange={(event) => setNameQuery(event.target.value)}
-              placeholder="이름으로 검색"
-              type="search"
-              value={nameQuery}
-            />
+            <form className="min-w-0" onSubmit={handleNameSearchSubmit}>
+              <AdminInput
+                className="h-11 rounded-lg border-[#D6D0C6] bg-white text-sm focus:border-[#2A4232] focus:ring-4 focus:ring-[#2A4232]/10"
+                disabled={isReorderMode}
+                id="character-name-filter"
+                onChange={(event) => setNameQuery(event.target.value)}
+                placeholder="이름으로 검색"
+                type="search"
+                value={nameQuery}
+              />
+            </form>
           </AdminFilterRow>
         </div>
       </div>
 
       {isReorderMode ? (
         <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#E8E4DC] bg-[#F4F1EA] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-[#3A3530]">
-            선택한 카테고리 내에서 드래그하여 순서를 변경하세요.
-          </p>
+          <p className="text-sm font-medium text-[#3A3530]">선택한 카테고리 내에서 드래그하여 순서를 변경하세요.</p>
           <div className="flex gap-2">
             <AdminButton
               className="w-auto"
-              onClick={cancelReorderMode}
+              disabled={reorderCharacters.isPending}
+              onClick={() => {
+                setDraftCharacters([]);
+                setIsReorderMode(false);
+              }}
               size="sm"
               type="button"
               variant="secondary"
             >
               취소
             </AdminButton>
-            <AdminButton className="w-auto" onClick={applyReorder} size="sm" type="button">
+            <AdminButton
+              className="w-auto"
+              isLoading={reorderCharacters.isPending}
+              loadingText="변경 중..."
+              onClick={applyReorder}
+              size="sm"
+              type="button"
+            >
               순서 변경하기
             </AdminButton>
           </div>
@@ -280,6 +362,8 @@ export default function CharactersPage() {
         <div className="mb-4 flex justify-end">
           <AdminButton
             className="w-auto"
+            isLoading={isPreparingReorder}
+            loadingText="불러오는 중..."
             onClick={startReorderMode}
             size="sm"
             type="button"
@@ -290,30 +374,82 @@ export default function CharactersPage() {
         </div>
       ) : null}
 
+      {!isReorderMode ? (
+        <AdminPagination
+          disabled={isLoading}
+          onPageChange={setPage}
+          onPageSizeChange={(value) => {
+            setPage(1);
+            setPageSize(value);
+          }}
+          onRefresh={reloadCharacters}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+        />
+      ) : null}
+
       <CharacterTable
-        characters={isReorderMode ? draftCharacters : characters}
+        characters={displayCharacters}
         emptyMessage="등록된 인물이 없습니다."
+        errorMessage={tableError}
+        isLoading={isLoading}
         isReorderMode={isReorderMode}
-        onReorder={handleDraftReorder}
-        onRowClick={openEditPanel}
+        onReorder={(fromIndex, toIndex) =>
+          setDraftCharacters((current) =>
+            applyCharacterOrder(reorderCharacterItems(current, fromIndex, toIndex)),
+          )
+        }
+        onRetry={reloadCharacters}
+        onRowClick={(character) => {
+          setSelectedCharacter(character);
+          setPanelError("");
+          setPanelMode("edit");
+        }}
       />
 
       <AdminSlidePanel
-        description={
-          panelMode === "create" ? "새 인물을 등록합니다." : "인물 정보를 수정합니다."
+        description={panelMode === "create" ? "새 인물을 등록합니다." : "인물 정보를 수정합니다."}
+        footer={
+          panelMode ? (
+            <AdminPanelFooter
+              deleteConfirmMessage="이 인물을 삭제하시겠습니까?"
+              isDeleting={isDeleting}
+              isSaving={isSaving}
+              mode={panelMode}
+              onCancel={closePanel}
+              onDelete={handleDelete}
+              onSave={() => formRef.current?.requestSubmit()}
+            />
+          ) : null
         }
-        footer={panelMode ? <AdminPanelFooter mode={panelMode} onCancel={closePanel} /> : null}
         onClose={closePanel}
         open={panelMode !== null}
         title={panelMode === "create" ? "인물 생성" : "인물 수정"}
       >
         {panelMode ? (
-          <CharacterPanelForm
+          <form
             key={selectedCharacter?.id ?? "create"}
-            categoryOptions={MOCK_CATEGORY_OPTIONS}
-            character={selectedCharacter ?? undefined}
-            mode={panelMode}
-          />
+            ref={formRef}
+            className="space-y-5"
+            onSubmit={handleSubmit}
+          >
+            <CharacterPanelForm
+              categoryOptions={categories}
+              character={selectedCharacter ?? undefined}
+              mode={panelMode}
+            />
+            {panelError ? (
+              <p
+                aria-live="polite"
+                className="rounded-lg border border-[#E6C9C5] bg-[#FDF6F5] px-4 py-3 text-sm text-[#9A3F38]"
+                role="alert"
+              >
+                {panelError}
+              </p>
+            ) : null}
+          </form>
         ) : null}
       </AdminSlidePanel>
     </>

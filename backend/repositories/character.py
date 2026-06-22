@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Character, CharacterCategory, CharacterStat
+from db.models import Character, CharacterStat
 from models.character import CharacterCreate, CharacterReorderRequest, CharacterUpdate, TurnStatWrite
 from repositories import character_category
 from repositories.character_search import apply_character_search_filters
@@ -13,13 +13,13 @@ from repositories.character_search import apply_character_search_filters
 class CharacterDuplicateError(Exception):
     def __init__(self, name: str):
         self.name = name
-        super().__init__(f"Character '{name}' already exists")
+        super().__init__(f"이미 등록된 인물 이름입니다. ({name})")
 
 
 class CharacterNotFoundError(Exception):
     def __init__(self, character_id: int):
         self.character_id = character_id
-        super().__init__(f"Character id={character_id} not found")
+        super().__init__(f"인물을 찾을 수 없습니다. (ID: {character_id})")
 
 
 class CharacterReorderError(Exception):
@@ -29,7 +29,7 @@ class CharacterReorderError(Exception):
 class TurnStatNotFoundError(Exception):
     def __init__(self, stat_id: int):
         self.stat_id = stat_id
-        super().__init__(f"Turn stat id={stat_id} not found")
+        super().__init__(f"인물 능력치를 찾을 수 없습니다. (ID: {stat_id})")
 
 
 def _character_admin_query():
@@ -41,7 +41,6 @@ def _character_admin_query():
             selectinload(Character.character_category),
             selectinload(Character.stats),
         )
-        .order_by(CharacterCategory.sort_order, Character.sort_order, Character.name)
     )
 
 
@@ -109,6 +108,24 @@ def _sync_turn_stats(db: Session, character: Character, items: List[TurnStatWrit
     db.refresh(character, attribute_names=["stats"])
 
 
+def _filtered_character_query(
+    *,
+    category_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    name: Optional[str] = None,
+    tag: Optional[str] = None,
+):
+    query = _character_admin_query()
+    if category_id is not None:
+        query = query.where(Character.category_id == category_id)
+    if is_active is not None:
+        query = query.where(Character.is_active.is_(is_active))
+    query = apply_character_search_filters(query, name=name, tag=tag)
+    if category_id is not None:
+        return query.order_by(Character.sort_order, Character.id)
+    return query.order_by(Character.id)
+
+
 def list_characters(
     db: Session,
     *,
@@ -117,13 +134,36 @@ def list_characters(
     name: Optional[str] = None,
     tag: Optional[str] = None,
 ) -> List[Character]:
-    query = _character_admin_query()
-    if category_id is not None:
-        query = query.where(Character.category_id == category_id)
-    if is_active is not None:
-        query = query.where(Character.is_active.is_(is_active))
-    query = apply_character_search_filters(query, name=name, tag=tag)
+    query = _filtered_character_query(
+        category_id=category_id,
+        is_active=is_active,
+        name=name,
+        tag=tag,
+    )
     return list(db.scalars(query))
+
+
+def list_characters_paginated(
+    db: Session,
+    *,
+    category_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    name: Optional[str] = None,
+    tag: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[Character], int]:
+    query = _filtered_character_query(
+        category_id=category_id,
+        is_active=is_active,
+        name=name,
+        tag=tag,
+    )
+    total = db.scalar(
+        select(func.count()).select_from(query.order_by(None).subquery())
+    ) or 0
+    items = list(db.scalars(query.offset((page - 1) * page_size).limit(page_size)))
+    return items, total
 
 
 def get_character_by_id(db: Session, character_id: int) -> Character:
@@ -176,6 +216,8 @@ def update_character(db: Session, character_id: int, data: CharacterUpdate) -> C
         _ensure_unique_name(db, updates["name"], exclude_id=character_id)
     if "category_id" in updates:
         character_category.get_category_by_id(db, updates["category_id"])
+        if updates["category_id"] != character.category_id:
+            updates["sort_order"] = _next_sort_order(db, updates["category_id"])
     if "associated_stories" in data.model_fields_set and data.associated_stories is not None:
         updates["associated_stories"] = data.associated_stories.to_storage_dict()
 
@@ -205,7 +247,7 @@ def reorder_characters(db: Session, data: CharacterReorderRequest) -> List[Chara
         character = _get_character_or_raise(db, character_id)
         if character.category_id != data.category_id:
             raise CharacterReorderError(
-                f"Character id={character_id} does not belong to category id={data.category_id}"
+                f"인물 ID {character_id}은(는) 선택한 카테고리에 속하지 않습니다."
             )
         character.sort_order = index
         updated.append(character)
