@@ -25,7 +25,7 @@ def test_list_character_categories_admin(admin_client):
 
 
 def test_list_character_categories_admin_filter_is_active(admin_client, db_session):
-    category = get_category(db_session, "실학 / 학문")
+    category = get_category(db_session, "사상 / 학문")
     category.is_active = False
     db_session.flush()
 
@@ -42,7 +42,7 @@ def test_list_character_categories_admin_filter_is_active(admin_client, db_sessi
     assert len(all_response.json()) == 4
     assert len(active_response.json()) == 3
     assert len(inactive_response.json()) == 1
-    assert inactive_response.json()[0]["title"] == "실학 / 학문"
+    assert inactive_response.json()[0]["title"] == "사상 / 학문"
 
 
 def test_create_character_category(admin_client):
@@ -159,13 +159,13 @@ def test_reorder_character_categories(admin_client, db_session):
 
 
 def test_inactive_category_hidden_from_public_list(client, db_session):
-    category = get_category(db_session, "실학 / 학문")
+    category = get_category(db_session, "사상 / 학문")
     category.is_active = False
     db_session.flush()
 
     response = client.get("/api/v2/character-categories")
     titles = [item["title"] for item in response.json()]
-    assert "실학 / 학문" not in titles
+    assert "사상 / 학문" not in titles
 
 
 def test_partner_cannot_access_content_admin(client, partner_user, jwt_env):

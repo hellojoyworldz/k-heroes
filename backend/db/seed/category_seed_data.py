@@ -15,7 +15,7 @@ DEFAULT_CHARACTER_CATEGORIES = [
         "sort_order": 2,
     },
     {
-        "title": "실학 / 학문",
+        "title": "사상 / 학문",
         "description": "지식으로 세상을 바꾸다",
         "sort_order": 3,
     },
