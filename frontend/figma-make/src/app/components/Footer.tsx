@@ -8,7 +8,7 @@ const FOOTER_LINKS = {
 
 export function Footer() {
   return (
-    <footer style={{ background: "#1A2520" }}>
+    <footer id="footer" style={{ background: "#1A2520" }}>
       {/* Main footer content */}
       <div className="max-w-7xl mx-auto px-6 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">

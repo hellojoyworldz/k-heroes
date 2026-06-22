@@ -1,9 +1,11 @@
 from datetime import datetime
+import enum
 from typing import Optional
 
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -30,12 +32,25 @@ class SoftDeleteMixin:
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
+class CharacterCategory(ManagedContentMixin, Base):
+    __tablename__ = "character_categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    characters: Mapped[list["Character"]] = relationship(back_populates="character_category")
+
+
 class Character(ManagedContentMixin, Base):
     __tablename__ = "characters"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("character_categories.id", ondelete="RESTRICT"), nullable=False
+    )
     era: Mapped[str] = mapped_column(String(100), nullable=False)
     era_tag: Mapped[str] = mapped_column(String(100), nullable=False)
     role: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -53,16 +68,24 @@ class Character(ManagedContentMixin, Base):
     intro_desc: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[list] = mapped_column(JSON, default=list)
     associated_stories: Mapped[dict] = mapped_column(JSON, default=dict)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+    character_category: Mapped["CharacterCategory"] = relationship(back_populates="characters")
     stats: Mapped[list["CharacterStat"]] = relationship(
         back_populates="character", cascade="all, delete-orphan", order_by="CharacterStat.sort_order"
     )
     scenarios: Mapped[list["Scenario"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan"
+        back_populates="character",
+        cascade="all, delete-orphan",
+        order_by="Scenario.sort_order",
     )
 
+    @property
+    def category(self) -> str:
+        return self.character_category.title if self.character_category else ""
 
-class CharacterStat(Base):
+
+class CharacterStat(ManagedContentMixin, Base):
     __tablename__ = "character_stats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -70,18 +93,17 @@ class CharacterStat(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     value: Mapped[int] = mapped_column(Integer, nullable=False)
     desc: Mapped[str] = mapped_column(Text, nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     character: Mapped["Character"] = relationship(back_populates="stats")
 
 
 class Scenario(ManagedContentMixin, Base):
     __tablename__ = "scenarios"
-    __table_args__ = (UniqueConstraint("character_id", "scenario_id", name="uq_character_scenario"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=False)
-    scenario_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     historical_facts: Mapped[str] = mapped_column(Text, nullable=False)
@@ -89,7 +111,7 @@ class Scenario(ManagedContentMixin, Base):
 
     character: Mapped["Character"] = relationship(back_populates="scenarios")
     turns: Mapped[list["Turn"]] = relationship(
-        back_populates="scenario", cascade="all, delete-orphan", order_by="Turn.turn_no"
+        back_populates="scenario", cascade="all, delete-orphan", order_by="Turn.sort_order"
     )
     endings: Mapped[list["Ending"]] = relationship(
         back_populates="scenario", cascade="all, delete-orphan"
@@ -98,11 +120,11 @@ class Scenario(ManagedContentMixin, Base):
 
 class Turn(SoftDeleteMixin, Base):
     __tablename__ = "turns"
-    __table_args__ = (UniqueConstraint("scenario_id", "turn_no", name="uq_scenario_turn"),)
+    __table_args__ = (UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_turn"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id", ondelete="CASCADE"), nullable=False)
-    turn_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     situation: Mapped[str] = mapped_column(Text, nullable=False)
     turn_image: Mapped[str] = mapped_column(String(500), default="")
@@ -127,7 +149,7 @@ class Choice(SoftDeleteMixin, Base):
     choice_image: Mapped[str] = mapped_column(String(500), default="")
     result_text: Mapped[str] = mapped_column(Text, nullable=False)
     is_historical: Mapped[bool] = mapped_column(Boolean, default=False)
-    stats: Mapped[dict] = mapped_column(JSON, default=dict)
+    turn_stats: Mapped[list] = mapped_column(JSON, default=list)
 
     turn: Mapped["Turn"] = relationship(back_populates="choices")
 
@@ -150,6 +172,30 @@ class Ending(SoftDeleteMixin, Base):
     recommended_places: Mapped[list] = mapped_column(JSON, default=list)
 
     scenario: Mapped["Scenario"] = relationship(back_populates="endings")
+
+
+class AdminRole(str, enum.Enum):
+    SUPERADMIN = "superadmin"
+    ADMIN = "admin"
+    PARTNER = "partner"
+
+
+class AdminUser(SoftDeleteMixin, Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[AdminRole] = mapped_column(
+        Enum(AdminRole, native_enum=False, length=20),
+        nullable=False,
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class User(Base):

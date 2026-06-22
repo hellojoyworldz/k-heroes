@@ -12,6 +12,7 @@ from simulation_data_manager import (
     get_recommended_places,
     get_pre_generated_ending
 )
+from repositories.turn_stats import map_turn_stats_to_effects, ordered_stat_ids
 import uuid
 from models.character import CharacterCard
 from rag_evaluator import RAGEvaluator
@@ -43,7 +44,7 @@ async def start_simulation(payload: StartRequest):
         character_card = get_character_card(character_name)
         
         # Filter scenarios
-        filtered_scenarios = [s for s in character_card.scenarios if s.scenario_id == scenario_id]
+        filtered_scenarios = [s for s in character_card.scenarios if s.id == scenario_id]
         if not filtered_scenarios:
             raise HTTPException(status_code=404, detail=f"시나리오 ID {scenario_id}를 인물 '{character_name}'에게서 찾을 수 없습니다.")
         character_card.scenarios = filtered_scenarios
@@ -80,7 +81,7 @@ async def play_turn(payload: TurnRequest):
         # 1. Find the scenario matching scenario_id
         scenario = None
         for s in character_card.scenarios:
-            if s.scenario_id == scenario_id:
+            if s.id == scenario_id:
                 scenario = s
                 break
         if not scenario:
@@ -101,26 +102,22 @@ async def play_turn(payload: TurnRequest):
         
         if not choice_a_raw or not choice_b_raw:
             raise ValueError(f"Turn {current_step} does not have both Choice A and Choice B.")
-            
-        def map_stats_to_effects(choice_stats: Dict[str, int]) -> Dict[str, int]:
-            effects = {}
-            for i, (name, val) in enumerate(choice_stats.items()):
-                effects[f"stat_{i+1}"] = val
-            return effects
-            
+
+        stat_ids = ordered_stat_ids(character_card.stats)
+
         choice_a = ChoiceDetail(
             is_historical=choice_a_raw.is_historical,
             title=choice_a_raw.title,
             description=choice_a_raw.description,
-            stat_effects=map_stats_to_effects(choice_a_raw.stats),
+            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, stat_ids),
             choice_image=choice_a_raw.choice_image if getattr(choice_a_raw, "choice_image", None) else ""
         )
-        
+
         choice_b = ChoiceDetail(
             is_historical=choice_b_raw.is_historical,
             title=choice_b_raw.title,
             description=choice_b_raw.description,
-            stat_effects=map_stats_to_effects(choice_b_raw.stats),
+            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, stat_ids),
             choice_image=choice_b_raw.choice_image if getattr(choice_b_raw, "choice_image", None) else ""
         )
         
@@ -172,7 +169,7 @@ async def generate_ending(payload: EndingRequest):
         # 1. Find scenario
         scenario = None
         for s in character_card.scenarios:
-            if s.scenario_id == scenario_id:
+            if s.id == scenario_id:
                 scenario = s
                 break
         if not scenario:
@@ -184,21 +181,27 @@ async def generate_ending(payload: EndingRequest):
         # 1.5. Calculate history_score, check historical choices, and compute final game_stats
         total_turns = len(scenario.turns)
         historical_choices_count = 0
-        current_stats = {stat.name: stat.value for stat in character_card.stats}
-        
+        stat_lookup = {stat.id: stat for stat in character_card.stats}
+        current_by_id = {stat.id: stat.value for stat in character_card.stats}
+
         for idx, turn in enumerate(scenario.turns):
             user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
             user_choice = turn.choices.get(user_choice_id)
             if not user_choice:
                 user_choice = list(turn.choices.values())[0]
-                
+
             if user_choice.is_historical:
                 historical_choices_count += 1
-                
-            # Apply stats modifications
-            for name, val in user_choice.stats.items():
-                if name in current_stats:
-                    current_stats[name] += val
+
+            for item in user_choice.turn_stats:
+                if item.stat_id in current_by_id:
+                    current_by_id[item.stat_id] += item.delta
+
+        current_stats = {
+            stat_lookup[stat_id].name: value
+            for stat_id, value in current_by_id.items()
+            if stat_id in stat_lookup
+        }
                     
         history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
         is_all_historical = (historical_choices_count == total_turns)

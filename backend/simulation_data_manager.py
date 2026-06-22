@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from models.character import CharacterCard
 from models.simulation import RecommendedPlace
+from repositories.turn_stats import normalize_json_character_profile
 from openai import OpenAI
 
 from google.cloud import storage
@@ -139,7 +140,7 @@ def get_character_card(character_name: str) -> CharacterCard:
 
     if character_name not in cached_characters:
         raise KeyError(f"Character '{character_name}' not found in profiles.")
-    return CharacterCard(**cached_characters[character_name])
+    return CharacterCard(**normalize_json_character_profile(cached_characters[character_name]))
 
 def get_retrieved_clues(character_name: str, sido: Optional[str] = None, sigungu: Optional[str] = None) -> List[Dict[str, Any]]:
     """

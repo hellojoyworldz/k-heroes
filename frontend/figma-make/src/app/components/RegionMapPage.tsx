@@ -1091,47 +1091,49 @@ export function RegionMapPage({
 
       {/* ── 헤더 ── */}
       <header
-        className={`relative flex-shrink-0 flex items-center justify-between px-5 h-14 border-b ${layerClass}`}
+        className={`relative flex-shrink-0 h-14 border-b ${layerClass}`}
         style={{
           background: "rgba(240,230,208,0.62)",
           borderColor: "rgba(110,80,40,0.18)",
           backdropFilter: "blur(8px)",
         }}
       >
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 transition-opacity hover:opacity-60"
-          style={{ color: "#4A4035", fontSize: "13px" }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">돌아가기</span>
-        </button>
-        <div
-          className="flex items-center gap-2 px-3 py-1 rounded-full"
-          style={{ background: "rgba(42,66,50,0.1)" }}
-        >
-          <span
-            style={{
-              fontFamily: "'Noto Serif KR', serif",
-              fontSize: "0.82rem",
-              fontWeight: 700,
-              color: activeKw.accent,
-            }}
+        <div className="mx-auto flex h-full w-full max-w-[1440px] items-center justify-between px-5">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 transition-opacity hover:opacity-60"
+            style={{ color: "#4A4035", fontSize: "13px" }}
           >
-            {activeKw.hanja}
-          </span>
-          <span
-            style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "0.75rem",
-              color: "#2A4232",
-              fontWeight: 600,
-            }}
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">돌아가기</span>
+          </button>
+          <div
+            className="flex items-center gap-2 px-3 py-1 rounded-full"
+            style={{ background: "rgba(42,66,50,0.1)" }}
           >
-            {activeKw.label}
-          </span>
+            <span
+              style={{
+                fontFamily: "'Noto Serif KR', serif",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: activeKw.accent,
+              }}
+            >
+              {activeKw.hanja}
+            </span>
+            <span
+              style={{
+                fontFamily: "'Noto Sans KR', sans-serif",
+                fontSize: "0.75rem",
+                color: "#2A4232",
+                fontWeight: 600,
+              }}
+            >
+              {activeKw.label}
+            </span>
+          </div>
+          <BrandLogo compact />
         </div>
-        <BrandLogo compact />
       </header>
 
       {/* ── 모바일 탭 바 ── */}

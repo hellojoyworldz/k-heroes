@@ -6,8 +6,10 @@ from sqlalchemy.pool import StaticPool
 
 from db.database import Base, get_db
 import db.models  # noqa: F401
-from db.seed_data import seed_characters, seed_endings
+from db.seed import seed_character_categories, seed_characters, seed_endings
 from main import app
+
+pytest_plugins = ["tests.admin_auth_helpers"]
 
 
 @pytest.fixture(scope="session")
@@ -21,7 +23,8 @@ def test_engine():
 
     session = sessionmaker(bind=engine)()
     try:
-        scenario_lookup = seed_characters(session)
+        category_lookup = seed_character_categories(session)
+        scenario_lookup = seed_characters(session, category_lookup)
         seed_endings(session, scenario_lookup)
         session.commit()
     finally:
@@ -51,3 +54,8 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_client(client, jwt_env, superadmin_user):
+    return client

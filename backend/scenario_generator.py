@@ -13,6 +13,16 @@ from history_pdf_rag_retriever import get_rag_instance
 
 # Setup project directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _turn_sort_order(turn: dict) -> int:
+    if "sort_order" in turn:
+        return turn["sort_order"]
+    return turn.get("turn_no", 1) - 1
+
+
+def _turn_step_no(sort_order: int) -> int:
+    return sort_order + 1
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
@@ -392,7 +402,7 @@ def generate_turn1_for_scenario(character_name: str, scenario_title: str, scenar
     history_context = get_history_rag_context(character_name, scenario_title)
 
     prompt = f"""너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 턴 설계자야.
-대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 첫 번째 턴(turn_no: 1)을 설계해 줘.
+대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 첫 번째 턴(sort_order: 0)을 설계해 줘.
 어려운 한자어(예: 친정, 하야, 간행 등)는 초등학생도 쉽게 이해할 수 있는 쉬운 단어로 풀어서 써줘.
 모든 출력 텍스트는 반드시 한국어로만 작성하십시오. 힌디어·아랍어·태국어 등 다른 언어를 절대 삽입하지 마십시오.
 
@@ -433,7 +443,7 @@ def generate_turn1_for_scenario(character_name: str, scenario_title: str, scenar
 
 반드시 마크다운 등 다른 텍스트 없이 아래 JSON 형식으로만 출력해:
 {{
-    "turn_no": 1,
+    "sort_order": 0,
     "title": "1턴 사건 명칭과 연도 (예: 무기 선택 (1932년 4월))",
     "situation": "상황 묘사 2~3줄 (시나리오 도입부를 바탕으로 주인공이 맞닥뜨린 첫 갈등 상황을 매끄럽게 서술)",
     "tip_title": "질문 형식의 토글 질문 (해당 역사 사실에 관한 흥미로운 질문)",
@@ -487,7 +497,7 @@ def generate_turn2_for_scenario(character_name: str, scenario_title: str, scenar
     history_context = get_history_rag_context(character_name, scenario_title)
 
     prompt = f"""너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 턴 설계자야.
-대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 두 번째 턴(turn_no: 2)을 설계해 줘.
+대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 두 번째 턴(sort_order: 1)을 설계해 줘.
 이전 턴(1턴)의 상황 및 각 선택 결과 정보를 분석하여, 사건이 개연성 있고 흥미진진하게 이어지도록 구성하십시오.
 어려운 한자어는 피하고 초등학생도 쉽게 읽을 수 있는 단어를 써줘.
 모든 출력 텍스트는 반드시 한국어로만 작성하십시오. 힌디어·아랍어·태국어 등 다른 언어를 절대 삽입하지 마십시오.
@@ -533,7 +543,7 @@ def generate_turn2_for_scenario(character_name: str, scenario_title: str, scenar
 
 반드시 아래 JSON 형식으로만 출력해:
 {{
-    "turn_no": 2,
+    "sort_order": 1,
     "title": "2턴 사건 명칭과 연도",
     "situation": "상황 묘사 2~3줄 (이전 1턴의 어떤 선택을 내렸어도 자연스럽게 흘러오도록 개연성 있게 2번째 갈등 국면을 작성)",
     "tip_title": "질문 형식의 토글 질문",
@@ -580,7 +590,7 @@ def generate_turn3_for_scenario(character_name: str, scenario_title: str, scenar
     history_context = get_history_rag_context(character_name, scenario_title)
 
     prompt = f"""너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 턴 설계자야.
-대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 세 번째 턴이자 최종 결말 턴(turn_no: 3)을 설계해 줘.
+대상 인물인 '{character_name}'의 시나리오 '{scenario_title}'에 속한 세 번째 턴이자 최종 결말 턴(sort_order: 2)을 설계해 줘.
 이전 1턴 and 2턴의 상황 및 각 선택 결과를 면밀히 분석하여, 전체 이야기 흐름이 자연스럽게 완결에 도달하도록 구성하십시오.
 어려운 한자어는 피하고 초등학생도 쉽게 읽을 수 있는 단어를 써줘.
 모든 출력 텍스트는 반드시 한국어로만 작성하십시오. 힌디어·아랍어·태국어 등 다른 언어를 절대 삽입하지 마십시오.
@@ -628,7 +638,7 @@ def generate_turn3_for_scenario(character_name: str, scenario_title: str, scenar
 
 반드시 아래 JSON 형식으로만 출력해:
 {{
-    "turn_no": 3,
+    "sort_order": 2,
     "title": "3턴 사건 명칭과 연도 (예: 최종 결사 (1932년 4월 29일))",
     "situation": "상황 묘사 2~3줄 (최종 결말 상황 - 이전 턴들의 결정을 수렴하여 주인공이 마지막 결단을 내려야 하는 절정 국면 서술)",
     "tip_title": "질문 형식의 토글 질문",
@@ -765,7 +775,8 @@ No text, logo, border, frame, or UI."""
         print(f" [ERROR] '{character_name}' 이미지 생성/GCS 실패: {e}")
         return ""
 
-def generate_and_upload_turn_image(character_name: str, turn_situation: str, scenario_id: int, turn_no: int) -> str:
+def generate_and_upload_turn_image(character_name: str, turn_situation: str, scenario_id: int, sort_order: int) -> str:
+    step_no = _turn_step_no(sort_order)
     """
     OpenAI gpt-image-2를 이용하여 상황(턴)별 키아트 일러스트를 생성하고 GCS에 업로드 (16:9 가로).
     """
@@ -811,7 +822,7 @@ No frame.
 4K quality."""
 
     try:
-        print(f" ➔ gpt-image-2 턴 상황 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id} 턴 {turn_no})...")
+        print(f" ➔ gpt-image-2 턴 상황 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id} 턴 {step_no})...")
         response = openai_client.images.generate(
             model="gpt-image-2",
             prompt=prompt,
@@ -829,7 +840,7 @@ No frame.
         storage_client = storage.Client(project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         
-        blob_name = f"scenarios/{character_name}_scenario_{scenario_id}_turn_{turn_no}.png"
+        blob_name = f"scenarios/{character_name}_scenario_{scenario_id}_turn_{step_no}.png"
         blob = bucket.blob(blob_name)
         
         print(f" ➔ GCS 업로드: gs://{GCP_BUCKET_NAME}/{blob_name}")
@@ -838,10 +849,11 @@ No frame.
         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
         return public_url
     except Exception as e:
-        print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 턴 {turn_no} 상황 이미지 생성/GCS 실패: {e}")
+        print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 턴 {step_no} 상황 이미지 생성/GCS 실패: {e}")
         return ""
 
-def generate_and_upload_choice_image(character_name: str, choice_text: str, scenario_id: int, turn_no: int, choice_key: str) -> str:
+def generate_and_upload_choice_image(character_name: str, choice_text: str, scenario_id: int, sort_order: int, choice_key: str) -> str:
+    step_no = _turn_step_no(sort_order)
     """
     OpenAI gpt-image-2를 이용하여 선택지(A/B)별 일러스트를 생성하고 GCS에 업로드 (4:3 -> 1:1).
     """
@@ -887,7 +899,7 @@ No frame.
 4K quality."""
 
     try:
-        print(f" ➔ gpt-image-2 선택지 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id} 턴 {turn_no} 선택지 {choice_key})...")
+        print(f" ➔ gpt-image-2 선택지 이미지 생성 요청 중 ({character_name} 시나리오 {scenario_id} 턴 {step_no} 선택지 {choice_key})...")
         response = openai_client.images.generate(
             model="gpt-image-2",
             prompt=prompt,
@@ -917,7 +929,7 @@ No frame.
         storage_client = storage.Client(project=GCP_PROJECT_ID)
         bucket = storage_client.bucket(GCP_BUCKET_NAME)
         
-        blob_name = f"scenarios/{character_name}_scenario_{scenario_id}_turn_{turn_no}_choice_{choice_key}.png"
+        blob_name = f"scenarios/{character_name}_scenario_{scenario_id}_turn_{step_no}_choice_{choice_key}.png"
         blob = bucket.blob(blob_name)
         
         print(f" ➔ GCS 업로드: gs://{GCP_BUCKET_NAME}/{blob_name}")
@@ -926,7 +938,7 @@ No frame.
         public_url = f"https://storage.googleapis.com/{GCP_BUCKET_NAME}/{blob_name}"
         return public_url
     except Exception as e:
-        print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 턴 {turn_no} 선택지 {choice_key} 이미지 생성/GCS 실패: {e}")
+        print(f" [ERROR] '{character_name}' 시나리오 {scenario_id} 턴 {step_no} 선택지 {choice_key} 이미지 생성/GCS 실패: {e}")
         return ""
 
 def generate_and_upload_ending_image(character_name: str, ending_title: str, story_contents: str, scenario_id: int, choices_path_str: str) -> str:
@@ -1014,7 +1026,7 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
                 combinations.append([c1, c2, c3])
                 
     for scenario in character_card.scenarios:
-        s_id = scenario.scenario_id
+        s_id = scenario.sort_order + 1
         if target_scenario_id is not None and s_id != target_scenario_id:
             continue
             
@@ -1076,20 +1088,27 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
             # 1.5. Calculate history_score & current_stats
             total_turns = len(scenario.turns)
             historical_choices_count = 0
-            current_stats = {stat.name: stat.value for stat in character_card.stats}
-            
+            stat_lookup = {stat.id: stat for stat in character_card.stats}
+            current_by_id = {stat.id: stat.value for stat in character_card.stats}
+
             for idx, turn in enumerate(scenario.turns):
                 user_choice_id = choices_path[idx]
                 user_choice = turn.choices.get(user_choice_id)
                 if not user_choice:
                     user_choice = list(turn.choices.values())[0]
-                    
+
                 if user_choice.is_historical:
                     historical_choices_count += 1
-                    
-                for name, val in user_choice.stats.items():
-                    if name in current_stats:
-                        current_stats[name] += val
+
+                for item in user_choice.turn_stats:
+                    if item.stat_id in current_by_id:
+                        current_by_id[item.stat_id] += item.delta
+
+            current_stats = {
+                stat_lookup[stat_id].name: value
+                for stat_id, value in current_by_id.items()
+                if stat_id in stat_lookup
+            }
                         
             history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
             is_all_historical = (historical_choices_count == total_turns)
@@ -1292,7 +1311,7 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
     character_card = CharacterCard(**db_char)
     
     for scenario in character_card.scenarios:
-        s_id = scenario.scenario_id
+        s_id = scenario.sort_order + 1
         if target_scenario_id is not None and s_id != target_scenario_id:
             continue
             
@@ -1651,8 +1670,11 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                     if not isinstance(turns, list):
                         turns = []
                     
-                    # turn_no를 키로 갖는 dict 생성
-                    turns_map = {t.get("turn_no"): t for t in turns if isinstance(t, dict) and t.get("turn_no")}
+                    turns_map = {
+                        _turn_sort_order(t): t
+                        for t in turns
+                        if isinstance(t, dict) and ("sort_order" in t or "turn_no" in t)
+                    }
                     
                     # 1턴 생성/갱신
                     if curr_run_turn1_text:
@@ -1661,7 +1683,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                         for attempt in range(3):
                             try:
                                 t1 = generate_turn1_for_scenario(char_name, s_title, s_desc, s_facts, category)
-                                turns_map[1] = t1
+                                turns_map[0] = t1
                                 success = True
                                 print(f"    [SUCCESS] 시나리오 {s_id} Turn 1 텍스트 생성 완료")
                                 break
@@ -1673,12 +1695,12 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                     
                     # 2턴 생성/갱신
                     if curr_run_turn2_text:
-                        t1 = turns_map.get(1)
+                        t1 = turns_map.get(0)
                         if not t1:
                             print(f"    [WARNING] Turn 1 데이터가 없습니다. 먼저 Turn 1을 임시 생성합니다...")
                             try:
                                 t1 = generate_turn1_for_scenario(char_name, s_title, s_desc, s_facts, category)
-                                turns_map[1] = t1
+                                turns_map[0] = t1
                             except Exception as e:
                                 print(f"    [ERROR] Turn 1 임시 생성 실패: {e}")
                                 t1 = {}
@@ -1689,7 +1711,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                             for attempt in range(3):
                                 try:
                                     t2 = generate_turn2_for_scenario(char_name, s_title, s_desc, s_facts, category, t1)
-                                    turns_map[2] = t2
+                                    turns_map[1] = t2
                                     success = True
                                     print(f"    [SUCCESS] 시나리오 {s_id} Turn 2 텍스트 생성 완료")
                                     break
@@ -1703,17 +1725,17 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                             
                     # 3턴 생성/갱신
                     if curr_run_turn3_text:
-                        t1 = turns_map.get(1)
-                        t2 = turns_map.get(2)
+                        t1 = turns_map.get(0)
+                        t2 = turns_map.get(1)
                         if not t1 or not t2:
                             print(f"    [WARNING] Turn 1 또는 Turn 2 데이터가 없습니다. 순차 생성을 시도합니다...")
                             try:
                                 if not t1:
                                     t1 = generate_turn1_for_scenario(char_name, s_title, s_desc, s_facts, category)
-                                    turns_map[1] = t1
+                                    turns_map[0] = t1
                                 if not t2 and t1:
                                     t2 = generate_turn2_for_scenario(char_name, s_title, s_desc, s_facts, category, t1)
-                                    turns_map[2] = t2
+                                    turns_map[1] = t2
                             except Exception as e:
                                 print(f"    [ERROR] 이전 턴 생성 실패: {e}")
                         
@@ -1723,7 +1745,7 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                             for attempt in range(3):
                                 try:
                                     t3 = generate_turn3_for_scenario(char_name, s_title, s_desc, s_facts, category, t1, t2)
-                                    turns_map[3] = t3
+                                    turns_map[2] = t3
                                     success = True
                                     print(f"    [SUCCESS] 시나리오 {s_id} Turn 3 텍스트 생성 완료")
                                     break
@@ -1737,8 +1759,8 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                     
                     # 정렬된 키 순서로 턴 리스트 구성
                     final_turns = []
-                    for t_no in sorted(turns_map.keys()):
-                        final_turns.append(turns_map[t_no])
+                    for sort_order in sorted(turns_map.keys()):
+                        final_turns.append(turns_map[sort_order])
                     
                     scenario["turns"] = final_turns
                     
@@ -1747,8 +1769,9 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                         from rag_evaluator import RAGEvaluator
                         evaluator = RAGEvaluator()
                         for turn_item in final_turns:
-                            t_no = turn_item.get("turn_no", 1)
-                            print(f"   ➔ 시나리오 {s_id} 턴 {t_no} 선택지 밸런스 평가 진행 중...")
+                            sort_order = _turn_sort_order(turn_item)
+                            step_no = _turn_step_no(sort_order)
+                            print(f"   ➔ 시나리오 {s_id} 턴 {step_no} 선택지 밸런스 평가 진행 중...")
                             evaluator.evaluate_choice_balance(
                                 character_name=char_name,
                                 scenario_title=s_title,
@@ -1797,8 +1820,9 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                             choice_val["title"] = choice_val.get("text", "")
                         if "description" not in choice_val:
                             choice_val["description"] = ""
-                        if "stats" not in choice_val:
-                            choice_val["stats"] = {}
+                        if "turn_stats" not in choice_val:
+                            choice_val["turn_stats"] = []
+                        choice_val.pop("stats", None)
         
         # 키 순서 재배치 및 DB 갱신
         ordered_profile = {
@@ -1896,8 +1920,9 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
             s_title = scenario.get("title")
             
             for turn in scenario.get("turns", []):
-                t_no = turn.get("turn_no")
-                if target_turn_image_no is not None and t_no != target_turn_image_no:
+                sort_order = _turn_sort_order(turn)
+                step_no = _turn_step_no(sort_order)
+                if target_turn_image_no is not None and step_no != target_turn_image_no:
                     continue
                 t_situation = turn.get("situation", "")
                 t_img = turn.get("turn_image", "")
@@ -1905,17 +1930,17 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                 # 상황(턴) 이미지 생성 (16:9)
                 if curr_run_scenario_image:
                     if not t_img or not t_img.startswith("http"):
-                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지가 없습니다. 생성 중...")
-                        t_img_url = generate_and_upload_turn_image(char_name, t_situation, s_id, t_no)
+                        print(f" ➔ 시나리오 {s_id} 턴 {step_no} 상황 이미지가 없습니다. 생성 중...")
+                        t_img_url = generate_and_upload_turn_image(char_name, t_situation, s_id, sort_order)
                         if t_img_url:
                             turn["turn_image"] = t_img_url
                             character_database[char_name] = db_char
                             with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
                                 json.dump(character_database, f, ensure_ascii=False, indent=4)
-                            print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 상황 이미지 업데이트 완료: {t_img_url}")
+                            print(f"  [SUCCESS] 시나리오 {s_id} 턴 {step_no} 상황 이미지 업데이트 완료: {t_img_url}")
                             time.sleep(5)
                     else:
-                        print(f" ➔ 시나리오 {s_id} 턴 {t_no} 상황 이미지 이미 존재함: {t_img}")
+                        print(f" ➔ 시나리오 {s_id} 턴 {step_no} 상황 이미지 이미 존재함: {t_img}")
                 
                 # 선택지(A/B) 이미지 생성 (4:3 -> 1:1)
                 if curr_run_text_image:
@@ -1929,17 +1954,17 @@ def run_main_pipeline(target_char: Optional[str] = None, mode: str = "all"):
                         c_img = choice_val.get("choice_image", "")
                         
                         if not c_img or not c_img.startswith("http"):
-                            print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지가 없습니다. 생성 중...")
-                            c_img_url = generate_and_upload_choice_image(char_name, c_text, s_id, t_no, choice_key)
+                            print(f" ➔ 시나리오 {s_id} 턴 {step_no} 선택지 {choice_key} 이미지가 없습니다. 생성 중...")
+                            c_img_url = generate_and_upload_choice_image(char_name, c_text, s_id, sort_order, choice_key)
                             if c_img_url:
                                 choice_val["choice_image"] = c_img_url
                                 character_database[char_name] = db_char
                                 with open(CHARACTERS_JSON_PATH, "w", encoding="utf-8") as f:
                                     json.dump(character_database, f, ensure_ascii=False, indent=4)
-                                print(f"  [SUCCESS] 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 업데이트 완료: {c_img_url}")
+                                print(f"  [SUCCESS] 시나리오 {s_id} 턴 {step_no} 선택지 {choice_key} 이미지 업데이트 완료: {c_img_url}")
                                 time.sleep(5)
                         else:
-                            print(f" ➔ 시나리오 {s_id} 턴 {t_no} 선택지 {choice_key} 이미지 이미 존재함: {c_img}")
+                            print(f" ➔ 시나리오 {s_id} 턴 {step_no} 선택지 {choice_key} 이미지 이미 존재함: {c_img}")
                             
     end_time = time.time()
     print(f"\n[SUCCESS] 데이터 파이프라인 가동 완료. 저장 파일: {CHARACTERS_JSON_PATH}")

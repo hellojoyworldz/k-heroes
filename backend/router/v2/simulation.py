@@ -1,12 +1,11 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.content_repository import (
+from repositories.content import (
     CharacterNotFoundError,
     EndingNotFoundError,
     ScenarioNotFoundError,
@@ -31,13 +30,10 @@ from models.simulation import (
     TurnRequest,
     TurnResponse,
 )
+from repositories.turn_stats import map_turn_stats_to_effects, ordered_stat_ids
 from simulation_data_manager import get_recommended_places
 
 router = APIRouter(prefix="/api/v2/simulation", tags=["Simulation v2"])
-
-
-def _map_stats_to_effects(choice_stats: Dict[str, int]) -> Dict[str, int]:
-    return {f"stat_{i + 1}": val for i, (_, val) in enumerate(choice_stats.items())}
 
 
 @router.post("/start", response_model=StartResponse)
@@ -68,11 +64,14 @@ async def start_simulation(payload: StartRequest, db: Session = Depends(get_db))
 @router.post("/turn", response_model=TurnResponse)
 async def play_turn(payload: TurnRequest, db: Session = Depends(get_db)):
     try:
+        character_card = get_character_card(db, payload.character_name, scenario_id=payload.scenario_id)
         scenario = get_scenario_item(db, payload.character_name, payload.scenario_id)
     except CharacterNotFoundError:
         raise HTTPException(status_code=404, detail=f"Character '{payload.character_name}' not found.")
     except ScenarioNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+    stat_ids = ordered_stat_ids(character_card.stats)
 
     if payload.current_step < 1 or payload.current_step > len(scenario.turns):
         raise HTTPException(
@@ -98,14 +97,14 @@ async def play_turn(payload: TurnRequest, db: Session = Depends(get_db)):
             is_historical=choice_a_raw.is_historical,
             title=choice_a_raw.title,
             description=choice_a_raw.description,
-            stat_effects=_map_stats_to_effects(choice_a_raw.stats),
+            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, stat_ids),
             choice_image=choice_a_raw.choice_image or "",
         ),
         choice_b=ChoiceDetail(
             is_historical=choice_b_raw.is_historical,
             title=choice_b_raw.title,
             description=choice_b_raw.description,
-            stat_effects=_map_stats_to_effects(choice_b_raw.stats),
+            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, stat_ids),
             choice_image=choice_b_raw.choice_image or "",
         ),
         turn_image=turn_item.turn_image or "",

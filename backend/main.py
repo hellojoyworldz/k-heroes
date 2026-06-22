@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from router import character, simulation
-from router.v2 import character as character_v2, simulation as simulation_v2
+from router.v2 import admin_auth as admin_auth_v2, admin_user as admin_user_v2, character as character_v2, character_category as character_category_v2, ending as ending_v2, scenario as scenario_v2, simulation as simulation_v2, turn as turn_v2
 import simulation_data_manager
 
 app = FastAPI()
@@ -18,8 +18,20 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(character.router)
 app.include_router(simulation.router)
+app.include_router(character_category_v2.router)
 app.include_router(character_v2.router)
 app.include_router(simulation_v2.router)
+
+app.include_router(admin_auth_v2.router)
+app.include_router(admin_user_v2.admin_router)
+app.include_router(character_category_v2.admin_router)
+app.include_router(character_v2.admin_router)
+app.include_router(scenario_v2.admin_router)
+app.include_router(turn_v2.admin_router)
+app.include_router(ending_v2.admin_router)
+
+
+
 
 # 서버 가동 시점에 전역 캐시 로드 가동
 @app.on_event("startup")

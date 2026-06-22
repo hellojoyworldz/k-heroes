@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from models.character import CharacterCard
+
 
 class SearchResponse(BaseModel):
     character_name: str
@@ -8,7 +9,7 @@ class SearchResponse(BaseModel):
 
 class StartRequest(BaseModel):
     character_name: str
-    scenario_id: int
+    scenario_id: int = Field(..., ge=1, description="시나리오 DB id")
 
 class GameStateStat(BaseModel):
     name: str
@@ -23,7 +24,7 @@ class GameHistoryItem(BaseModel):
 
 class GameState(BaseModel):
     character_name: str
-    scenario_id: int
+    scenario_id: int = Field(..., ge=1, description="시나리오 DB id")
     history_score: int
     current_step: int
     game_stats: Dict[str, GameStateStat]
@@ -43,7 +44,7 @@ class ChoiceDetail(BaseModel):
 
 class TurnRequest(BaseModel):
     character_name: str
-    scenario_id: int
+    scenario_id: int = Field(..., ge=1, description="시나리오 DB id")
     current_step: int
 
 class TurnResponse(BaseModel):
@@ -70,7 +71,7 @@ class RecommendedPlace(BaseModel):
 
 class EndingRequest(BaseModel):
     character_name: str
-    scenario_id: int
+    scenario_id: int = Field(..., ge=1, description="시나리오 DB id")
     choices_path: List[str]
     force_eval: Optional[bool] = False
 

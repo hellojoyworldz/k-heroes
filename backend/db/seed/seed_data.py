@@ -4,17 +4,34 @@ from __future__ import annotations
 
 import json
 import os
+from collections import defaultdict
 
 from sqlalchemy import func, inspect, select
 
 from db.database import SessionLocal, engine
-from db.models import Character, CharacterStat, Choice, Ending, Scenario, Turn
+from db.models import Character, CharacterCategory, CharacterStat, Choice, Ending, Scenario, Turn
+from db.seed.category_seed_data import DEFAULT_CHARACTER_CATEGORIES
+from repositories.turn_stats import resolve_choice_turn_stats_for_db
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
 ENDINGS_DIR = os.path.join(BASE_DIR, "data", "endings")
 
-CONTENT_TABLES = ("characters", "character_stats", "scenarios", "turns", "choices", "endings")
+CONTENT_TABLES = (
+    "character_categories",
+    "characters",
+    "character_stats",
+    "scenarios",
+    "turns",
+    "choices",
+    "endings",
+)
+
+
+def _turn_sort_order(turn_data: dict) -> int:
+    if "sort_order" in turn_data:
+        return turn_data["sort_order"]
+    return turn_data["turn_no"] - 1
 
 
 def tables_exist() -> bool:
@@ -31,20 +48,47 @@ def clear_content_data(session) -> None:
     session.query(Scenario).delete()
     session.query(CharacterStat).delete()
     session.query(Character).delete()
+    session.query(CharacterCategory).delete()
 
 
-def seed_characters(session) -> dict[tuple[str, int], int]:
+def seed_character_categories(session) -> dict[str, int]:
+    """기본 카테고리 4개를 시드하고 title -> id 매핑을 반환."""
+    title_to_id: dict[str, int] = {}
+    for item in DEFAULT_CHARACTER_CATEGORIES:
+        category = CharacterCategory(
+            title=item["title"],
+            description=item["description"],
+            sort_order=item["sort_order"],
+            is_active=True,
+        )
+        session.add(category)
+        session.flush()
+        title_to_id[item["title"]] = category.id
+    return title_to_id
+
+
+def seed_characters(session, category_lookup: dict[str, int]) -> dict[tuple[str, int], int]:
     """characters.json을 DB에 적재하고 (character_name, scenario_id) -> scenario PK 매핑을 반환."""
     with open(CHARACTERS_JSON_PATH, "r", encoding="utf-8") as f:
         characters_data = json.load(f)
 
     scenario_lookup: dict[tuple[str, int], int] = {}
+    category_sort_counters: dict[int, int] = defaultdict(int)
 
     for name, profile in characters_data.items():
+        category_title = profile["category"]
+        category_id = category_lookup.get(category_title)
+        if category_id is None:
+            raise ValueError(f"Unknown category title in characters.json: {category_title}")
+
+        sort_order = category_sort_counters[category_id]
+        category_sort_counters[category_id] += 1
+
         mbti_details = profile.get("mbti_details", {})
         character = Character(
             name=name,
-            category=profile["category"],
+            category_id=category_id,
+            sort_order=sort_order,
             era=profile["era"],
             era_tag=profile["era_tag"],
             role=profile["role"],
@@ -74,13 +118,28 @@ def seed_characters(session) -> dict[tuple[str, int], int]:
                     value=stat["value"],
                     desc=stat["desc"],
                     sort_order=idx,
+                    is_active=True,
                 )
             )
+        session.flush()
 
-        for scenario_data in profile.get("scenarios", []):
+        stat_rows = list(
+            session.scalars(
+                select(CharacterStat)
+                .where(
+                    CharacterStat.character_id == character.id,
+                    CharacterStat.deleted_at.is_(None),
+                )
+                .order_by(CharacterStat.sort_order, CharacterStat.id)
+            )
+        )
+        stat_name_to_id = {row.name: row.id for row in stat_rows}
+        profile_stat_names = [row.name for row in stat_rows]
+
+        for scenario_idx, scenario_data in enumerate(profile.get("scenarios", [])):
             scenario = Scenario(
                 character_id=character.id,
-                scenario_id=scenario_data["scenario_id"],
+                sort_order=scenario_idx,
                 title=scenario_data["title"],
                 description=scenario_data["description"],
                 historical_facts=scenario_data["historical_facts"],
@@ -93,7 +152,7 @@ def seed_characters(session) -> dict[tuple[str, int], int]:
             for turn_data in scenario_data.get("turns", []):
                 turn = Turn(
                     scenario_id=scenario.id,
-                    turn_no=turn_data["turn_no"],
+                    sort_order=_turn_sort_order(turn_data),
                     title=turn_data["title"],
                     situation=turn_data["situation"],
                     turn_image=turn_data.get("turn_image", ""),
@@ -113,7 +172,12 @@ def seed_characters(session) -> dict[tuple[str, int], int]:
                             choice_image=choice_data.get("choice_image", ""),
                             result_text=choice_data["result_text"],
                             is_historical=choice_data["is_historical"],
-                            stats=choice_data.get("stats", {}),
+                            turn_stats=resolve_choice_turn_stats_for_db(
+                                stat_name_to_id,
+                                choice_data,
+                                profile_stat_names=profile_stat_names,
+                                category_label=category_title,
+                            ),
                         )
                     )
 
@@ -169,6 +233,7 @@ def seed_endings(session, scenario_lookup: dict[tuple[str, int], int]) -> None:
 
 
 def print_summary(session) -> None:
+    category_count = session.scalar(select(func.count()).select_from(CharacterCategory))
     character_count = session.scalar(select(func.count()).select_from(Character))
     stat_count = session.scalar(select(func.count()).select_from(CharacterStat))
     scenario_count = session.scalar(select(func.count()).select_from(Scenario))
@@ -177,6 +242,7 @@ def print_summary(session) -> None:
     ending_count = session.scalar(select(func.count()).select_from(Ending))
 
     print("\n[SEED SUMMARY]")
+    print(f"  character_categories: {category_count}")
     print(f"  characters       : {character_count}")
     print(f"  character_stats  : {stat_count}")
     print(f"  scenarios        : {scenario_count}")
@@ -201,8 +267,10 @@ def run_seed(force: bool = False) -> None:
             clear_content_data(session)
             session.flush()
 
+        print("[INFO] character_categories 시드 중...")
+        category_lookup = seed_character_categories(session)
         print("[INFO] characters.json 시드 중...")
-        scenario_lookup = seed_characters(session)
+        scenario_lookup = seed_characters(session, category_lookup)
         print("[INFO] endings/*.json 시드 중...")
         seed_endings(session, scenario_lookup)
         session.commit()
