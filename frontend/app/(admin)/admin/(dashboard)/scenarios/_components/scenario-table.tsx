@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils/cn";
 
 const baseColumns: AdminTableColumn[] = [
   { key: "id", header: "ID", className: "w-16" },
-  { key: "character", header: "인물" },
   { key: "category", header: "카테고리", className: "w-32" },
+  { key: "character", header: "인물" },
   { key: "title", header: "제목" },
   { key: "sort_order", header: "순서", className: "w-20" },
   { key: "status", header: "상태", className: "w-24" },
@@ -25,16 +25,22 @@ type ScenarioTableProps = {
   scenarios: ScenarioListItem[];
   emptyMessage: string;
   isReorderMode: boolean;
+  isLoading?: boolean;
+  errorMessage?: string;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onRowClick?: (scenario: ScenarioListItem) => void;
+  onRetry?: () => void;
 };
 
 export function ScenarioTable({
+  errorMessage,
+  isLoading,
   scenarios,
   emptyMessage,
   isReorderMode,
   onReorder,
   onRowClick,
+  onRetry,
 }: ScenarioTableProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -75,7 +81,15 @@ export function ScenarioTable({
   }
 
   return (
-    <AdminDataTable columns={columns} emptyMessage={emptyMessage} isEmpty={scenarios.length === 0}>
+    <AdminDataTable
+      columns={columns}
+      emptyMessage={emptyMessage}
+      errorMessage={errorMessage}
+      isEmpty={scenarios.length === 0}
+      isLoading={isLoading}
+      loadingMessage="시나리오 목록을 불러오고 있습니다."
+      onRetry={onRetry}
+    >
       {scenarios.map((scenario, index) => (
         <AdminTableRow
           key={scenario.id}
@@ -98,8 +112,8 @@ export function ScenarioTable({
             </AdminTableCell>
           ) : null}
           <AdminTableCell className="text-[#8A847C]">{scenario.id}</AdminTableCell>
-          <AdminTableCell className="font-medium text-[#1A1714]">{scenario.character.name}</AdminTableCell>
           <AdminTableCell className="text-[#8A847C]">{scenario.character.category.title}</AdminTableCell>
+          <AdminTableCell className="font-medium text-[#1A1714]">{scenario.character.name}</AdminTableCell>
           <AdminTableCell>{scenario.title}</AdminTableCell>
           <AdminTableCell className="text-[#8A847C]">{scenario.sort_order}</AdminTableCell>
           <AdminTableCell>

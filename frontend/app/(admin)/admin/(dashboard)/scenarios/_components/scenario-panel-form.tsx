@@ -29,20 +29,6 @@ export function ScenarioPanelForm({ characterOptions, mode, scenario }: Scenario
   return (
     <AdminFormTable>
       {!isCreate ? (
-        <AdminFormRow htmlFor="scenario-id" label="ID">
-          <AdminInput
-            className={panelInputClassName}
-            defaultValue={scenario?.id}
-            disabled
-            id="scenario-id"
-            name="id"
-            readOnly
-            type="text"
-          />
-        </AdminFormRow>
-      ) : null}
-
-      {!isCreate ? (
         <AdminFormRow label="상태">
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
             <input
@@ -56,38 +42,37 @@ export function ScenarioPanelForm({ characterOptions, mode, scenario }: Scenario
         </AdminFormRow>
       ) : null}
 
-      {isCreate ? (
-        <AdminFormRow htmlFor="scenario-character" label="인물" required>
-          <AdminSelect
-            className={`${panelInputClassName} h-11`}
-            defaultValue={String(characterOptions[0]?.id ?? "")}
-            id="scenario-character"
-            name="character_id"
-            required
-          >
-            {characterOptions.map((character) => (
-              <option key={character.id} value={character.id}>
-                {formatIdDotLabel(character.id, character.name)}
-              </option>
-            ))}
-          </AdminSelect>
-        </AdminFormRow>
-      ) : (
-        <AdminFormRow htmlFor="scenario-character" label="인물">
+      {!isCreate ? (
+        <AdminFormRow htmlFor="scenario-id" label="ID">
           <AdminInput
             className={panelInputClassName}
-            defaultValue={
-              scenario
-                ? formatIdDotLabel(scenario.character_id, scenario.character.name)
-                : ""
-            }
+            defaultValue={scenario?.id}
             disabled
-            id="scenario-character"
+            id="scenario-id"
+            name="id"
             readOnly
             type="text"
           />
         </AdminFormRow>
-      )}
+      ) : null}
+
+      <AdminFormRow htmlFor="scenario-character" label="인물" required>
+        <AdminSelect
+          className={`${panelInputClassName} h-11`}
+          defaultValue={String(
+            scenario?.character_id ?? characterOptions[0]?.id ?? "",
+          )}
+          id="scenario-character"
+          name="character_id"
+          required
+        >
+          {characterOptions.map((character) => (
+            <option key={character.id} value={character.id}>
+              {formatIdDotLabel(character.id, character.name)}
+            </option>
+          ))}
+        </AdminSelect>
+      </AdminFormRow>
 
       <AdminFormRow htmlFor="scenario-title" label="제목" required>
         <AdminInput

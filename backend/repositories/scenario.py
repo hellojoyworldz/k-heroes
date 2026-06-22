@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
@@ -12,7 +12,7 @@ from repositories.character import _get_character_or_raise
 class ScenarioNotFoundError(Exception):
     def __init__(self, scenario_id: int):
         self.scenario_id = scenario_id
-        super().__init__(f"Scenario id={scenario_id} not found")
+        super().__init__(f"시나리오를 찾을 수 없습니다. (ID: {scenario_id})")
 
 
 def _get_scenario_or_raise(db: Session, scenario_db_id: int) -> Scenario:
@@ -43,12 +43,11 @@ def _scenario_query():
     )
 
 
-def list_scenarios(
-    db: Session,
+def _filtered_scenario_query(
     *,
     character_id: Optional[int] = None,
     is_active: Optional[bool] = None,
-) -> List[Scenario]:
+):
     query = (
         _scenario_query()
         .join(Scenario.character)
@@ -59,7 +58,44 @@ def list_scenarios(
         query = query.where(Scenario.is_active.is_(is_active))
     if character_id is not None:
         query = query.where(Scenario.character_id == character_id)
-    return list(db.scalars(query).unique())
+    return query
+
+
+def list_scenarios(
+    db: Session,
+    *,
+    character_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+) -> List[Scenario]:
+    return list(
+        db.scalars(
+            _filtered_scenario_query(
+                character_id=character_id,
+                is_active=is_active,
+            )
+        ).unique()
+    )
+
+
+def list_scenarios_paginated(
+    db: Session,
+    *,
+    character_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[Scenario], int]:
+    query = _filtered_scenario_query(
+        character_id=character_id,
+        is_active=is_active,
+    )
+    total = db.scalar(
+        select(func.count()).select_from(query.order_by(None).subquery())
+    ) or 0
+    items = list(
+        db.scalars(query.offset((page - 1) * page_size).limit(page_size)).unique()
+    )
+    return items, total
 
 
 def get_scenario_by_id(db: Session, scenario_db_id: int) -> Scenario:
@@ -86,6 +122,11 @@ def create_scenario(db: Session, data: ScenarioCreate) -> Scenario:
 def update_scenario(db: Session, scenario_db_id: int, data: ScenarioUpdate) -> Scenario:
     scenario = _get_scenario_or_raise(db, scenario_db_id)
     updates = data.model_dump(exclude_unset=True)
+
+    if "character_id" in updates:
+        _get_character_or_raise(db, updates["character_id"])
+        if updates["character_id"] != scenario.character_id:
+            updates["sort_order"] = _next_sort_order(db, updates["character_id"])
 
     for field, value in updates.items():
         setattr(scenario, field, value)

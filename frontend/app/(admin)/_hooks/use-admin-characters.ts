@@ -20,6 +20,7 @@ const adminCharacterKeys = {
   all: ["admin", "characters"] as const,
   list: (filters: CharacterFilters, page: number, pageSize: AdminPageSize) =>
     [...adminCharacterKeys.all, "list", { filters, page, pageSize }] as const,
+  options: () => [...adminCharacterKeys.all, "options"] as const,
   reorder: (categoryId: number) =>
     [...adminCharacterKeys.all, "reorder", categoryId] as const,
 };
@@ -49,6 +50,18 @@ function fetchCharacterList(
   );
 }
 
+function characterOptionsQuery() {
+  return {
+    queryKey: adminCharacterKeys.options(),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchCharacterList({ active: "all", categoryId: null, name: "" }, 1, 100, signal).then(
+        (data) => data.items,
+      ),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  };
+}
+
 export function useAdminCharacters(
   filters: CharacterFilters,
   page: number,
@@ -60,6 +73,14 @@ export function useAdminCharacters(
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+}
+
+export function useAdminCharacterOptions() {
+  return useQuery(characterOptionsQuery());
+}
+
+export function fetchAdminCharacterOptions(queryClient: QueryClient) {
+  return queryClient.fetchQuery(characterOptionsQuery());
 }
 
 export function fetchAdminCharactersForReorder(

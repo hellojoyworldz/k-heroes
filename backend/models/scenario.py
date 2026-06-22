@@ -21,6 +21,7 @@ class ScenarioCreate(BaseModel):
 
 
 class ScenarioUpdate(BaseModel):
+    character_id: Optional[int] = Field(None, ge=1, description="인물 DB id")
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="시나리오 제목")
     description: Optional[str] = Field(None, min_length=1, description="시나리오 설명")
     historical_facts: Optional[str] = Field(None, min_length=1, description="역사적 사실")
