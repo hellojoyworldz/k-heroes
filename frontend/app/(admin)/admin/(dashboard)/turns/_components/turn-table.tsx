@@ -1,5 +1,6 @@
 import { GripVertical } from "lucide-react";
 import { type DragEvent, useState } from "react";
+import { AdminStatusBadge } from "@/app/(admin)/_components/admin-badge";
 import {
   AdminDataTable,
   AdminTableCell,
@@ -11,10 +12,12 @@ import { cn } from "@/lib/utils/cn";
 
 const baseColumns: AdminTableColumn[] = [
   { key: "id", header: "ID", className: "w-16" },
-  { key: "character", header: "인물" },
-  { key: "scenario", header: "시나리오", className: "w-36" },
-  { key: "title", header: "제목" },
+  { key: "category", header: "카테고리", className: "w-32" },
+  { key: "character", header: "인물", className: "w-28" },
+  { key: "scenario", header: "시나리오", className: "w-52" },
+  { key: "title", header: "제목", className: "w-36" },
   { key: "sort_order", header: "순서", className: "w-20" },
+  { key: "status", header: "상태", className: "w-24" },
 ];
 
 const handleColumn: AdminTableColumn = { key: "handle", header: "", className: "w-12" };
@@ -23,16 +26,22 @@ type TurnTableProps = {
   turns: TurnListItem[];
   emptyMessage: string;
   isReorderMode: boolean;
+  isLoading?: boolean;
+  errorMessage?: string;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onRowClick?: (turn: TurnListItem) => void;
+  onRetry?: () => void;
 };
 
 export function TurnTable({
   turns,
   emptyMessage,
+  errorMessage,
+  isLoading,
   isReorderMode,
   onReorder,
   onRowClick,
+  onRetry,
 }: TurnTableProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -73,7 +82,15 @@ export function TurnTable({
   }
 
   return (
-    <AdminDataTable columns={columns} emptyMessage={emptyMessage} isEmpty={turns.length === 0}>
+    <AdminDataTable
+      columns={columns}
+      emptyMessage={emptyMessage}
+      errorMessage={errorMessage}
+      isEmpty={turns.length === 0}
+      isLoading={isLoading}
+      loadingMessage="턴 목록을 불러오고 있습니다."
+      onRetry={onRetry}
+    >
       {turns.map((turn, index) => (
         <AdminTableRow
           key={turn.id}
@@ -96,10 +113,18 @@ export function TurnTable({
             </AdminTableCell>
           ) : null}
           <AdminTableCell className="text-[#8A847C]">{turn.id}</AdminTableCell>
+          <AdminTableCell className="text-[#8A847C]">{turn.character.category.title}</AdminTableCell>
           <AdminTableCell className="font-medium text-[#1A1714]">{turn.character.name}</AdminTableCell>
-          <AdminTableCell className="text-[#8A847C]">{turn.scenario.title}</AdminTableCell>
-          <AdminTableCell>{turn.title}</AdminTableCell>
+          <AdminTableCell className="max-w-52 truncate text-[#8A847C]" title={turn.scenario.title}>
+            {turn.scenario.title}
+          </AdminTableCell>
+          <AdminTableCell className="max-w-36 truncate" title={turn.title}>
+            {turn.title}
+          </AdminTableCell>
           <AdminTableCell className="text-[#8A847C]">{turn.sort_order}</AdminTableCell>
+          <AdminTableCell>
+            <AdminStatusBadge isActive={turn.is_active} />
+          </AdminTableCell>
         </AdminTableRow>
       ))}
     </AdminDataTable>

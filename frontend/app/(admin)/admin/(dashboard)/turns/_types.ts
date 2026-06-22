@@ -53,4 +53,5 @@ export type TurnListItem = {
   tip_title: string;
   tip_desc: string;
   choices: Record<"A" | "B", TurnChoice>;
+  is_active: boolean;
 };

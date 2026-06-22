@@ -1,19 +1,19 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from db.models import Character, Choice, Scenario, Turn
 from models.turn import ChoiceWrite, TurnCreate, TurnReorderRequest, TurnUpdate
-from repositories.character import TurnStatNotFoundError
+from repositories.character import TurnStatNotFoundError, _get_character_or_raise
 from repositories.scenario import ScenarioNotFoundError, _get_scenario_or_raise
 
 
 class TurnNotFoundError(Exception):
     def __init__(self, turn_id: int):
         self.turn_id = turn_id
-        super().__init__(f"Turn id={turn_id} not found")
+        super().__init__(f"턴을 찾을 수 없습니다. (ID: {turn_id})")
 
 
 def _turn_query():
@@ -130,7 +130,12 @@ def _sync_choices(
     db.refresh(turn, attribute_names=["choices"])
 
 
-def list_turns(db: Session, *, scenario_id: Optional[int] = None) -> List[Turn]:
+def _filtered_turn_query(
+    *,
+    character_id: Optional[int] = None,
+    scenario_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+):
     query = (
         _turn_query()
         .join(Turn.scenario)
@@ -138,10 +143,60 @@ def list_turns(db: Session, *, scenario_id: Optional[int] = None) -> List[Turn]:
         .where(Turn.deleted_at.is_(None))
         .order_by(Character.name, Scenario.sort_order, Turn.sort_order, Turn.id)
     )
+    if is_active is not None:
+        query = query.where(Turn.is_active.is_(is_active))
+    if character_id is not None:
+        query = query.where(Scenario.character_id == character_id)
+    if scenario_id is not None:
+        query = query.where(Turn.scenario_id == scenario_id)
+    return query
+
+
+def list_turns(
+    db: Session,
+    *,
+    character_id: Optional[int] = None,
+    scenario_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+) -> List[Turn]:
+    if character_id is not None:
+        _get_character_or_raise(db, character_id)
     if scenario_id is not None:
         _get_scenario_or_raise(db, scenario_id)
-        query = query.where(Turn.scenario_id == scenario_id)
-    return list(db.scalars(query))
+    return list(
+        db.scalars(
+            _filtered_turn_query(
+                character_id=character_id,
+                scenario_id=scenario_id,
+                is_active=is_active,
+            )
+        )
+    )
+
+
+def list_turns_paginated(
+    db: Session,
+    *,
+    character_id: Optional[int] = None,
+    scenario_id: Optional[int] = None,
+    is_active: Optional[bool] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[Turn], int]:
+    if character_id is not None:
+        _get_character_or_raise(db, character_id)
+    if scenario_id is not None:
+        _get_scenario_or_raise(db, scenario_id)
+    query = _filtered_turn_query(
+        character_id=character_id,
+        scenario_id=scenario_id,
+        is_active=is_active,
+    )
+    total = db.scalar(
+        select(func.count()).select_from(query.order_by(None).subquery())
+    ) or 0
+    items = list(db.scalars(query.offset((page - 1) * page_size).limit(page_size)))
+    return items, total
 
 
 def get_turn_by_id(db: Session, turn_id: int) -> Turn:
@@ -162,6 +217,7 @@ def create_turn(db: Session, data: TurnCreate) -> Turn:
         turn_image=data.turn_image,
         tip_title=data.tip_title,
         tip_desc=data.tip_desc,
+        is_active=True,
     )
     db.add(turn)
     db.flush()

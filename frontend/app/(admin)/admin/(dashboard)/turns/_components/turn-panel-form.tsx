@@ -6,6 +6,7 @@ import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-fo
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
+import type { CharacterListItem } from "@/app/(admin)/admin/(dashboard)/characters/_types";
 import type {
   CharacterTurnStat,
   TurnChoice,
@@ -24,7 +25,7 @@ type TurnPanelFormProps = {
   mode: "create" | "edit";
   turn?: TurnListItem;
   scenarioOptions: ScenarioOption[];
-  characterStatsByCharacterId: Record<number, CharacterTurnStat[]>;
+  characterOptions: CharacterListItem[];
 };
 
 const panelInputClassName =
@@ -194,7 +195,7 @@ function ChoiceFields({
 }
 
 export function TurnPanelForm({
-  characterStatsByCharacterId,
+  characterOptions,
   mode,
   scenarioOptions,
   turn,
@@ -208,14 +209,35 @@ export function TurnPanelForm({
     (scenario) => scenario.id === Number(selectedScenarioId),
   );
 
-  const characterStats =
+  const characterStats: CharacterTurnStat[] =
     turn?.character_stats ??
-    characterStatsByCharacterId[selectedScenario?.characterId ?? 0] ??
+    characterOptions
+      .find((character) => character.id === selectedScenario?.characterId)
+      ?.turn_stats.filter((stat) => stat.id !== undefined)
+      .map((stat) => ({
+        id: stat.id as number,
+        name: stat.name,
+        value: stat.value,
+      })) ??
     [];
 
   return (
     <div className="space-y-6">
       <FormSection title="기본 정보">
+        {!isCreate ? (
+          <AdminFormRow label="상태">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
+              <input
+                className="size-4 rounded border-[#D6D0C6] accent-[#2A4232]"
+                defaultChecked={turn?.is_active ?? true}
+                name="is_active"
+                type="checkbox"
+              />
+              사용
+            </label>
+          </AdminFormRow>
+        ) : null}
+
         {!isCreate ? (
           <AdminFormRow htmlFor="turn-id" label="ID">
             <AdminInput
@@ -242,7 +264,7 @@ export function TurnPanelForm({
             >
               {scenarioOptions.map((scenario) => (
                 <option key={scenario.id} value={scenario.id}>
-                  {formatIdDotLabel(scenario.id, scenario.characterName, scenario.title)}
+                  {formatIdDotLabel(scenario.id, scenario.title)}
                 </option>
               ))}
             </AdminSelect>

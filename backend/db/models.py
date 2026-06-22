@@ -118,7 +118,7 @@ class Scenario(ManagedContentMixin, Base):
     )
 
 
-class Turn(SoftDeleteMixin, Base):
+class Turn(ManagedContentMixin, Base):
     __tablename__ = "turns"
     __table_args__ = (UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_turn"),)
 

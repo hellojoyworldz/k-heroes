@@ -50,6 +50,7 @@ class TurnUpdate(BaseModel):
     tip_title: Optional[str] = Field(None, min_length=1, description="팁 질문")
     tip_desc: Optional[str] = Field(None, min_length=1, description="팁 답변")
     choices: Optional[ChoicesWrite] = Field(None, description="선택지 A/B sync")
+    is_active: Optional[bool] = Field(None, description="true=사용, false=미사용")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -92,6 +93,7 @@ class TurnAdminResponse(BaseModel):
     tip_title: str
     tip_desc: str
     choices: Dict[str, ChoiceAdminResponse]
+    is_active: bool
     deleted_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -156,6 +158,7 @@ class TurnAdminResponse(BaseModel):
             tip_title=turn.tip_title,
             tip_desc=turn.tip_desc,
             choices=choices,
+            is_active=turn.is_active,
             deleted_at=turn.deleted_at,
         )
 

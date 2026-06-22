@@ -28,6 +28,7 @@ export const adminScenarioKeys = {
   all: ["admin", "scenarios"] as const,
   list: (filters: ScenarioFilters, page: number, pageSize: AdminPageSize) =>
     [...adminScenarioKeys.all, "list", { filters, page, pageSize }] as const,
+  options: () => [...adminScenarioKeys.all, "options"] as const,
   reorder: (characterId: number) => [...adminScenarioKeys.all, "reorder", characterId] as const,
 };
 
@@ -61,6 +62,18 @@ function fetchScenarioList(
   );
 }
 
+function scenarioOptionsQuery() {
+  return {
+    queryKey: adminScenarioKeys.options(),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchScenarioList({ active: "all", characterId: null }, 1, 100, signal).then(
+        (data) => data.items,
+      ),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  };
+}
+
 export function useAdminScenarios(
   filters: ScenarioFilters,
   page: number,
@@ -72,6 +85,14 @@ export function useAdminScenarios(
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+}
+
+export function useAdminScenarioOptions() {
+  return useQuery(scenarioOptionsQuery());
+}
+
+export function fetchAdminScenarioOptions(queryClient: QueryClient) {
+  return queryClient.fetchQuery(scenarioOptionsQuery());
 }
 
 export function fetchAdminScenariosForReorder(

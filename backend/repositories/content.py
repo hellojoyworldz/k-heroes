@@ -39,7 +39,7 @@ def _is_active_scenario(scenario: Scenario) -> bool:
 
 
 def _is_visible_turn(turn: Turn) -> bool:
-    return turn.deleted_at is None
+    return turn.is_active and turn.deleted_at is None
 
 
 def _is_visible_choice(choice: Choice) -> bool:
