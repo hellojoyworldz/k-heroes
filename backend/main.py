@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from router import character, simulation
@@ -6,10 +8,20 @@ import simulation_data_manager
 
 app = FastAPI()
 
+frontend_port = os.environ.get("FRONTEND_PORT", "3000")
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ORIGINS",
+        f"http://localhost:{frontend_port},http://127.0.0.1:{frontend_port}",
+    ).split(",")
+    if origin.strip()
+]
+
 # CORS 설정 추가
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

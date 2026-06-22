@@ -5,17 +5,43 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AdminButton } from "@/app/(admin)/_components/admin-button";
 import { AdminFormField } from "@/app/(admin)/_components/admin-form-field";
+import { fetchAdminApi } from "@/app/(admin)/_lib/admin-api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage("");
     setIsSubmitting(true);
+
     try {
-      // TODO: 인증 API 연동
-      router.push("/admin");
+      const formData = new FormData(event.currentTarget);
+      const response = await fetchAdminApi("/api/v2/admin/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.get("username"),
+          password: formData.get("password"),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { detail?: unknown };
+        setErrorMessage(
+          typeof data.detail === "string"
+            ? data.detail
+            : "로그인 요청을 처리하지 못했습니다.",
+        );
+        return;
+      }
+
+      router.replace("/admin");
+      router.refresh();
+    } catch {
+      setErrorMessage("로그인 요청 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +126,16 @@ export default function AdminLoginPage() {
               required
               type="password"
             />
+
+            {errorMessage ? (
+              <p
+                aria-live="polite"
+                className="rounded-lg border border-[#E6C9C5] bg-[#FDF6F5] px-4 py-3 text-sm text-[#9A3F38]"
+                role="alert"
+              >
+                {errorMessage}
+              </p>
+            ) : null}
 
             <AdminButton isLoading={isSubmitting} loadingText="로그인 중..." type="submit">
               로그인

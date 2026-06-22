@@ -14,8 +14,12 @@ from models.character import (
     ScenarioItem,
     StatItem,
     TurnItem,
+    TurnStatGameItem,
 )
 from models.simulation import RecommendedPlace, SummaryItem
+from repositories.character_stats import stat_items_from_json
+from repositories.character_turn_stats import active_turn_stats
+from repositories.turn_stats import DEFAULT_GAME_STAT_VALUE
 
 
 class CharacterNotFoundError(Exception):
@@ -39,7 +43,7 @@ def _is_active_scenario(scenario: Scenario) -> bool:
 
 
 def _is_visible_turn(turn: Turn) -> bool:
-    return turn.deleted_at is None
+    return turn.is_active and turn.deleted_at is None
 
 
 def _is_visible_choice(choice: Choice) -> bool:
@@ -47,7 +51,7 @@ def _is_visible_choice(choice: Choice) -> bool:
 
 
 def _is_visible_ending(ending: Ending) -> bool:
-    return ending.deleted_at is None
+    return ending.is_active and ending.deleted_at is None
 
 
 def _map_choice(choice: Choice) -> ChoiceItem:
@@ -56,7 +60,10 @@ def _map_choice(choice: Choice) -> ChoiceItem:
         description=choice.description,
         choice_image=choice.choice_image or "",
         turn_stats=[
-            ChoiceTurnStatItem(stat_id=item["stat_id"], delta=item["delta"])
+            ChoiceTurnStatItem(
+                turn_stats_id=item["turn_stats_id"],
+                delta=item["delta"],
+            )
             for item in (choice.turn_stats or [])
         ],
         result_text=choice.result_text,
@@ -102,10 +109,10 @@ def _map_character(
     scenario_id: Optional[int] = None,
     lightweight: bool = False,
 ) -> CharacterCard:
-    stats = [
-        StatItem(id=s.id, name=s.name, value=s.value, desc=s.desc)
-        for s in sorted(character.stats, key=lambda s: s.sort_order)
-        if s.deleted_at is None and s.is_active
+    stats = stat_items_from_json(character.stats)
+    turn_stats = [
+        TurnStatGameItem(id=row.id, name=row.name, value=DEFAULT_GAME_STAT_VALUE)
+        for row in active_turn_stats(character)
     ]
 
     scenarios: List[ScenarioItem] = []
@@ -138,6 +145,7 @@ def _map_character(
             J_P=character.mbti_j_p,
         ),
         stats=stats,
+        turn_stats=turn_stats,
         intro_quote=character.intro_quote,
         intro_desc=character.intro_desc,
         associated_stories={} if lightweight else (character.associated_stories or {}),
@@ -152,7 +160,7 @@ def _character_query(*, active_category_only: bool = True):
         .where(Character.is_active.is_(True), Character.deleted_at.is_(None))
         .options(
             selectinload(Character.character_category),
-            selectinload(Character.stats),
+            selectinload(Character.turn_stats),
             selectinload(Character.scenarios)
             .selectinload(Scenario.turns)
             .selectinload(Turn.choices),
@@ -237,7 +245,6 @@ def get_ending_by_path(
             Character.is_active.is_(True),
             Character.deleted_at.is_(None),
         )
-        .options(selectinload(Character.stats))
     )
     if not character:
         raise CharacterNotFoundError(f"Character '{name}' not found.")
@@ -286,6 +293,7 @@ def map_recommended_places(raw: list) -> List[RecommendedPlace]:
             address=item.get("address", ""),
             name=item.get("name", ""),
             description=item.get("description", ""),
+            link=item.get("link", "") or "",
             image_url=item.get("image_url", "") or "",
         )
         for item in (raw or [])
@@ -299,8 +307,8 @@ def compute_play_results(
 ) -> tuple[int, Dict[str, int], int]:
     total_turns = len(scenario.turns)
     historical_choices_count = 0
-    stat_lookup = {stat.id: stat for stat in character_card.stats}
-    current_by_id = {stat.id: stat.value for stat in character_card.stats}
+    stat_lookup = {stat.id: stat for stat in character_card.turn_stats}
+    current_by_id = {stat.id: stat.value for stat in character_card.turn_stats}
 
     for idx, turn in enumerate(scenario.turns):
         user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
@@ -312,13 +320,13 @@ def compute_play_results(
             historical_choices_count += 1
 
         for item in user_choice.turn_stats:
-            if item.stat_id in current_by_id:
-                current_by_id[item.stat_id] += item.delta
+            if item.turn_stats_id in current_by_id:
+                current_by_id[item.turn_stats_id] += item.delta
 
     current_stats = {
-        stat_lookup[stat_id].name: value
-        for stat_id, value in current_by_id.items()
-        if stat_id in stat_lookup
+        stat_lookup[turn_stats_id].name: value
+        for turn_stats_id, value in current_by_id.items()
+        if turn_stats_id in stat_lookup
     }
 
     history_score = (

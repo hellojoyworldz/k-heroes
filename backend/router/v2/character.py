@@ -18,6 +18,7 @@ from models.character import (
     CharacterReorderRequest,
     CharacterUpdate,
 )
+from models.pagination import ALLOWED_PAGE_SIZES, PaginatedResponse
 from router.v2.deps import require_content_admin
 
 router = APIRouter(prefix="/api/v2/characters", tags=["Character v2"])
@@ -49,21 +50,38 @@ async def get_character_details(character_id: int, db: Session = Depends(get_db)
         )
 
 
-@admin_router.get("", response_model=List[CharacterAdminResponse])
+@admin_router.get("", response_model=PaginatedResponse[CharacterAdminResponse])
 def list_characters(
     category_id: Optional[int] = Query(None, description="카테고리 DB id"),
     is_active: Optional[bool] = Query(None, description="true=활성만, false=비활성만, 생략=전체"),
     name: Optional[str] = Query(None, description="이름 부분 일치"),
     tag: Optional[str] = Query(None, description="keywords 태그 부분 일치"),
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    page_size: int = Query(20, ge=1, le=100, description="페이지당 항목 수"),
     db: Session = Depends(get_db),
 ):
     """어드민 — 인물 목록."""
-    return character_repository.list_characters(
+    if page_size not in ALLOWED_PAGE_SIZES:
+        raise HTTPException(
+            status_code=422,
+            detail="페이지당 항목 수는 10, 20, 50, 100 중 하나여야 합니다.",
+        )
+
+    characters, total = character_repository.list_characters_paginated(
         db,
         category_id=category_id,
         is_active=is_active,
         name=name,
         tag=tag,
+        page=page,
+        page_size=page_size,
+    )
+    return PaginatedResponse[CharacterAdminResponse](
+        items=characters,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
     )
 
 
@@ -110,7 +128,7 @@ def create_character(
     except character_repository.CharacterDuplicateError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except character_repository.TurnStatNotFoundError as exc:
+    except character_repository.CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except character_category_repository.CharacterCategoryNotFoundError as exc:
@@ -133,7 +151,7 @@ def update_character(
     except character_repository.CharacterNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except character_repository.TurnStatNotFoundError as exc:
+    except character_repository.CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except character_repository.CharacterDuplicateError as exc:

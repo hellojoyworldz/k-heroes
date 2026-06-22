@@ -30,6 +30,7 @@ class EndingCreate(BaseModel):
 
 
 class EndingUpdate(BaseModel):
+    scenario_id: Optional[int] = Field(None, ge=1, description="시나리오 DB id")
     path_key: Optional[str] = Field(None, min_length=1, max_length=50, description="선택 경로")
     ending_type: Optional[str] = Field(None, min_length=1, max_length=50, description="엔딩 유형")
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="엔딩 제목")
@@ -40,6 +41,7 @@ class EndingUpdate(BaseModel):
     image_url: Optional[str] = Field(None, max_length=500, description="엔딩 이미지 URL")
     summary_items: Optional[List[SummaryItem]] = Field(None, description="요약 항목")
     recommended_places: Optional[List[RecommendedPlace]] = Field(None, description="추천 방문지")
+    is_active: Optional[bool] = Field(None, description="사용 여부")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -49,6 +51,7 @@ class EndingAdminResponse(BaseModel):
     scenario_id: int
     scenario: AdminScenarioRef
     character: AdminCharacterRef
+    sort_order: int
     path_key: str
     ending_type: str
     title: str
@@ -59,6 +62,7 @@ class EndingAdminResponse(BaseModel):
     image_url: str
     summary_items: List[SummaryItem]
     recommended_places: List[RecommendedPlace]
+    is_active: bool
     deleted_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -71,6 +75,7 @@ class EndingAdminResponse(BaseModel):
             scenario_id=ending.scenario_id,
             scenario=scenario_ref_from_scenario(scenario),
             character=character_ref_from_scenario(scenario),
+            sort_order=ending.sort_order,
             path_key=ending.path_key,
             ending_type=ending.ending_type,
             title=ending.title,
@@ -88,9 +93,18 @@ class EndingAdminResponse(BaseModel):
                     address=item.get("address", ""),
                     name=item.get("name", ""),
                     description=item.get("description", ""),
+                    link=item.get("link", "") or "",
                     image_url=item.get("image_url", "") or "",
                 )
                 for item in (ending.recommended_places or [])
             ],
+            is_active=ending.is_active,
             deleted_at=ending.deleted_at,
         )
+
+
+class EndingReorderRequest(BaseModel):
+    scenario_id: int = Field(..., ge=1, description="시나리오 DB id")
+    ids: List[int] = Field(..., min_length=1, description="엔딩 DB id 배열 (index = sort_order)")
+
+    model_config = ConfigDict(extra="forbid")

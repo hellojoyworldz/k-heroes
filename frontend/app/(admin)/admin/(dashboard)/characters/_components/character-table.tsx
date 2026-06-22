@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils/cn";
 
 const baseColumns: AdminTableColumn[] = [
   { key: "id", header: "ID", className: "w-16" },
+  { key: "category", header: "카테고리", className: "w-32" },
   { key: "name", header: "이름" },
-  { key: "category", header: "카테고리" },
-  { key: "role", header: "역할", className: "w-28" },
-  { key: "era_tag", header: "시대", className: "w-28" },
+  { key: "role", header: "역할", className: "w-44" },
+  { key: "era_tag", header: "시대", className: "w-36" },
   { key: "sort_order", header: "순서", className: "w-20" },
   { key: "status", header: "상태", className: "w-24" },
 ];
@@ -26,15 +26,21 @@ type CharacterTableProps = {
   characters: CharacterListItem[];
   emptyMessage: string;
   isReorderMode: boolean;
+  isLoading?: boolean;
+  errorMessage?: string;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  onRetry?: () => void;
   onRowClick?: (character: CharacterListItem) => void;
 };
 
 export function CharacterTable({
   characters,
   emptyMessage,
+  errorMessage,
   isReorderMode,
+  isLoading,
   onReorder,
+  onRetry,
   onRowClick,
 }: CharacterTableProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -76,7 +82,15 @@ export function CharacterTable({
   }
 
   return (
-    <AdminDataTable columns={columns} emptyMessage={emptyMessage} isEmpty={characters.length === 0}>
+    <AdminDataTable
+      columns={columns}
+      emptyMessage={emptyMessage}
+      errorMessage={errorMessage}
+      isEmpty={characters.length === 0}
+      isLoading={isLoading}
+      loadingMessage="인물 목록을 불러오고 있습니다."
+      onRetry={onRetry}
+    >
       {characters.map((character, index) => (
         <AdminTableRow
           key={character.id}
@@ -99,10 +113,14 @@ export function CharacterTable({
             </AdminTableCell>
           ) : null}
           <AdminTableCell className="text-[#8A847C]">{character.id}</AdminTableCell>
+          <AdminTableCell className="max-w-32 truncate text-[#8A847C]">
+            {character.category}
+          </AdminTableCell>
           <AdminTableCell className="font-medium text-[#1A1714]">{character.name}</AdminTableCell>
-          <AdminTableCell className="text-[#8A847C]">{character.category}</AdminTableCell>
-          <AdminTableCell>{character.role}</AdminTableCell>
-          <AdminTableCell className="text-[#8A847C]">{character.era_tag}</AdminTableCell>
+          <AdminTableCell className="whitespace-nowrap">{character.role}</AdminTableCell>
+          <AdminTableCell className="whitespace-nowrap text-[#8A847C]">
+            {character.era_tag}
+          </AdminTableCell>
           <AdminTableCell className="text-[#8A847C]">{character.sort_order}</AdminTableCell>
           <AdminTableCell>
             <AdminStatusBadge isActive={character.is_active} />

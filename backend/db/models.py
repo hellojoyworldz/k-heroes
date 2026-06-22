@@ -68,11 +68,14 @@ class Character(ManagedContentMixin, Base):
     intro_desc: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[list] = mapped_column(JSON, default=list)
     associated_stories: Mapped[dict] = mapped_column(JSON, default=dict)
+    stats: Mapped[list] = mapped_column(JSON, default=list)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     character_category: Mapped["CharacterCategory"] = relationship(back_populates="characters")
-    stats: Mapped[list["CharacterStat"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan", order_by="CharacterStat.sort_order"
+    turn_stats: Mapped[list["CharacterTurnStat"]] = relationship(
+        back_populates="character",
+        cascade="all, delete-orphan",
+        order_by="CharacterTurnStat.sort_order",
     )
     scenarios: Mapped[list["Scenario"]] = relationship(
         back_populates="character",
@@ -85,17 +88,17 @@ class Character(ManagedContentMixin, Base):
         return self.character_category.title if self.character_category else ""
 
 
-class CharacterStat(ManagedContentMixin, Base):
-    __tablename__ = "character_stats"
+class CharacterTurnStat(SoftDeleteMixin, Base):
+    __tablename__ = "character_turn_stats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=False)
+    character_id: Mapped[int] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    value: Mapped[int] = mapped_column(Integer, nullable=False)
-    desc: Mapped[str] = mapped_column(Text, nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    character: Mapped["Character"] = relationship(back_populates="stats")
+    character: Mapped["Character"] = relationship(back_populates="turn_stats")
 
 
 class Scenario(ManagedContentMixin, Base):
@@ -118,7 +121,7 @@ class Scenario(ManagedContentMixin, Base):
     )
 
 
-class Turn(SoftDeleteMixin, Base):
+class Turn(ManagedContentMixin, Base):
     __tablename__ = "turns"
     __table_args__ = (UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_turn"),)
 
@@ -154,12 +157,16 @@ class Choice(SoftDeleteMixin, Base):
     turn: Mapped["Turn"] = relationship(back_populates="choices")
 
 
-class Ending(SoftDeleteMixin, Base):
+class Ending(ManagedContentMixin, Base):
     __tablename__ = "endings"
-    __table_args__ = (UniqueConstraint("scenario_id", "path_key", name="uq_scenario_path"),)
+    __table_args__ = (
+        UniqueConstraint("scenario_id", "path_key", name="uq_scenario_path"),
+        UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_ending"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id", ondelete="CASCADE"), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     path_key: Mapped[str] = mapped_column(String(50), nullable=False)
     ending_type: Mapped[str] = mapped_column(String(50), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)

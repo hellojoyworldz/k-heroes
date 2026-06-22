@@ -21,11 +21,16 @@ def test_list_character_categories_admin(admin_client):
     response = admin_client.get("/api/v2/admin/character-categories", headers=admin_headers(admin_client))
 
     assert response.status_code == 200
-    assert len(response.json()) == 4
+    data = response.json()
+    assert len(data["items"]) == 4
+    assert data["page"] == 1
+    assert data["page_size"] == 20
+    assert data["total"] == 4
+    assert data["total_pages"] == 1
 
 
 def test_list_character_categories_admin_filter_is_active(admin_client, db_session):
-    category = get_category(db_session, "실학 / 학문")
+    category = get_category(db_session, "사상 / 학문")
     category.is_active = False
     db_session.flush()
 
@@ -39,10 +44,20 @@ def test_list_character_categories_admin_filter_is_active(admin_client, db_sessi
         headers=admin_headers(admin_client),
     )
 
-    assert len(all_response.json()) == 4
-    assert len(active_response.json()) == 3
-    assert len(inactive_response.json()) == 1
-    assert inactive_response.json()[0]["title"] == "실학 / 학문"
+    assert len(all_response.json()["items"]) == 4
+    assert len(active_response.json()["items"]) == 3
+    assert len(inactive_response.json()["items"]) == 1
+    assert inactive_response.json()["items"][0]["title"] == "사상 / 학문"
+    assert inactive_response.json()["total"] == 1
+
+
+def test_list_character_categories_admin_rejects_invalid_page_size(admin_client):
+    response = admin_client.get(
+        "/api/v2/admin/character-categories?page_size=30",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 422
 
 
 def test_create_character_category(admin_client):
@@ -138,11 +153,16 @@ def test_delete_character_category_soft(admin_client, db_session):
     assert delete_response.json()["deleted_at"] is not None
 
     list_response = admin_client.get("/api/v2/admin/character-categories", headers=admin_headers(admin_client))
-    assert category_id not in [item["id"] for item in list_response.json()]
+    assert category_id not in [item["id"] for item in list_response.json()["items"]]
 
 
 def test_reorder_character_categories(admin_client, db_session):
-    categories = admin_client.get("/api/v2/admin/character-categories", headers=admin_headers(admin_client)).json()
+    list_response = admin_client.get(
+        "/api/v2/admin/character-categories?page_size=100",
+        headers=admin_headers(admin_client),
+    )
+    assert list_response.status_code == 200, list_response.text
+    categories = list_response.json()["items"]
     first = categories[0]
     second = categories[1]
 
@@ -159,13 +179,13 @@ def test_reorder_character_categories(admin_client, db_session):
 
 
 def test_inactive_category_hidden_from_public_list(client, db_session):
-    category = get_category(db_session, "실학 / 학문")
+    category = get_category(db_session, "사상 / 학문")
     category.is_active = False
     db_session.flush()
 
     response = client.get("/api/v2/character-categories")
     titles = [item["title"] for item in response.json()]
-    assert "실학 / 학문" not in titles
+    assert "사상 / 학문" not in titles
 
 
 def test_partner_cannot_access_content_admin(client, partner_user, jwt_env):

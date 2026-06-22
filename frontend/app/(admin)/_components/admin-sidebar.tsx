@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { adminNavGroups, isAdminNavActive } from "@/app/(admin)/_lib/admin-nav";
+import { fetchAdminApi } from "@/app/(admin)/_lib/admin-api";
 import { cn } from "@/lib/utils/cn";
 
 type AdminSidebarProps = {
@@ -14,6 +17,22 @@ type AdminSidebarProps = {
 
 export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await fetchAdminApi("/api/v2/admin/auth/session/logout", { method: "POST" });
+    } finally {
+      queryClient.clear();
+      onMobileClose();
+      router.replace("/admin/login");
+      router.refresh();
+    }
+  }
 
   return (
     <>
@@ -88,14 +107,15 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
         </nav>
 
         <div className="border-t border-[#E8E4DC] p-3">
-          <Link
+          <button
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[#8A847C] transition-colors hover:bg-[#F4F1EA] hover:text-[#3A3530]"
-            href="/admin/login"
-            onClick={onMobileClose}
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            type="button"
           >
             <LogOut aria-hidden="true" className="size-[1.05rem]" />
-            로그아웃
-          </Link>
+            {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+          </button>
         </div>
       </aside>
     </>

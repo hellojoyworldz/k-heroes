@@ -13,11 +13,14 @@ def test_list_scenarios_admin(admin_client):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) >= 1
-    assert "character" in data[0]
-    assert data[0]["character"]["name"]
-    assert "category" in data[0]["character"]
-    assert data[0]["character"]["category"]["title"]
+    assert len(data["items"]) >= 1
+    assert "character" in data["items"][0]
+    assert data["items"][0]["character"]["name"]
+    assert "category" in data["items"][0]["character"]
+    assert data["items"][0]["character"]["category"]["title"]
+    assert data["page"] == 1
+    assert data["page_size"] == 20
+    assert data["total"] >= 1
 
 
 def test_list_scenarios_filter_by_character_id(admin_client, db_session):
@@ -30,7 +33,7 @@ def test_list_scenarios_filter_by_character_id(admin_client, db_session):
     )
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["items"]
     assert len(data) >= 1
     assert all(item["character_id"] == character.id for item in data)
 
@@ -38,7 +41,7 @@ def test_list_scenarios_filter_by_character_id(admin_client, db_session):
         f"{SCENARIOS_URL}?character_id=99999",
         headers=admin_headers(admin_client),
     )
-    assert other_response.json() == []
+    assert other_response.json()["items"] == []
 
 
 def test_list_scenarios_filter_is_active(admin_client, db_session):
@@ -56,8 +59,17 @@ def test_list_scenarios_filter_is_active(admin_client, db_session):
         headers=admin_headers(admin_client),
     )
 
-    assert scenario.id not in [item["id"] for item in active_response.json()]
-    assert scenario.id in [item["id"] for item in inactive_response.json()]
+    assert scenario.id not in [item["id"] for item in active_response.json()["items"]]
+    assert scenario.id in [item["id"] for item in inactive_response.json()["items"]]
+
+
+def test_list_scenarios_admin_rejects_invalid_page_size(admin_client):
+    response = admin_client.get(
+        f"{SCENARIOS_URL}?page_size=30",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 422
 
 
 def test_create_scenario(admin_client, db_session):
@@ -159,6 +171,30 @@ def test_update_scenario(admin_client, db_session):
     assert data["is_active"] is False
 
 
+def test_update_scenario_character_id(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 0)
+    other_character = get_character(db_session, "고종")
+    assert scenario is not None
+    assert other_character is not None
+
+    current_max = db_session.scalar(
+        select(func.max(Scenario.sort_order)).where(Scenario.character_id == other_character.id)
+    )
+    expected_sort_order = (current_max or -1) + 1
+
+    response = admin_client.patch(
+        f"{SCENARIOS_URL}/{scenario.id}",
+        json={"character_id": other_character.id},
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["character_id"] == other_character.id
+    assert data["character"]["name"] == "고종"
+    assert data["sort_order"] == expected_sort_order
+
+
 def test_update_scenario_rejects_sort_order(admin_client, db_session):
     scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
@@ -203,7 +239,7 @@ def test_delete_scenario_soft(admin_client, db_session):
         f"{SCENARIOS_URL}?character_id={character.id}",
         headers=admin_headers(admin_client),
     )
-    assert scenario_db_id not in [item["id"] for item in list_response.json()]
+    assert scenario_db_id not in [item["id"] for item in list_response.json()["items"]]
 
 
 def test_reorder_scenarios(admin_client, db_session):
@@ -213,7 +249,7 @@ def test_reorder_scenarios(admin_client, db_session):
     scenarios = admin_client.get(
         f"{SCENARIOS_URL}?character_id={character.id}",
         headers=admin_headers(admin_client),
-    ).json()
+    ).json()["items"]
     if len(scenarios) < 2:
         pytest.skip("이순신 시나리오가 2개 이상 필요합니다")
 

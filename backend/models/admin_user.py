@@ -49,5 +49,9 @@ class AdminLoginResponse(BaseModel):
     admin_user: AdminUserResponse
 
 
+class AdminSessionResponse(BaseModel):
+    admin_user: AdminUserResponse
+
+
 class TokenType(str, Enum):
     BEARER = "bearer"

@@ -4,4 +4,5 @@ export type CharacterCategoryListItem = {
   description: string;
   sort_order: number;
   is_active: boolean;
+  deleted_at: string | null;
 };

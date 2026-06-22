@@ -30,7 +30,7 @@ from models.simulation import (
     TurnRequest,
     TurnResponse,
 )
-from repositories.turn_stats import map_turn_stats_to_effects, ordered_stat_ids
+from repositories.turn_stats import map_turn_stats_to_effects, ordered_turn_stats_ids
 from simulation_data_manager import get_recommended_places
 
 router = APIRouter(prefix="/api/v2/simulation", tags=["Simulation v2"])
@@ -47,7 +47,7 @@ async def start_simulation(payload: StartRequest, db: Session = Depends(get_db))
 
     initial_stats = {
         f"stat_{i + 1}": GameStateStat(name=stat.name, value=stat.value)
-        for i, stat in enumerate(character_card.stats)
+        for i, stat in enumerate(character_card.turn_stats)
     }
     initial_state = GameState(
         character_name=payload.character_name,
@@ -71,7 +71,7 @@ async def play_turn(payload: TurnRequest, db: Session = Depends(get_db)):
     except ScenarioNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-    stat_ids = ordered_stat_ids(character_card.stats)
+    turn_stats_ids = ordered_turn_stats_ids(character_card.turn_stats)
 
     if payload.current_step < 1 or payload.current_step > len(scenario.turns):
         raise HTTPException(
@@ -97,14 +97,14 @@ async def play_turn(payload: TurnRequest, db: Session = Depends(get_db)):
             is_historical=choice_a_raw.is_historical,
             title=choice_a_raw.title,
             description=choice_a_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, stat_ids),
+            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, turn_stats_ids),
             choice_image=choice_a_raw.choice_image or "",
         ),
         choice_b=ChoiceDetail(
             is_historical=choice_b_raw.is_historical,
             title=choice_b_raw.title,
             description=choice_b_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, stat_ids),
+            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, turn_stats_ids),
             choice_image=choice_b_raw.choice_image or "",
         ),
         turn_image=turn_item.turn_image or "",

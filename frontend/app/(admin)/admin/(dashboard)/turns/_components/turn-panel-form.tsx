@@ -6,25 +6,17 @@ import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-fo
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
-import type {
-  CharacterTurnStat,
-  TurnChoice,
-  TurnListItem,
-} from "@/app/(admin)/admin/(dashboard)/turns/_types";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
-
-type ScenarioOption = {
-  id: number;
-  title: string;
-  characterName: string;
-  characterId: number;
-};
+import type { CharacterOption } from "@/app/(admin)/_hooks/use-admin-characters";
+import type { ScenarioOption } from "@/app/(admin)/_hooks/use-admin-scenarios";
+import type { CharacterTurnStat, TurnChoice, TurnListItem } from "@/app/(admin)/admin/(dashboard)/turns/_types";
 
 type TurnPanelFormProps = {
   mode: "create" | "edit";
   turn?: TurnListItem;
   scenarioOptions: ScenarioOption[];
-  characterStatsByCharacterId: Record<number, CharacterTurnStat[]>;
+  characterOptions: CharacterOption[];
+  defaultCharacterId?: number | null;
+  defaultScenarioId?: number | null;
 };
 
 const panelInputClassName =
@@ -55,14 +47,14 @@ function ChoiceStatDeltas({
   turnStats?: TurnChoice["turn_stats"];
 }) {
   const deltaByStatId = useMemo(
-    () => new Map(turnStats.map((stat) => [stat.stat_id, stat.delta])),
+    () => new Map(turnStats.map((stat) => [stat.turn_stats_id, stat.delta])),
     [turnStats],
   );
 
   if (characterStats.length === 0) {
     return (
       <AdminFormRow alignTop label="능력치 변화">
-        <p className="text-sm text-[#8A847C]">인물 능력치가 없습니다.</p>
+        <p className="text-sm text-[#8A847C]">인물 턴 능력치가 없습니다. 인물 패널에서 먼저 등록해 주세요.</p>
       </AdminFormRow>
     );
   }
@@ -91,7 +83,7 @@ function ChoiceStatDeltas({
                 type="number"
               />
               <input
-                name={`choices.${choiceKey}.turn_stats.${stat.id}.stat_id`}
+                name={`choices.${choiceKey}.turn_stats.${stat.id}.turn_stats_id`}
                 type="hidden"
                 value={stat.id}
               />
@@ -194,28 +186,79 @@ function ChoiceFields({
 }
 
 export function TurnPanelForm({
-  characterStatsByCharacterId,
+  characterOptions,
+  defaultCharacterId = null,
+  defaultScenarioId = null,
   mode,
   scenarioOptions,
   turn,
 }: TurnPanelFormProps) {
   const isCreate = mode === "create";
-  const [selectedScenarioId, setSelectedScenarioId] = useState(
-    String(turn?.scenario_id ?? scenarioOptions[0]?.id ?? ""),
+
+  const initialCharacterId =
+    turn?.character.id ??
+    defaultCharacterId ??
+    characterOptions[0]?.id ??
+    scenarioOptions[0]?.character_id ??
+    "";
+
+  const initialScenarioId = (() => {
+    if (turn) return turn.scenario_id;
+    if (defaultScenarioId) return defaultScenarioId;
+    const scenarios = scenarioOptions.filter(
+      (scenario) => scenario.character_id === initialCharacterId,
+    );
+    return scenarios[0]?.id ?? "";
+  })();
+
+  const [selectedCharacterId, setSelectedCharacterId] = useState(String(initialCharacterId));
+  const [selectedScenarioId, setSelectedScenarioId] = useState(String(initialScenarioId));
+
+  const filteredScenarioOptions = useMemo(
+    () =>
+      scenarioOptions.filter(
+        (scenario) => scenario.character_id === Number(selectedCharacterId),
+      ),
+    [scenarioOptions, selectedCharacterId],
   );
 
-  const selectedScenario = scenarioOptions.find(
-    (scenario) => scenario.id === Number(selectedScenarioId),
-  );
+  function handleCharacterChange(characterId: string) {
+    setSelectedCharacterId(characterId);
+    const nextScenarios = scenarioOptions.filter(
+      (scenario) => scenario.character_id === Number(characterId),
+    );
+    setSelectedScenarioId(String(nextScenarios[0]?.id ?? ""));
+  }
 
-  const characterStats =
-    turn?.character_stats ??
-    characterStatsByCharacterId[selectedScenario?.characterId ?? 0] ??
-    [];
+  const characterStats: CharacterTurnStat[] = useMemo(() => {
+    const scenarioId = Number(selectedScenarioId);
+    if (turn?.turn_stats?.length && turn.scenario_id === scenarioId) {
+      return turn.turn_stats;
+    }
+
+    return (
+      characterOptions.find((character) => character.id === Number(selectedCharacterId))
+        ?.turn_stats ?? []
+    );
+  }, [turn, selectedScenarioId, selectedCharacterId, characterOptions]);
 
   return (
     <div className="space-y-6">
       <FormSection title="기본 정보">
+        {!isCreate ? (
+          <AdminFormRow label="상태">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
+              <input
+                className="size-4 rounded border-[#D6D0C6] accent-[#2A4232]"
+                defaultChecked={turn?.is_active ?? true}
+                name="is_active"
+                type="checkbox"
+              />
+              사용
+            </label>
+          </AdminFormRow>
+        ) : null}
+
         {!isCreate ? (
           <AdminFormRow htmlFor="turn-id" label="ID">
             <AdminInput
@@ -230,58 +273,43 @@ export function TurnPanelForm({
           </AdminFormRow>
         ) : null}
 
-        {isCreate ? (
-          <AdminFormRow htmlFor="turn-scenario" label="시나리오" required>
-            <AdminSelect
-              className={`${panelInputClassName} h-11`}
-              id="turn-scenario"
-              name="scenario_id"
-              onChange={(event) => setSelectedScenarioId(event.target.value)}
-              required
-              value={selectedScenarioId}
-            >
-              {scenarioOptions.map((scenario) => (
-                <option key={scenario.id} value={scenario.id}>
-                  {formatIdDotLabel(scenario.id, scenario.characterName, scenario.title)}
-                </option>
-              ))}
-            </AdminSelect>
-          </AdminFormRow>
-        ) : (
-          <>
-            <AdminFormRow htmlFor="turn-scenario" label="시나리오">
-              <AdminInput
-                className={panelInputClassName}
-                defaultValue={
-                  turn
-                    ? formatIdDotLabel(
-                        turn.scenario.id,
-                        turn.character.name,
-                        turn.scenario.title,
-                      )
-                    : ""
-                }
-                disabled
-                id="turn-scenario"
-                readOnly
-                type="text"
-              />
-            </AdminFormRow>
+        <AdminFormRow htmlFor="turn-character" label="인물" required>
+          <AdminSelect
+            className={`${panelInputClassName} h-11`}
+            id="turn-character"
+            onChange={(event) => handleCharacterChange(event.target.value)}
+            required
+            value={selectedCharacterId}
+          >
+            {characterOptions.map((character) => (
+              <option key={character.id} value={character.id}>
+                {character.label}
+              </option>
+            ))}
+          </AdminSelect>
+        </AdminFormRow>
 
-            <AdminFormRow htmlFor="turn-character" label="인물">
-              <AdminInput
-                className={panelInputClassName}
-                defaultValue={
-                  turn ? formatIdDotLabel(turn.character.id, turn.character.name) : ""
-                }
-                disabled
-                id="turn-character"
-                readOnly
-                type="text"
-              />
-            </AdminFormRow>
-          </>
-        )}
+        <AdminFormRow htmlFor="turn-scenario" label="시나리오" required>
+          <AdminSelect
+            className={`${panelInputClassName} h-11`}
+            disabled={filteredScenarioOptions.length === 0}
+            id="turn-scenario"
+            name="scenario_id"
+            onChange={(event) => setSelectedScenarioId(event.target.value)}
+            required
+            value={selectedScenarioId}
+          >
+            {filteredScenarioOptions.length === 0 ? (
+              <option value="">시나리오 없음</option>
+            ) : (
+              filteredScenarioOptions.map((scenario) => (
+                <option key={scenario.id} value={scenario.id}>
+                  {scenario.label}
+                </option>
+              ))
+            )}
+          </AdminSelect>
+        </AdminFormRow>
 
         <AdminFormRow htmlFor="turn-title" label="제목" required>
           <AdminInput

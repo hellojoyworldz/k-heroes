@@ -20,11 +20,17 @@ export type TurnScenarioRef = {
 export type CharacterTurnStat = {
   id: number;
   name: string;
+};
+
+/** @deprecated 인물 stats index 참조 — turn_stats 사용 */
+export type CharacterStatIndex = {
+  id: number;
+  name: string;
   value: number;
 };
 
 export type ChoiceTurnStat = {
-  stat_id: number;
+  turn_stats_id: number;
   name: string;
   delta: number;
 };
@@ -45,12 +51,13 @@ export type TurnListItem = {
   scenario_id: number;
   scenario: TurnScenarioRef;
   character: TurnCharacterRef;
-  character_stats: CharacterTurnStat[];
   sort_order: number;
   title: string;
   situation: string;
   turn_image: string;
   tip_title: string;
   tip_desc: string;
+  turn_stats: CharacterTurnStat[];
   choices: Record<"A" | "B", TurnChoice>;
+  is_active: boolean;
 };

@@ -24,6 +24,9 @@ type CharacterCategoryTableProps = {
   categories: CharacterCategoryListItem[];
   emptyMessage: string;
   isReorderMode: boolean;
+  isLoading?: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onRowClick?: (category: CharacterCategoryListItem) => void;
 };
@@ -31,8 +34,11 @@ type CharacterCategoryTableProps = {
 export function CharacterCategoryTable({
   categories,
   emptyMessage,
+  errorMessage,
   isReorderMode,
+  isLoading,
   onReorder,
+  onRetry,
   onRowClick,
 }: CharacterCategoryTableProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -74,7 +80,15 @@ export function CharacterCategoryTable({
   }
 
   return (
-    <AdminDataTable columns={columns} emptyMessage={emptyMessage} isEmpty={categories.length === 0}>
+    <AdminDataTable
+      columns={columns}
+      emptyMessage={emptyMessage}
+      errorMessage={errorMessage}
+      isEmpty={categories.length === 0}
+      isLoading={isLoading}
+      loadingMessage="카테고리 목록을 불러오고 있습니다."
+      onRetry={onRetry}
+    >
       {categories.map((category, index) => (
         <AdminTableRow
           key={category.id}

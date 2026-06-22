@@ -1,4 +1,5 @@
 import { Children, type ComponentProps, type ReactNode } from "react";
+import { AdminTableState } from "@/app/(admin)/_components/admin-table-state";
 import { cn } from "@/lib/utils/cn";
 
 export type AdminTableColumn = {
@@ -10,7 +11,11 @@ export type AdminTableColumn = {
 type AdminDataTableProps = {
   columns: AdminTableColumn[];
   emptyMessage: string;
+  errorMessage?: string;
   isEmpty?: boolean;
+  isLoading?: boolean;
+  loadingMessage?: string;
+  onRetry?: () => void;
   children?: ReactNode;
 };
 
@@ -18,7 +23,11 @@ export function AdminDataTable({
   children,
   columns,
   emptyMessage,
+  errorMessage,
   isEmpty,
+  isLoading = false,
+  loadingMessage,
+  onRetry,
 }: AdminDataTableProps) {
   const hasRows = isEmpty !== undefined ? !isEmpty : Children.count(children) > 0;
 
@@ -42,15 +51,17 @@ export function AdminDataTable({
             </tr>
           </thead>
           <tbody>
-            {hasRows ? (
-              children
-            ) : (
-              <tr>
-                <td className="px-5 py-16 text-center text-sm text-[#8A847C]" colSpan={columns.length}>
-                  {emptyMessage}
-                </td>
-              </tr>
-            )}
+            <AdminTableState
+              columnCount={columns.length}
+              emptyMessage={emptyMessage}
+              errorMessage={errorMessage}
+              hasRows={hasRows}
+              isLoading={isLoading}
+              loadingMessage={loadingMessage}
+              onRetry={onRetry}
+            >
+              {children}
+            </AdminTableState>
           </tbody>
         </table>
       </div>
