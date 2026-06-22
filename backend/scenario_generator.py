@@ -1105,8 +1105,8 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
         if rag_context:
             context_str += f"\n[국사 교과서 RAG 단서]\n{rag_context}\n"
             
-        # 추천 방문지 일괄 조회
-        recommended_places = get_recommended_places(character_name)
+        # 추천 방문지 일괄 조회 (시나리오의 스토리 ID 기반 우선 검색)
+        recommended_places = get_recommended_places(character_name, source_story_ids=scenario.source_story_ids)
         recommended_places_dict = [place.dict() for place in recommended_places]
         
         for choices_path in combinations:
@@ -1176,8 +1176,8 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
             stats_str = {name: f"{val}%" for name, val in current_stats.items()}
             
             ending_prompt = f"""
-너는 역사 시뮬레이션 게임 'K-Heroes'의 최종 엔딩 연출가야.
-유저가 게임 도중 내린 선택과 그로 인해 발생한 이야기를 토대로 최종 감동적인 엔딩과 실제 역사와의 비교를 작성해 줘.
+너는 역사 선택형 시뮬레이션 게임 'K-Heroes'의 최종 엔딩 연출가야.
+유저가 게임 도중 내린 선택과 그로 인해 발생한 이야기를 토대로 최종 감동적인 엔딩, 실제 역사와의 비교, 그리고 관련 역사적 방문지를 매칭해 줘.
 
 [대상 인물]
 이름: {character_name}
@@ -1185,9 +1185,13 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
 [시나리오]
 제목: {scenario.title}
 역사적 사실 요약: {scenario.historical_facts}
+스토리 ID 데이터: {scenario.source_story_ids}
 
 [국사교과서 및 RAG 역사 단서]
 {context_str}
+
+[DB에서 검색된 실제 관련 장소 후보]
+{json.dumps(recommended_places_dict, ensure_ascii=False, indent=2)}
 
 [유저의 플레이 기록]
 - 유저의 선택 경로: {choices_path} (역사 점수: {history_score}/100점)
@@ -1200,34 +1204,56 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
 2. 실제 역사 이야기 흐름:
 {factual_compiled_story}
 
-# 제작 가이드라인 & 할루시네이션 절대 금지
-1. 실제 역사적 사실과의 비교 (history_fact):
-   - 제공된 역사 단서와 실제 역사 이야기 흐름을 바탕으로, 유저의 선택이 실제 역사와 어떻게 다르고 어떤 교훈이 있는지 정확하고 상세히(3-4줄) 서술해 주세요.
-2. 엔딩 유형 (ending_type):
-   - 역사 점수가 100점인 경우 또는 모든 선택이 역사적 선택인 경우: "True Ending"
-   - 그 외의 경우: "Alternative Ending"
-3. 엔딩 타이틀 (title):
-   - 유저의 엔딩 흐름에 맞는 감동적이고 웅장한 타이틀을 지어주세요.
-4. 결과 스토리:
-   - story_headline: 효과음이나 대사로 시작하는 강렬한 헤드라인 1줄 (따옴표 포함)
+# 1. 엔딩 설계 및 화면 연출 원칙 (UI/UX 기반)
+1. 엔딩 유형 (ending_type): 
+   - 역사 점수가 100점인 경우 또는 모든 선택이 역사적 선택(is_historical: true)인 경우: "True Ending"
+   - 그 외의 가상 역사 경로를 단 하나라도 거친 경우: "Alternative Ending"
+2. 엔딩 타이틀 (title): UI 상단의 핵심 타이틀입니다. 유저의 엔딩 흐름에 맞는 감동적이고 웅장한 타이틀을 지어주세요.
+3. 내가 만든 이야기 (Result Section):
+   - story_headline: 효과음이나 인물의 대사로 시작하는 강렬한 느낌의 헤드라인 1줄 (반드시 큰따옴표 포함, 예: "쾅-!!! 공원을 뒤흔든 위대한 폭발!")
    - story_contents: 유저의 선택들이 만들어낸 서사 결과를 초등학생 눈높이에 맞게 쉽고 웅장한 톤으로 2-3줄 요약해 주세요.
-   - factual_contents: 실제 역사 이야기 흐름을 정돈하여, 역사 속 인물이 겪은 실제 결말을 2-3줄 요약해 주세요.
-5. 결과 요약 (summary_items):
-   - 이번 시나리오의 핵심 교훈이나 유저의 활약을 3개의 요약 항목 리스트(각각 title과 desc로 구성된 객체)로 작성해 주세요.
-6. 초등학생 눈높이에 맞게 쉽고 감동적인 톤을 유지하세요.
+   - factual_contents: 유저의 선택과 무관하게 '실제 역사 속 인물'이 마주했던 객관적인 팩트 중심의 결말을 2-3줄로 명확히 정돈해 주세요.
+4. 실제 역사와의 차이 (history_fact): 
+   - 토글 박스 내부에 들어갈 텍스트입니다. 제공된 RAG 데이터와 실제 역사 흐름을 바탕으로, 유저의 선택이 실제 역사와 어떤 차이가 있고 이것이 주는 역사적 교훈이 무엇인지 친절하고 상세하게(3-4줄) 서술해 주세요.
+5. 결과 요약 (summary_items): 
+   - 화면 중앙의 1, 2, 3번 요약 섹션입니다. 이번 시나리오의 핵심 교훈이나 유저의 활약을 3개의 요약 항목 리스트(각각 title과 desc로 구성)로 작성해 주세요.
+6. 추천 방문지 (places):
+   - 위에서 제공된 **[DB에서 검색된 실제 관련 장소 후보]** 목록 중에서 현재 인물 및 시나리오 사건과 가장 잘 어울리는 **명소/기념관 2곳**을 엄격히 발췌하여 작성하십시오.
+   - 반드시 제공된 후보 목록에 있는 장소만 사용해야 하며, 후보에 명시되지 않은 엉뚱한 현대 관광지나 허구의 장소를 절대 지어내지 마십시오.
 
-반드시 아래 JSON 형식으로 응답할 것:
+# 2. 범용 역사 고증 및 왜곡 방지 규칙 (MUST FOLLOW)
+- 초등학생 눈높이에 맞게 어려운 한자어(예: 비준, 늑약, 사문난적 등)는 본문에서 풀어서 설명하거나 쉬운 단어로 대체하십시오.
+- 모든 서술의 근거는 반드시 제공된 RAG 컨텍스트에 있는 내용이어야 합니다. 컨텍스트에 없는 사실을 임의로 생성(hallucination)하지 마십시오.
+- 인물의 실책, 패배, 굴복, 변절 등 부정적이거나 역사적으로 비판받는 행적을 유저가 선택했을 경우, 이를 '어쩔 수 없는 선택'이나 '비극적 고뇌'로 미화하거나 합리화하지 말고 객관적인 실패 팩트로 서술하십시오.
+- 인물의 실제 생몰년도 범위를 벗어나는 사건이나 사후의 업적을 인물이 직접 공헌한 것처럼 시공간을 날조하여 서술하는 것을 절대 금지합니다.
+- 모든 출력 텍스트에 이모티콘이나 이모지(예: 💡, 🌟)를 절대 포함하지 마십시오.
+
+반드시 마크다운 등 다른 텍스트 없이 아래 JSON 형식으로만 응답할 것:
 {{
     "ending_type": "True Ending" 또는 "Alternative Ending",
     "title": "엔딩 타이틀",
-    "history_fact": "실제 역사와 비교 및 교훈 해설",
-    "story_headline": "강렬한 헤드라인 1줄 (예: \\"轟-!!! 폭음 뒤에 숨겨진 자유의 외침!\\")",
+    "history_fact": "실제 역사와의 차이점 비교 및 역사적 교훈 해설",
+    "story_headline": "효과음이나 대사가 포함된 강렬한 헤드라인 1줄",
     "story_contents": "유저 선택 기반의 서사 결과 2-3줄",
-    "factual_contents": "실제 역사 기반의 서사 결과 2-3줄",
+    "factual_contents": "실제 역사 기반의 사실적 결말 2-3줄",
     "summary_items": [
         {{"title": "요약 제목 1", "desc": "요약 설명 1"}},
         {{"title": "요약 제목 2", "desc": "요약 설명 2"}},
         {{"title": "요약 제목 3", "desc": "요약 설명 3"}}
+    ],
+    "places": [
+        {{
+            "place_id": 1,
+            "name": "첫 번째 추천 방문지 이름 (예: 매헌윤봉길의사기념관)",
+            "address": "행정구역 주소 (예: 서울특별시 서초구 양재동)",
+            "desc": "이 장소가 해당 인물/사건과 어떤 연관이 있는지에 대한 객관적 설명 1~2줄"
+        }},
+        {{
+            "place_id": 2,
+            "name": "두 번째 추천 방문지 이름 (예: 충의사 (윤봉길 의사 생가))",
+            "address": "행정구역 주소 (예: 충청남도 예산군 덕산면)",
+            "desc": "장소 연관성 설명 1~2줄"
+        }}
     ]
 }}
 """
@@ -1305,7 +1331,7 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
                 "story_contents": ending_data.get("story_contents", ""),
                 "factual_contents": ending_data.get("factual_contents", ""),
                 "summary_items": ending_data.get("summary_items", []),
-                "recommended_places": recommended_places_dict,
+                "recommended_places": ending_data.get("places", []),
                 "image_url": existing_img
             }
             

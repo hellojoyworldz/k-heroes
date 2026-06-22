@@ -258,13 +258,17 @@ def is_related_place(row, char_name: str) -> bool:
                     return True
     return False
 
-def get_recommended_places(character_name: str) -> List[RecommendedPlace]:
+def get_recommended_places(character_name: str, source_story_ids: Optional[List[int]] = None) -> List[RecommendedPlace]:
     try:
         df = get_master_df()
         
         # Filter valid address rows
         valid_df = df[df['addr'].notna() & (df['addr'].str.strip() != '') & (df['addr'].str.lower() != 'nan')]
         
+        m_story = pd.DataFrame()
+        if source_story_ids:
+            m_story = valid_df[valid_df['data_manage_no'].isin(source_story_ids)]
+            
         # 1. Matches in title
         m_title = valid_df[valid_df['data_title_nm'].str.contains(character_name, na=False)]
         m_title = m_title[m_title.apply(lambda r: is_related_place(r, character_name), axis=1)]
@@ -273,8 +277,11 @@ def get_recommended_places(character_name: str) -> List[RecommendedPlace]:
         m_prsn = valid_df[valid_df['relate_prsn_nm'].str.contains(character_name, na=False)]
         m_prsn = m_prsn[m_prsn.apply(lambda r: is_related_place(r, character_name), axis=1)]
         
-        # Combine (prioritize title matches first)
-        combined = pd.concat([m_title, m_prsn]).drop_duplicates(subset=['data_title_nm'])
+        # Combine (prioritize story matches, then title, then prsn)
+        if not m_story.empty:
+            combined = pd.concat([m_story, m_title, m_prsn]).drop_duplicates(subset=['data_title_nm'])
+        else:
+            combined = pd.concat([m_title, m_prsn]).drop_duplicates(subset=['data_title_nm'])
         
         results = []
         for _, row in combined.head(5).iterrows():
