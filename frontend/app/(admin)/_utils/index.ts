@@ -1,0 +1,1 @@
+export { formatIdDotLabel } from "./utils";
