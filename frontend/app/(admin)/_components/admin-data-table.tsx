@@ -97,9 +97,14 @@ export function AdminTableRow({
 export function AdminTableCell({
   children,
   className,
+  ...props
 }: {
   children: ReactNode;
   className?: string;
-}) {
-  return <td className={cn("px-5 py-4 text-[#3A3530]", className)}>{children}</td>;
+} & ComponentProps<"td">) {
+  return (
+    <td className={cn("px-5 py-4 text-[#3A3530]", className)} {...props}>
+      {children}
+    </td>
+  );
 }
