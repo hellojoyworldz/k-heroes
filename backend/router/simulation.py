@@ -228,7 +228,7 @@ async def generate_ending(payload: EndingRequest):
                     RecommendedPlace(
                         address=item.get("address", ""),
                         name=item.get("name", ""),
-                        description=item.get("description", ""),
+                        description=item.get("desc", item.get("description", "")),
                         image_url=item.get("image_url", "")
                     )
                     for item in recommended_places_raw
