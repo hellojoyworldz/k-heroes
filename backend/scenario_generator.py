@@ -1122,8 +1122,8 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
             # 1.5. Calculate history_score & current_stats
             total_turns = len(scenario.turns)
             historical_choices_count = 0
-            stat_lookup = {stat.id: stat for stat in character_card.stats}
-            current_by_id = {stat.id: stat.value for stat in character_card.stats}
+            stat_lookup = {stat.id: stat for stat in character_card.turn_stats}
+            current_by_id = {stat.id: stat.value for stat in character_card.turn_stats}
 
             for idx, turn in enumerate(scenario.turns):
                 user_choice_id = choices_path[idx]
@@ -1135,13 +1135,13 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
                     historical_choices_count += 1
 
                 for item in user_choice.turn_stats:
-                    if item.stat_id in current_by_id:
-                        current_by_id[item.stat_id] += item.delta
+                    if item.turn_stats_id in current_by_id:
+                        current_by_id[item.turn_stats_id] += item.delta
 
             current_stats = {
-                stat_lookup[stat_id].name: value
-                for stat_id, value in current_by_id.items()
-                if stat_id in stat_lookup
+                stat_lookup[turn_stats_id].name: value
+                for turn_stats_id, value in current_by_id.items()
+                if turn_stats_id in stat_lookup
             }
                         
             history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100

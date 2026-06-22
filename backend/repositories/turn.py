@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from db.models import Character, Choice, Scenario, Turn
 from models.turn import ChoiceWrite, TurnCreate, TurnReorderRequest, TurnUpdate
-from repositories.character import TurnStatNotFoundError, _get_character_or_raise
+from repositories.character import CharacterStatNotFoundError, _get_character_or_raise
+from repositories.character_turn_stats import active_turn_stats
 from repositories.scenario import ScenarioNotFoundError, _get_scenario_or_raise
 
 
@@ -21,10 +22,10 @@ def _turn_query():
         selectinload(Turn.choices),
         selectinload(Turn.scenario)
         .selectinload(Scenario.character)
-        .selectinload(Character.stats),
+        .selectinload(Character.character_category),
         selectinload(Turn.scenario)
         .selectinload(Scenario.character)
-        .selectinload(Character.character_category),
+        .selectinload(Character.turn_stats),
     )
 
 
@@ -54,30 +55,26 @@ def _next_sort_order(db: Session, scenario_id: int) -> int:
 
 def _get_character_for_scenario(db: Session, scenario: Scenario) -> Character:
     return db.scalar(
-        select(Character).where(
+        select(Character)
+        .where(
             Character.id == scenario.character_id,
             Character.deleted_at.is_(None),
         )
+        .options(selectinload(Character.turn_stats))
     )
 
 
-def _validate_turn_stats(db: Session, character_id: int, items: List) -> List[dict]:
-    from db.models import CharacterStat
-
+def _validate_turn_stats(character: Character, items: List) -> List[dict]:
+    active_ids = {row.id for row in active_turn_stats(character)}
     resolved: List[dict] = []
     for item in items:
-        stat_id = item.stat_id if hasattr(item, "stat_id") else item["stat_id"]
-        delta = item.delta if hasattr(item, "delta") else item["delta"]
-        stat_row = db.scalar(
-            select(CharacterStat).where(
-                CharacterStat.id == stat_id,
-                CharacterStat.character_id == character_id,
-                CharacterStat.deleted_at.is_(None),
-            )
+        turn_stats_id = (
+            item.turn_stats_id if hasattr(item, "turn_stats_id") else item["turn_stats_id"]
         )
-        if not stat_row:
-            raise TurnStatNotFoundError(stat_id)
-        resolved.append({"stat_id": stat_id, "delta": delta})
+        delta = item.delta if hasattr(item, "delta") else item["delta"]
+        if not isinstance(turn_stats_id, int) or turn_stats_id not in active_ids:
+            raise CharacterStatNotFoundError(int(turn_stats_id))
+        resolved.append({"turn_stats_id": turn_stats_id, "delta": delta})
     return resolved
 
 
@@ -94,7 +91,7 @@ def _sync_choices(
     db: Session,
     turn: Turn,
     choices: Dict[str, ChoiceWrite],
-    character_id: int,
+    character: Character,
 ) -> None:
     existing_by_key = {
         choice.choice_key: choice
@@ -104,7 +101,7 @@ def _sync_choices(
 
     for key in ("A", "B"):
         data = choices[key]
-        turn_stats = _validate_turn_stats(db, character_id, data.turn_stats)
+        turn_stats = _validate_turn_stats(character, data.turn_stats)
         existing = existing_by_key.get(key)
         if existing:
             _apply_choice_fields(existing, data, turn_stats)
@@ -226,28 +223,34 @@ def create_turn(db: Session, data: TurnCreate) -> Turn:
         db,
         turn,
         {"A": data.choices.A, "B": data.choices.B},
-        character.id,
+        character,
     )
     return get_turn_by_id(db, turn.id)
 
 
 def update_turn(db: Session, turn_id: int, data: TurnUpdate) -> Turn:
     turn = _get_turn_or_raise(db, turn_id)
+    updates = data.model_dump(exclude_unset=True, exclude={"choices"})
+
+    if "scenario_id" in updates:
+        _get_scenario_or_raise(db, updates["scenario_id"])
+        if updates["scenario_id"] != turn.scenario_id:
+            updates["sort_order"] = _next_sort_order(db, updates["scenario_id"])
+
+    for field, value in updates.items():
+        setattr(turn, field, value)
+
     scenario = _get_scenario_or_raise(db, turn.scenario_id)
     character = _get_character_for_scenario(db, scenario)
     if not character:
         raise ScenarioNotFoundError(turn.scenario_id)
-
-    updates = data.model_dump(exclude_unset=True, exclude={"choices"})
-    for field, value in updates.items():
-        setattr(turn, field, value)
 
     if "choices" in data.model_fields_set and data.choices is not None:
         _sync_choices(
             db,
             turn,
             {"A": data.choices.A, "B": data.choices.B},
-            character.id,
+            character,
         )
 
     db.flush()

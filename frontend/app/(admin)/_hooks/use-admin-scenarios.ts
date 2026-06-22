@@ -9,6 +9,29 @@ import {
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
 import type { ScenarioListItem } from "@/app/(admin)/admin/(dashboard)/scenarios/_types";
+import { formatIdDotLabel } from "@/app/(admin)/_utils";
+
+export type ScenarioOption = ScenarioListItem & { label: string };
+
+function toScenarioOption(scenario: ScenarioListItem): ScenarioOption {
+  return {
+    ...scenario,
+    label: formatIdDotLabel(scenario.id, scenario.character.name, scenario.title),
+  };
+}
+
+export function pickScenarioOptionLabel(
+  options: ScenarioOption[],
+  id: number,
+  fallback?: { id: number; title: string; characterName: string },
+) {
+  const found = options.find((option) => option.id === id);
+  if (found) return found.label;
+  if (fallback) {
+    return formatIdDotLabel(fallback.id, fallback.characterName, fallback.title);
+  }
+  return "";
+}
 
 type ScenarioWrite = {
   character_id: number;
@@ -66,8 +89,8 @@ function scenarioOptionsQuery() {
   return {
     queryKey: adminScenarioKeys.options(),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
-      fetchScenarioList({ active: "all", characterId: null }, 1, 100, signal).then(
-        (data) => data.items,
+      fetchScenarioList({ active: "all", characterId: null }, 1, 100, signal).then((data) =>
+        data.items.map(toScenarioOption),
       ),
     staleTime: Infinity,
     gcTime: Infinity,
@@ -82,7 +105,8 @@ export function useAdminScenarios(
   return useQuery({
     queryKey: adminScenarioKeys.list(filters, page, pageSize),
     queryFn: ({ signal }) => fetchScenarioList(filters, page, pageSize, signal),
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     gcTime: 10 * 60 * 1000,
   });
 }

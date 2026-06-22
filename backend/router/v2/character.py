@@ -128,7 +128,7 @@ def create_character(
     except character_repository.CharacterDuplicateError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except character_repository.TurnStatNotFoundError as exc:
+    except character_repository.CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except character_category_repository.CharacterCategoryNotFoundError as exc:
@@ -151,7 +151,7 @@ def update_character(
     except character_repository.CharacterNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except character_repository.TurnStatNotFoundError as exc:
+    except character_repository.CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except character_repository.CharacterDuplicateError as exc:

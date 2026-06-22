@@ -67,6 +67,7 @@ class RecommendedPlace(BaseModel):
     address: str
     name: str
     description: str
+    link: Optional[str] = ""
     image_url: Optional[str] = ""
 
 class EndingRequest(BaseModel):

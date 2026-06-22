@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from db.models import Character, CharacterCategory, CharacterStat, Ending, Scenario
+from db.models import Character, CharacterCategory, CharacterTurnStat, Ending, Scenario
 
 
 def get_character(db: Session, name: str) -> Optional[Character]:
@@ -18,17 +18,22 @@ def get_category(db: Session, title: str) -> Optional[CharacterCategory]:
     return db.scalar(select(CharacterCategory).where(CharacterCategory.title == title))
 
 
-def get_character_stat(db: Session, character_name: str, stat_name: str) -> Optional[CharacterStat]:
+def get_character_turn_stat_id(db: Session, character_name: str, stat_name: str) -> Optional[int]:
     character = get_character(db, character_name)
     if not character:
         return None
     return db.scalar(
-        select(CharacterStat).where(
-            CharacterStat.character_id == character.id,
-            CharacterStat.name == stat_name,
-            CharacterStat.deleted_at.is_(None),
+        select(CharacterTurnStat.id).where(
+            CharacterTurnStat.character_id == character.id,
+            CharacterTurnStat.name == stat_name,
+            CharacterTurnStat.deleted_at.is_(None),
         )
     )
+
+
+def get_character_stat_index(db: Session, character_name: str, stat_name: str) -> Optional[int]:
+    """하위 호환: turn_stats id 반환 (구 stat index 대체)."""
+    return get_character_turn_stat_id(db, character_name, stat_name)
 
 
 def get_scenario(db: Session, character_name: str, sort_order: int = 0) -> Optional[Scenario]:

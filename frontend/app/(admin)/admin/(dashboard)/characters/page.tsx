@@ -36,8 +36,6 @@ import {
   reorderCharacterItems,
 } from "@/app/(admin)/admin/(dashboard)/characters/_components/character-table";
 import type { CharacterListItem } from "@/app/(admin)/admin/(dashboard)/characters/_types";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
-
 type PanelMode = "create" | "edit" | null;
 
 function errorMessage(error: unknown, fallback: string) {
@@ -165,24 +163,58 @@ export default function CharactersPage() {
       return;
     }
 
-    const turnStatMap = new Map<number, { id?: number; name: string; value: number }>();
+    function parseStoryIds(field: string) {
+      return text(field)
+        .split(",")
+        .map((value) => Number(value.trim()))
+        .filter((value) => Number.isFinite(value) && value > 0);
+    }
+
+    const statMap = new Map<number, { name: string; value: number; desc: string }>();
     for (const [key, rawValue] of formData.entries()) {
-      const match = /^turn_stats\.(\d+)\.(id|name|value)$/.exec(String(key));
+      const match = /^stats\.(\d+)\.(name|value|desc)$/.exec(String(key));
       if (!match) continue;
 
       const index = Number(match[1]);
       const field = match[2];
-      const current = turnStatMap.get(index) ?? { name: "", value: 0 };
+      const current = statMap.get(index) ?? { name: "", value: 0, desc: "" };
 
-      if (field === "id") {
-        const id = Number(rawValue);
-        if (Number.isFinite(id) && id > 0) {
-          current.id = id;
-        }
-      } else if (field === "name") {
+      if (field === "name") {
         current.name = String(rawValue).trim();
       } else if (field === "value") {
         current.value = Number(rawValue);
+      } else if (field === "desc") {
+        current.desc = String(rawValue).trim();
+      }
+
+      statMap.set(index, current);
+    }
+
+    const stats = [...statMap.entries()]
+      .sort(([left], [right]) => left - right)
+      .map(([, item]) => item);
+
+    if (stats.some((item) => !item.name || !Number.isFinite(item.value))) {
+      setPanelError("강점 이름과 값을 모두 입력해 주세요.");
+      return;
+    }
+
+    const turnStatMap = new Map<number, { id?: number; name: string }>();
+    for (const [key, rawValue] of formData.entries()) {
+      const match = /^turn_stats\.(\d+)\.(id|name)$/.exec(String(key));
+      if (!match) continue;
+
+      const index = Number(match[1]);
+      const field = match[2];
+      const current = turnStatMap.get(index) ?? { name: "" };
+
+      if (field === "name") {
+        current.name = String(rawValue).trim();
+      } else if (field === "id") {
+        const parsedId = Number(rawValue);
+        if (Number.isFinite(parsedId) && parsedId > 0) {
+          current.id = parsedId;
+        }
       }
 
       turnStatMap.set(index, current);
@@ -190,16 +222,20 @@ export default function CharactersPage() {
 
     const turnStats = [...turnStatMap.entries()]
       .sort(([left], [right]) => left - right)
-      .map(([, item]) => item);
+      .map(([, item]) => item)
+      .filter((item) => item.name)
+      .map((item) => (item.id ? { id: item.id, name: item.name } : { name: item.name }));
 
-    if (
-      turnStats.some(
-        (item) => !item.name || !Number.isFinite(item.value),
-      )
-    ) {
-      setPanelError("능력치 이름과 값을 모두 입력해 주세요.");
+    if (turnStats.some((item) => !item.name)) {
+      setPanelError("턴 능력치 이름을 모두 입력해 주세요.");
       return;
     }
+
+    const associatedStories = {
+      prsn: parseStoryIds("associated_stories.prsn"),
+      cltur: parseStoryIds("associated_stories.cltur"),
+      국사교과서: parseStoryIds("associated_stories.국사교과서"),
+    };
 
     const body: Record<string, unknown> = {
       name: text("name"),
@@ -223,7 +259,9 @@ export default function CharactersPage() {
         .split(",")
         .map((keyword) => keyword.trim())
         .filter(Boolean),
-      turn_stats,
+      stats,
+      turn_stats: turnStats,
+      associated_stories: associatedStories,
       ...(panelMode === "edit"
         ? { is_active: formData.get("is_active") === "on" }
         : {}),
@@ -307,7 +345,7 @@ export default function CharactersPage() {
               <option value="">전체</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {formatIdDotLabel(category.id, category.title)}
+                  {category.label}
                 </option>
               ))}
             </AdminSelect>

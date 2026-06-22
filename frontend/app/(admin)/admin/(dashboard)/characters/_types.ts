@@ -1,7 +1,19 @@
-export type CharacterTurnStat = {
-  id?: number;
+export type CharacterStat = {
+  id: number;
   name: string;
   value: number;
+  desc: string;
+};
+
+export type AssociatedStories = {
+  prsn?: number[];
+  cltur?: number[];
+  국사교과서?: number[];
+};
+
+export type CharacterTurnStatDef = {
+  id: number;
+  name: string;
 };
 
 export type CharacterListItem = {
@@ -26,8 +38,9 @@ export type CharacterListItem = {
   intro_quote: string;
   intro_desc: string;
   keywords: string[];
-  associated_stories: Record<string, number[]>;
-  turn_stats: CharacterTurnStat[];
+  associated_stories: AssociatedStories;
+  stats: CharacterStat[];
+  turn_stats: CharacterTurnStatDef[];
   is_active: boolean;
   deleted_at: string | null;
 };

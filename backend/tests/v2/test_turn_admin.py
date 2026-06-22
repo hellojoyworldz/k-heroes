@@ -3,17 +3,16 @@ from sqlalchemy import func, select
 
 from db.models import Turn
 from tests.admin_auth_helpers import admin_headers
-from tests.helpers import get_character, get_character_stat, get_scenario
+from tests.helpers import get_character, get_character_turn_stat_id, get_scenario
 
 TURNS_URL = "/api/v2/admin/turns"
 
 
 def sample_turn_payload(db_session, scenario_id: int, character_name: str = "이순신"):
-    stat = get_character_stat(db_session, character_name, "전술력")
-    if not stat:
-        stat = get_character_stat(db_session, character_name, "국력")
-    assert stat is not None
-    stat_id = stat.id
+    turn_stats_id = get_character_turn_stat_id(db_session, character_name, "전투력")
+    if turn_stats_id is None:
+        turn_stats_id = get_character_turn_stat_id(db_session, character_name, "국력")
+    assert turn_stats_id is not None
     return {
         "scenario_id": scenario_id,
         "title": "신규 턴",
@@ -26,14 +25,14 @@ def sample_turn_payload(db_session, scenario_id: int, character_name: str = "이
                 "description": "A 설명",
                 "result_text": "A 결과",
                 "is_historical": True,
-                "turn_stats": [{"stat_id": stat_id, "delta": 5}],
+                "turn_stats": [{"turn_stats_id": turn_stats_id, "delta": 5}],
             },
             "B": {
                 "title": "가상 선택",
                 "description": "B 설명",
                 "result_text": "B 결과",
                 "is_historical": False,
-                "turn_stats": [{"stat_id": stat_id, "delta": -3}],
+                "turn_stats": [{"turn_stats_id": turn_stats_id, "delta": -3}],
             },
         },
     }
@@ -51,9 +50,10 @@ def test_list_turns_admin_all(admin_client):
     assert "is_active" in data["items"][0]
     assert "choices" in data["items"][0]
     assert "A" in data["items"][0]["choices"]
-    assert "character_stats" in data["items"][0]
-    assert len(data["items"][0]["character_stats"]) >= 1
-    assert "name" in data["items"][0]["character_stats"][0]
+    assert "character_stats" not in data["items"][0]
+    assert "turn_stats" in data["items"][0]
+    assert len(data["items"][0]["turn_stats"]) >= 1
+    assert "name" in data["items"][0]["turn_stats"][0]
     assert "name" in data["items"][0]["choices"]["A"]["turn_stats"][0]
     assert data["items"][0]["character"]["name"]
     assert data["items"][0]["character"]["category"]["title"]
@@ -201,7 +201,7 @@ def test_create_turn_unknown_stat(admin_client, db_session):
     scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     payload = sample_turn_payload(db_session, scenario.id)
-    payload["choices"]["A"]["turn_stats"] = [{"stat_id": 99999, "delta": 1}]
+    payload["choices"]["A"]["turn_stats"] = [{"turn_stats_id": 99999, "delta": 1}]
 
     response = admin_client.post(TURNS_URL, json=payload, headers=admin_headers(admin_client))
     assert response.status_code == 404
@@ -250,11 +250,52 @@ def test_update_turn(admin_client, db_session):
     assert response.json()["title"] == "수정된 턴"
 
 
+def test_update_turn_changes_scenario(admin_client, db_session):
+    source_scenario = get_scenario(db_session, "이순신", 0)
+    character = get_character(db_session, "이순신")
+    assert source_scenario is not None
+    assert character is not None
+
+    target_scenario = admin_client.post(
+        "/api/v2/admin/scenarios",
+        json={
+            "character_id": character.id,
+            "title": "턴 이동 대상 시나리오",
+            "description": "설명",
+            "historical_facts": "역사",
+        },
+        headers=admin_headers(admin_client),
+    ).json()
+
+    create_response = admin_client.post(
+        TURNS_URL,
+        json=sample_turn_payload(db_session, source_scenario.id),
+        headers=admin_headers(admin_client),
+    )
+    turn_id = create_response.json()["id"]
+
+    response = admin_client.patch(
+        f"{TURNS_URL}/{turn_id}",
+        json={"scenario_id": target_scenario["id"]},
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["scenario_id"] == target_scenario["id"]
+
+    list_response = admin_client.get(
+        f"{TURNS_URL}?scenario_id={target_scenario['id']}",
+        headers=admin_headers(admin_client),
+    )
+    assert turn_id in [item["id"] for item in list_response.json()["items"]]
+
+
 def test_update_turn_choices_sync(admin_client, db_session):
     scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
-    stat = get_character_stat(db_session, "이순신", "전술력")
-    assert stat is not None
+    turn_stats_id = get_character_turn_stat_id(db_session, "이순신", "전투력")
+    assert turn_stats_id is not None
 
     create_response = admin_client.post(
         TURNS_URL,
@@ -273,7 +314,7 @@ def test_update_turn_choices_sync(admin_client, db_session):
                     "description": "수정 설명",
                     "result_text": "수정 결과",
                     "is_historical": False,
-                    "turn_stats": [{"stat_id": stat.id, "delta": 10}],
+                    "turn_stats": [{"turn_stats_id": turn_stats_id, "delta": 10}],
                 },
                 "B": {
                     "title": "수정 B",

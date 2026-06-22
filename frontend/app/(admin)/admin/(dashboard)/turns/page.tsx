@@ -36,8 +36,6 @@ import {
   TurnTable,
 } from "@/app/(admin)/admin/(dashboard)/turns/_components/turn-table";
 import type { CharacterTurnStat, TurnListItem } from "@/app/(admin)/admin/(dashboard)/turns/_types";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
-
 type PanelMode = "create" | "edit" | null;
 
 function errorMessage(error: unknown, fallback: string) {
@@ -52,14 +50,16 @@ function parseChoices(formData: FormData, characterStats: CharacterTurnStat[]) {
 
     const turnStats = characterStats
       .map((stat) => {
-        const statId = Number(formData.get(`choices.${key}.turn_stats.${stat.id}.stat_id`));
+        const turnStatsId = Number(
+          formData.get(`choices.${key}.turn_stats.${stat.id}.turn_stats_id`),
+        );
         const delta = Number(formData.get(`choices.${key}.turn_stats.${stat.id}.delta`));
-        if (!Number.isFinite(statId) || statId <= 0) {
+        if (!Number.isFinite(turnStatsId) || turnStatsId <= 0) {
           return null;
         }
-        return { stat_id: statId, delta: Number.isFinite(delta) ? delta : 0 };
+        return { turn_stats_id: turnStatsId, delta: Number.isFinite(delta) ? delta : 0 };
       })
-      .filter((item): item is { stat_id: number; delta: number } => item !== null);
+      .filter((item): item is { turn_stats_id: number; delta: number } => item !== null);
 
     return {
       title,
@@ -112,18 +112,12 @@ export default function TurnsPage() {
   const tableError = pageError || (turnsQuery.error?.message ?? "");
   const displayTurns = isReorderMode ? draftTurns : turns;
 
-  const scenarioOptions =
-    scenarioOptionsQuery.data?.map((scenario) => ({
-      id: scenario.id,
-      title: scenario.title,
-      characterName: scenario.character.name,
-      characterId: scenario.character_id,
-    })) ?? [];
+  const scenarioOptions = scenarioOptionsQuery.data ?? [];
 
   const filteredScenarioOptions =
     characterFilter === null
       ? scenarioOptions
-      : scenarioOptions.filter((scenario) => scenario.characterId === characterFilter);
+      : scenarioOptions.filter((scenario) => scenario.character_id === characterFilter);
 
   const characterOptions = characterOptionsQuery.data ?? [];
 
@@ -208,25 +202,17 @@ export default function TurnsPage() {
     }
   }
 
-  function resolveCharacterStats(
+  function resolveCharacterTurnStats(
     scenarioId: number,
     turn?: TurnListItem | null,
   ): CharacterTurnStat[] {
-    if (turn?.character_stats?.length) {
-      return turn.character_stats;
+    if (turn?.turn_stats?.length && turn.scenario_id === scenarioId) {
+      return turn.turn_stats;
     }
 
     const scenario = scenarioOptions.find((item) => item.id === scenarioId);
-    const character = characterOptions.find((item) => item.id === scenario?.characterId);
-    return (
-      character?.turn_stats
-        .filter((stat) => stat.id !== undefined)
-        .map((stat) => ({
-          id: stat.id as number,
-          name: stat.name,
-          value: stat.value,
-        })) ?? []
-    );
+    const character = characterOptions.find((item) => item.id === scenario?.character_id);
+    return character?.turn_stats ?? [];
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -244,17 +230,14 @@ export default function TurnsPage() {
       return;
     }
 
-    const scenarioId =
-      panelMode === "create"
-        ? Number(formData.get("scenario_id"))
-        : selectedTurn?.scenario_id;
+    const scenarioId = Number(formData.get("scenario_id"));
 
     if (!scenarioId || !Number.isFinite(scenarioId)) {
       setPanelError("시나리오를 선택해 주세요.");
       return;
     }
 
-    const characterStats = resolveCharacterStats(scenarioId, selectedTurn);
+    const characterStats = resolveCharacterTurnStats(scenarioId, selectedTurn);
     const choices = parseChoices(formData, characterStats);
 
     if (
@@ -289,6 +272,7 @@ export default function TurnsPage() {
         await updateTurn.mutateAsync({
           id: selectedTurn.id,
           body: {
+            scenario_id: scenarioId,
             ...sharedBody,
             is_active: formData.get("is_active") === "on",
           },
@@ -360,7 +344,7 @@ export default function TurnsPage() {
               <option value="">전체</option>
               {characterOptions.map((character) => (
                 <option key={character.id} value={character.id}>
-                  {formatIdDotLabel(character.id, character.name)}
+                  {character.label}
                 </option>
               ))}
             </AdminSelect>
@@ -381,7 +365,7 @@ export default function TurnsPage() {
               <option value="">전체</option>
               {filteredScenarioOptions.map((scenario) => (
                 <option key={scenario.id} value={scenario.id}>
-                  {formatIdDotLabel(scenario.id, scenario.title)}
+                  {scenario.label}
                 </option>
               ))}
             </AdminSelect>
@@ -487,6 +471,8 @@ export default function TurnsPage() {
           >
             <TurnPanelForm
               characterOptions={characterOptions}
+              defaultCharacterId={panelMode === "create" ? characterFilter : null}
+              defaultScenarioId={panelMode === "create" ? scenarioFilter : null}
               mode={panelMode}
               scenarioOptions={scenarioOptions}
               turn={selectedTurn ?? undefined}

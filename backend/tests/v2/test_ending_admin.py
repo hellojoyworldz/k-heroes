@@ -22,6 +22,7 @@ def sample_ending_payload(scenario_id: int, path_key: str = "A-A-A"):
                 "address": "서울",
                 "name": "추천 장소",
                 "description": "설명",
+                "link": "https://example.com",
                 "image_url": "",
             }
         ],
@@ -33,11 +34,16 @@ def test_list_endings_all(admin_client):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) >= 176
-    assert "path_key" in data[0]
-    assert data[0]["character"]["name"]
-    assert data[0]["character"]["category"]["title"]
-    assert data[0]["scenario"]["title"]
+    assert len(data["items"]) >= 1
+    assert data["total"] >= 176
+    assert data["page"] == 1
+    assert data["page_size"] == 20
+    assert "path_key" in data["items"][0]
+    assert "sort_order" in data["items"][0]
+    assert "is_active" in data["items"][0]
+    assert data["items"][0]["character"]["name"]
+    assert data["items"][0]["character"]["category"]["title"]
+    assert data["items"][0]["scenario"]["title"]
 
 
 def test_list_endings_filter_by_scenario(admin_client, db_session):
@@ -50,14 +56,50 @@ def test_list_endings_filter_by_scenario(admin_client, db_session):
     )
 
     assert response.status_code == 200
-    data = response.json()
+    data = response.json()["items"]
     assert len(data) == 8
     assert all(item["scenario_id"] == scenario.id for item in data)
+
+
+def test_list_endings_filter_by_character(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    response = admin_client.get(
+        f"{ENDINGS_URL}?character_id={character.id}",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    data = response.json()["items"]
+    assert len(data) >= 1
+    assert all(item["character"]["id"] == character.id for item in data)
+
+
+def test_list_endings_filter_by_active(admin_client):
+    response = admin_client.get(
+        f"{ENDINGS_URL}?is_active=true",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    assert all(item["is_active"] is True for item in response.json()["items"])
+
+
+def test_list_endings_invalid_page_size(admin_client):
+    response = admin_client.get(
+        f"{ENDINGS_URL}?page_size=15",
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 422
+    assert "페이지당 항목 수" in response.json()["detail"]
 
 
 def test_list_endings_scenario_not_found(admin_client):
     response = admin_client.get(f"{ENDINGS_URL}?scenario_id=99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
+    assert "시나리오를 찾을 수 없습니다" in response.json()["detail"]
 
 
 def test_create_ending(admin_client, db_session):
@@ -86,7 +128,26 @@ def test_create_ending(admin_client, db_session):
     assert data["scenario_id"] == scenario["id"]
     assert data["path_key"] == "A-B-A"
     assert data["title"] == "신규 엔딩"
+    assert data["sort_order"] >= 0
+    assert data["is_active"] is True
     assert len(data["summary_items"]) == 1
+    assert data["recommended_places"][0]["link"] == "https://example.com"
+
+
+def test_create_ending_rejects_sort_order(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 0)
+    assert scenario is not None
+
+    payload = sample_ending_payload(scenario.id, "Z-Z-Z")
+    payload["sort_order"] = 0
+
+    response = admin_client.post(
+        ENDINGS_URL,
+        json=payload,
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 422
 
 
 def test_create_ending_duplicate_path_key(admin_client, db_session):
@@ -100,6 +161,7 @@ def test_create_ending_duplicate_path_key(admin_client, db_session):
     )
 
     assert response.status_code == 409
+    assert "동일한 경로" in response.json()["detail"]
 
 
 def test_get_ending(admin_client, db_session):
@@ -115,6 +177,7 @@ def test_get_ending(admin_client, db_session):
 def test_get_ending_not_found(admin_client):
     response = admin_client.get(f"{ENDINGS_URL}/99999", headers=admin_headers(admin_client))
     assert response.status_code == 404
+    assert "엔딩을 찾을 수 없습니다" in response.json()["detail"]
 
 
 def test_update_ending(admin_client, db_session):
@@ -141,12 +204,65 @@ def test_update_ending(admin_client, db_session):
 
     response = admin_client.patch(
         f"{ENDINGS_URL}/{ending_id}",
-        json={"title": "수정된 엔딩"},
+        json={"title": "수정된 엔딩", "is_active": False},
         headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
-    assert response.json()["title"] == "수정된 엔딩"
+    data = response.json()
+    assert data["title"] == "수정된 엔딩"
+    assert data["is_active"] is False
+
+
+def test_update_ending_changes_scenario(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
+    source_scenario = admin_client.post(
+        "/api/v2/admin/scenarios",
+        json={
+            "character_id": character.id,
+            "title": "엔딩 이동 원본 시나리오",
+            "description": "설명",
+            "historical_facts": "역사",
+        },
+        headers=admin_headers(admin_client),
+    ).json()
+
+    target_scenario = admin_client.post(
+        "/api/v2/admin/scenarios",
+        json={
+            "character_id": character.id,
+            "title": "엔딩 이동 대상 시나리오",
+            "description": "설명",
+            "historical_facts": "역사",
+        },
+        headers=admin_headers(admin_client),
+    ).json()
+
+    create_response = admin_client.post(
+        ENDINGS_URL,
+        json=sample_ending_payload(source_scenario["id"], "C-C-C"),
+        headers=admin_headers(admin_client),
+    )
+    ending_id = create_response.json()["id"]
+
+    response = admin_client.patch(
+        f"{ENDINGS_URL}/{ending_id}",
+        json={"scenario_id": target_scenario["id"]},
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["scenario_id"] == target_scenario["id"]
+    assert data["path_key"] == "C-C-C"
+
+    list_response = admin_client.get(
+        f"{ENDINGS_URL}?scenario_id={target_scenario['id']}",
+        headers=admin_headers(admin_client),
+    )
+    assert ending_id in [item["id"] for item in list_response.json()["items"]]
 
 
 def test_update_ending_duplicate_path_key(admin_client, db_session):
@@ -162,6 +278,7 @@ def test_update_ending_duplicate_path_key(admin_client, db_session):
     )
 
     assert response.status_code == 409
+    assert "동일한 경로" in response.json()["detail"]
 
 
 def test_delete_ending_soft(admin_client, db_session):
@@ -195,7 +312,30 @@ def test_delete_ending_soft(admin_client, db_session):
         f"{ENDINGS_URL}?scenario_id={scenario['id']}",
         headers=admin_headers(admin_client),
     )
-    assert ending_id not in [item["id"] for item in list_response.json()]
+    assert ending_id not in [item["id"] for item in list_response.json()["items"]]
+
+
+def test_reorder_endings(admin_client, db_session):
+    scenario = get_scenario(db_session, "이순신", 0)
+    assert scenario is not None
+
+    endings = admin_client.get(
+        f"{ENDINGS_URL}?scenario_id={scenario.id}&page_size=100",
+        headers=admin_headers(admin_client),
+    ).json()["items"]
+    assert len(endings) >= 2
+
+    reversed_ids = [ending["id"] for ending in reversed(endings)]
+    response = admin_client.patch(
+        f"{ENDINGS_URL}/reorder",
+        json={"scenario_id": scenario.id, "ids": reversed_ids},
+        headers=admin_headers(admin_client),
+    )
+
+    assert response.status_code == 200
+    reordered = {item["id"]: item["sort_order"] for item in response.json()}
+    for index, ending_id in enumerate(reversed_ids):
+        assert reordered[ending_id] == index
 
 
 def test_created_ending_used_by_simulation(admin_client, client, db_session):

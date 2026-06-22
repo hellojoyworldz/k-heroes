@@ -44,6 +44,7 @@ class TurnCreate(BaseModel):
 
 
 class TurnUpdate(BaseModel):
+    scenario_id: Optional[int] = Field(None, ge=1, description="시나리오 DB id")
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="턴 제목")
     situation: Optional[str] = Field(None, min_length=1, description="상황 설명")
     turn_image: Optional[str] = Field(None, max_length=500, description="턴 이미지 URL")
@@ -56,7 +57,7 @@ class TurnUpdate(BaseModel):
 
 
 class ChoiceTurnStatAdminItem(BaseModel):
-    stat_id: int
+    turn_stats_id: int
     name: str
     delta: int
 
@@ -82,16 +83,13 @@ class TurnAdminResponse(BaseModel):
     scenario_id: int
     scenario: AdminScenarioRef
     character: AdminCharacterRef
-    character_stats: List[TurnStatItem] = Field(
-        default_factory=list,
-        description="소속 인물 능력치 목록 (선택지 편집용)",
-    )
     sort_order: int
     title: str
     situation: str
     turn_image: str
     tip_title: str
     tip_desc: str
+    turn_stats: List[TurnStatItem] = Field(default_factory=list)
     choices: Dict[str, ChoiceAdminResponse]
     is_active: bool
     deleted_at: Optional[datetime] = None
@@ -99,38 +97,41 @@ class TurnAdminResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @staticmethod
-    def _character_stats(character) -> List[TurnStatItem]:
-        active = sorted(
-            (stat for stat in character.stats if stat.deleted_at is None),
-            key=lambda stat: stat.sort_order,
-        )
+    def _character_turn_stats(character) -> List[TurnStatItem]:
+        from repositories.character_turn_stats import active_turn_stats
+
         return [
-            TurnStatItem(id=stat.id, name=stat.name, value=stat.value) for stat in active
+            TurnStatItem(id=row.id, name=row.name) for row in active_turn_stats(character)
         ]
 
     @staticmethod
-    def _choice_turn_stats_admin(choice, character_stats: List[TurnStatItem]) -> List[ChoiceTurnStatAdminItem]:
-        delta_by_id = {
-            item["stat_id"]: item["delta"] for item in (choice.turn_stats or [])
-        }
+    def _choice_turn_stats_admin(
+        choice,
+        turn_stats_defs: List[TurnStatItem],
+    ) -> List[ChoiceTurnStatAdminItem]:
+        name_by_id = {item.id: item.name for item in turn_stats_defs}
         return [
             ChoiceTurnStatAdminItem(
-                stat_id=stat.id,
-                name=stat.name,
-                delta=delta_by_id.get(stat.id, 0),
+                turn_stats_id=int(item["turn_stats_id"]),
+                name=name_by_id.get(int(item["turn_stats_id"]), ""),
+                delta=int(item["delta"]),
             )
-            for stat in character_stats
+            for item in (choice.turn_stats or [])
         ]
 
     @classmethod
-    def _choice_admin_response(cls, choice, character_stats: List[TurnStatItem]) -> ChoiceAdminResponse:
+    def _choice_admin_response(
+        cls,
+        choice,
+        turn_stats_defs: List[TurnStatItem],
+    ) -> ChoiceAdminResponse:
         return ChoiceAdminResponse(
             id=choice.id,
             choice_key=choice.choice_key,
             title=choice.title,
             description=choice.description,
             choice_image=choice.choice_image or "",
-            turn_stats=cls._choice_turn_stats_admin(choice, character_stats),
+            turn_stats=cls._choice_turn_stats_admin(choice, turn_stats_defs),
             result_text=choice.result_text,
             is_historical=choice.is_historical,
             deleted_at=choice.deleted_at,
@@ -139,9 +140,9 @@ class TurnAdminResponse(BaseModel):
     @classmethod
     def from_orm_row(cls, turn: Turn) -> "TurnAdminResponse":
         scenario = turn.scenario
-        character_stats = cls._character_stats(scenario.character)
+        turn_stats_defs = cls._character_turn_stats(scenario.character)
         choices = {
-            choice.choice_key: cls._choice_admin_response(choice, character_stats)
+            choice.choice_key: cls._choice_admin_response(choice, turn_stats_defs)
             for choice in turn.choices
             if choice.deleted_at is None
         }
@@ -150,13 +151,13 @@ class TurnAdminResponse(BaseModel):
             scenario_id=turn.scenario_id,
             scenario=scenario_ref_from_scenario(scenario),
             character=character_ref_from_scenario(scenario),
-            character_stats=character_stats,
             sort_order=turn.sort_order,
             title=turn.title,
             situation=turn.situation,
             turn_image=turn.turn_image or "",
             tip_title=turn.tip_title,
             tip_desc=turn.tip_desc,
+            turn_stats=turn_stats_defs,
             choices=choices,
             is_active=turn.is_active,
             deleted_at=turn.deleted_at,

@@ -390,17 +390,18 @@ def test_get_character_admin_includes_turn_stats(admin_client, db_session):
     )
 
     assert response.status_code == 200
-    turn_stats = response.json()["turn_stats"]
-    assert len(turn_stats) >= 3
-    assert turn_stats[0]["id"] > 0
-    assert "name" in turn_stats[0]
-    assert "value" in turn_stats[0]
+    stats = response.json()["stats"]
+    assert len(stats) >= 3
+    assert stats[0]["id"] == 0
+    assert "name" in stats[0]
+    assert "value" in stats[0]
+    assert "desc" in stats[0]
 
 
 def test_create_character_with_turn_stats(admin_client, db_session):
     category = get_category(db_session, "정치 / 외교")
     payload = sample_character_payload("능력치인물", category_id=category.id)
-    payload["turn_stats"] = [
+    payload["stats"] = [
         {"name": "국력", "value": 50},
         {"name": "외교", "value": 60},
     ]
@@ -408,17 +409,17 @@ def test_create_character_with_turn_stats(admin_client, db_session):
     response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
     assert response.status_code == 201
-    turn_stats = response.json()["turn_stats"]
-    assert len(turn_stats) == 2
-    assert turn_stats[0]["name"] == "국력"
-    assert turn_stats[0]["value"] == 50
-    assert turn_stats[0]["id"] > 0
+    stats = response.json()["stats"]
+    assert len(stats) == 2
+    assert stats[0]["name"] == "국력"
+    assert stats[0]["value"] == 50
+    assert stats[0]["id"] == 0
 
 
 def test_create_character_turn_stats_rejects_sort_order(admin_client, db_session):
     category = get_category(db_session, "정치 / 외교")
     payload = sample_character_payload("능력치422", category_id=category.id)
-    payload["turn_stats"] = [{"name": "국력", "value": 50, "sort_order": 0}]
+    payload["stats"] = [{"name": "국력", "value": 50, "sort_order": 0}]
 
     response = admin_client.post("/api/v2/admin/characters", json=payload, headers=admin_headers(admin_client))
 
@@ -434,25 +435,29 @@ def test_update_character_turn_stats(admin_client, db_session):
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
         headers=admin_headers(admin_client),
-    ).json()["turn_stats"]
+    ).json()["stats"]
     first = current[0]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character.id}",
         json={
-            "turn_stats": [
-                {**first, "name": "전술력 (수정)", "value": 99},
-                *current[1:],
+            "stats": [
+                {
+                    "name": "전술력 (수정)",
+                    "value": 99,
+                    "desc": first.get("desc", ""),
+                },
+                *[{"name": item["name"], "value": item["value"], "desc": item.get("desc", "")} for item in current[1:]],
             ]
         },
         headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
-    updated = response.json()["turn_stats"]
+    updated = response.json()["stats"]
     assert updated[0]["name"] == "전술력 (수정)"
     assert updated[0]["value"] == 99
-    assert updated[0]["id"] == first["id"]
+    assert updated[0]["id"] == 0
 
 
 def test_update_character_turn_stats_reorder(admin_client, db_session):
@@ -462,20 +467,25 @@ def test_update_character_turn_stats_reorder(admin_client, db_session):
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
         headers=admin_headers(admin_client),
-    ).json()["turn_stats"]
+    ).json()["stats"]
     assert len(current) >= 2
-    reordered = [current[1], current[0], *current[2:]]
+    reordered = [
+        {"name": item["name"], "value": item["value"], "desc": item.get("desc", "")}
+        for item in [current[1], current[0], *current[2:]]
+    ]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character.id}",
-        json={"turn_stats": reordered},
+        json={"stats": reordered},
         headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
-    result = response.json()["turn_stats"]
-    assert result[0]["id"] == current[1]["id"]
-    assert result[1]["id"] == current[0]["id"]
+    result = response.json()["stats"]
+    assert result[0]["id"] == 0
+    assert result[0]["name"] == current[1]["name"]
+    assert result[1]["id"] == 1
+    assert result[1]["name"] == current[0]["name"]
 
 
 def test_update_character_turn_stats_soft_delete(admin_client, db_session):
@@ -484,7 +494,7 @@ def test_update_character_turn_stats_soft_delete(admin_client, db_session):
         "/api/v2/admin/characters",
         json={
             **sample_character_payload("능력치삭제", category_id=category.id),
-            "turn_stats": [
+            "stats": [
                 {"name": "유지", "value": 10},
                 {"name": "삭제", "value": 20},
             ],
@@ -492,32 +502,40 @@ def test_update_character_turn_stats_soft_delete(admin_client, db_session):
         headers=admin_headers(admin_client),
     )
     character_id = create_response.json()["id"]
-    stats = create_response.json()["turn_stats"]
+    stats = create_response.json()["stats"]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character_id}",
-        json={"turn_stats": [stats[0]]},
+        json={
+            "stats": [
+                {
+                    "name": stats[0]["name"],
+                    "value": stats[0]["value"],
+                    "desc": stats[0].get("desc", ""),
+                }
+            ]
+        },
         headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
-    assert len(response.json()["turn_stats"]) == 1
-    assert response.json()["turn_stats"][0]["name"] == "유지"
+    assert len(response.json()["stats"]) == 1
+    assert response.json()["stats"][0]["name"] == "유지"
 
 
-def test_update_character_turn_stats_unknown_id(admin_client, db_session):
+def test_update_character_stats_rejects_unknown_field(admin_client, db_session):
     from tests.helpers import get_character
 
     character = get_character(db_session, "이순신")
     current = admin_client.get(
         f"/api/v2/admin/characters/{character.id}",
         headers=admin_headers(admin_client),
-    ).json()["turn_stats"]
+    ).json()["stats"]
 
     response = admin_client.patch(
         f"/api/v2/admin/characters/{character.id}",
-        json={"turn_stats": [{**current[0], "id": 99999}]},
+        json={"stats": [{**current[0], "id": 99999}]},
         headers=admin_headers(admin_client),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 422

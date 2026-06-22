@@ -3,12 +3,7 @@ import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
 import type { ScenarioListItem } from "@/app/(admin)/admin/(dashboard)/scenarios/_types";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
-
-type CharacterOption = {
-  id: number;
-  name: string;
-};
+import type { CharacterOption } from "@/app/(admin)/_hooks/use-admin-characters";
 
 type ScenarioPanelFormProps = {
   mode: "create" | "edit";
@@ -68,7 +63,7 @@ export function ScenarioPanelForm({ characterOptions, mode, scenario }: Scenario
         >
           {characterOptions.map((character) => (
             <option key={character.id} value={character.id}>
-              {formatIdDotLabel(character.id, character.name)}
+              {character.label}
             </option>
           ))}
         </AdminSelect>

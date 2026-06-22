@@ -9,6 +9,27 @@ import {
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
 import type { CharacterListItem } from "@/app/(admin)/admin/(dashboard)/characters/_types";
+import { formatIdDotLabel } from "@/app/(admin)/_utils";
+
+export type CharacterOption = CharacterListItem & { label: string };
+
+function toCharacterOption(character: CharacterListItem): CharacterOption {
+  return {
+    ...character,
+    label: formatIdDotLabel(character.id, character.name),
+  };
+}
+
+export function pickCharacterOptionLabel(
+  options: CharacterOption[],
+  id: number,
+  fallback?: { id: number; name: string },
+) {
+  const found = options.find((option) => option.id === id);
+  if (found) return found.label;
+  if (fallback) return formatIdDotLabel(fallback.id, fallback.name);
+  return "";
+}
 
 type CharacterFilters = {
   active: ActiveFilterValue;
@@ -55,7 +76,7 @@ function characterOptionsQuery() {
     queryKey: adminCharacterKeys.options(),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       fetchCharacterList({ active: "all", categoryId: null, name: "" }, 1, 100, signal).then(
-        (data) => data.items,
+        (data) => data.items.map(toCharacterOption),
       ),
     staleTime: Infinity,
     gcTime: Infinity,
@@ -70,7 +91,8 @@ export function useAdminCharacters(
   return useQuery({
     queryKey: adminCharacterKeys.list(filters, page, pageSize),
     queryFn: ({ signal }) => fetchCharacterList(filters, page, pageSize, signal),
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     gcTime: 10 * 60 * 1000,
   });
 }

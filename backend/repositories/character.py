@@ -4,10 +4,16 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Character, CharacterStat
+from db.models import Character
 from models.character import CharacterCreate, CharacterReorderRequest, CharacterUpdate, TurnStatWrite
 from repositories import character_category
 from repositories.character_search import apply_character_search_filters
+from repositories.character_stats import stats_to_storage
+from repositories.character_turn_stats import (
+    CharacterTurnStatNotFoundError,
+    soft_delete_character_turn_stats,
+    sync_character_turn_stats,
+)
 
 
 class CharacterDuplicateError(Exception):
@@ -26,10 +32,8 @@ class CharacterReorderError(Exception):
     pass
 
 
-class TurnStatNotFoundError(Exception):
-    def __init__(self, stat_id: int):
-        self.stat_id = stat_id
-        super().__init__(f"인물 능력치를 찾을 수 없습니다. (ID: {stat_id})")
+class CharacterStatNotFoundError(CharacterTurnStatNotFoundError):
+    """하위 호환 alias (턴 API 예외 처리)."""
 
 
 def _character_admin_query():
@@ -39,7 +43,7 @@ def _character_admin_query():
         .where(Character.deleted_at.is_(None))
         .options(
             selectinload(Character.character_category),
-            selectinload(Character.stats),
+            selectinload(Character.turn_stats),
         )
     )
 
@@ -67,45 +71,6 @@ def _next_sort_order(db: Session, category_id: int) -> int:
         )
     )
     return (current_max or -1) + 1
-
-
-def _sync_turn_stats(db: Session, character: Character, items: List[TurnStatWrite]) -> None:
-    existing_by_id = {
-        stat.id: stat
-        for stat in character.stats
-        if stat.deleted_at is None
-    }
-    kept_ids: set[int] = set()
-
-    for index, item in enumerate(items):
-        stat_id = getattr(item, "id", None)
-        if stat_id is not None:
-            stat = existing_by_id.get(stat_id)
-            if not stat or stat.character_id != character.id:
-                raise TurnStatNotFoundError(stat_id)
-            stat.name = item.name
-            stat.value = item.value
-            stat.sort_order = index
-            stat.is_active = True
-            kept_ids.add(stat_id)
-        else:
-            db.add(
-                CharacterStat(
-                    character_id=character.id,
-                    name=item.name,
-                    value=item.value,
-                    desc="",
-                    sort_order=index,
-                    is_active=True,
-                )
-            )
-
-    for stat_id, stat in existing_by_id.items():
-        if stat_id not in kept_ids:
-            stat.deleted_at = datetime.now(timezone.utc)
-
-    db.flush()
-    db.refresh(character, attribute_names=["stats"])
 
 
 def _filtered_character_query(
@@ -197,20 +162,21 @@ def create_character(db: Session, data: CharacterCreate) -> Character:
         intro_desc=data.intro_desc,
         keywords=data.keywords,
         associated_stories=data.associated_stories.to_storage_dict(),
+        stats=stats_to_storage(data.stats),
         is_active=True,
     )
     db.add(character)
     db.flush()
 
     if data.turn_stats:
-        _sync_turn_stats(db, character, data.turn_stats)
+        sync_character_turn_stats(db, character, data.turn_stats)
 
     return get_character_by_id(db, character.id)
 
 
 def update_character(db: Session, character_id: int, data: CharacterUpdate) -> Character:
     character = _get_character_or_raise(db, character_id)
-    updates = data.model_dump(exclude_unset=True, exclude={"turn_stats"})
+    updates = data.model_dump(exclude_unset=True, exclude={"stats", "turn_stats"})
 
     if "name" in updates:
         _ensure_unique_name(db, updates["name"], exclude_id=character_id)
@@ -224,8 +190,11 @@ def update_character(db: Session, character_id: int, data: CharacterUpdate) -> C
     for field, value in updates.items():
         setattr(character, field, value)
 
+    if "stats" in data.model_fields_set:
+        character.stats = stats_to_storage(data.stats or [])
+
     if "turn_stats" in data.model_fields_set:
-        _sync_turn_stats(db, character, data.turn_stats or [])
+        sync_character_turn_stats(db, character, data.turn_stats or [])
 
     db.flush()
     return get_character_by_id(db, character_id)
@@ -233,7 +202,9 @@ def update_character(db: Session, character_id: int, data: CharacterUpdate) -> C
 
 def delete_character(db: Session, character_id: int) -> Character:
     character = _get_character_or_raise(db, character_id)
-    character.deleted_at = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    character.deleted_at = now
+    soft_delete_character_turn_stats(character, deleted_at=now)
     db.flush()
     db.refresh(character)
     return character

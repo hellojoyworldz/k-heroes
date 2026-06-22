@@ -8,19 +8,14 @@ import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-fo
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
-import type { CharacterListItem } from "@/app/(admin)/admin/(dashboard)/characters/_types";
-import { formatIdDotLabel } from "@/app/(admin)/_utils";
+import type { CharacterListItem, CharacterStat, CharacterTurnStatDef } from "@/app/(admin)/admin/(dashboard)/characters/_types";
+import type { CategoryOption } from "@/app/(admin)/_hooks/use-admin-categories";
 
-type CategoryOption = {
-  id: number;
-  title: string;
-};
-
-type TurnStatItem = {
+type StatFormItem = {
   key: string;
-  id?: number;
   name: string;
   value: string;
+  desc: string;
 };
 
 type CharacterPanelFormProps = {
@@ -88,26 +83,48 @@ function CharacterImageUrlField({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-function createTurnStat(key: string, item?: Partial<TurnStatItem>): TurnStatItem {
+function formatStoryIds(ids?: number[]) {
+  return (ids ?? []).join(", ");
+}
+
+function createStatItem(key: string, item?: Partial<CharacterStat>): StatFormItem {
+  return {
+    key,
+    name: item?.name ?? "",
+    value: item?.value !== undefined ? String(item.value) : "",
+    desc: item?.desc ?? "",
+  };
+}
+
+type TurnStatFormItem = {
+  key: string;
+  id?: number;
+  name: string;
+};
+
+function createTurnStatItem(key: string, item?: Partial<CharacterTurnStatDef>): TurnStatFormItem {
   return {
     key,
     id: item?.id,
     name: item?.name ?? "",
-    value: item?.value ?? "",
   };
 }
 
-function TurnStatFields({ items }: { items: TurnStatItem[] }) {
-  const [turnStats, setTurnStats] = useState<TurnStatItem[]>(
+function TurnStatFields({ items }: { items: TurnStatFormItem[] }) {
+  const [turnStats, setTurnStats] = useState<TurnStatFormItem[]>(
     items.length > 0
       ? items
-      : [createTurnStat("turn-stat-0"), createTurnStat("turn-stat-1"), createTurnStat("turn-stat-2")],
+      : [
+          createTurnStatItem("turn-stat-0"),
+          createTurnStatItem("turn-stat-1"),
+          createTurnStatItem("turn-stat-2"),
+        ],
   );
   const [draggedKey, setDraggedKey] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
 
   function addItem() {
-    setTurnStats((current) => [...current, createTurnStat(`turn-stat-${crypto.randomUUID()}`)]);
+    setTurnStats((current) => [...current, createTurnStatItem(`turn-stat-${crypto.randomUUID()}`)]);
   }
 
   function removeItem(index: number) {
@@ -156,7 +173,7 @@ function TurnStatFields({ items }: { items: TurnStatItem[] }) {
   }
 
   return (
-    <AdminFormRow alignTop label="능력치">
+    <AdminFormRow alignTop label="턴 능력치">
       <div className="space-y-3">
         {turnStats.map((item, index) => (
           <div
@@ -191,23 +208,17 @@ function TurnStatFields({ items }: { items: TurnStatItem[] }) {
               </div>
             </div>
 
-            {item.id ? <input name={`turn_stats.${index}.id`} type="hidden" value={item.id} /> : null}
+            {item.id !== undefined ? (
+              <input name={`turn_stats.${index}.id`} type="hidden" value={item.id} />
+            ) : null}
 
             <AdminInput
               className={panelInputClassName}
               defaultValue={item.name}
               name={`turn_stats.${index}.name`}
-              placeholder="능력치명"
+              placeholder="능력치명 (예: 국력)"
               required
               type="text"
-            />
-            <AdminInput
-              className={panelInputClassName}
-              defaultValue={item.value}
-              name={`turn_stats.${index}.value`}
-              placeholder="기본값"
-              required
-              type="number"
             />
           </div>
         ))}
@@ -220,7 +231,141 @@ function TurnStatFields({ items }: { items: TurnStatItem[] }) {
           variant="secondary"
         >
           <Plus aria-hidden="true" className="size-3.5" />
-          능력치 추가
+          턴 능력치 추가
+        </AdminButton>
+      </div>
+    </AdminFormRow>
+  );
+}
+
+function StatFields({ items }: { items: StatFormItem[] }) {
+  const [stats, setStats] = useState<StatFormItem[]>(
+    items.length > 0
+      ? items
+      : [createStatItem("stat-0"), createStatItem("stat-1"), createStatItem("stat-2")],
+  );
+  const [draggedKey, setDraggedKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  function addItem() {
+    setStats((current) => [...current, createStatItem(`stat-${crypto.randomUUID()}`)]);
+  }
+
+  function removeItem(index: number) {
+    setStats((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function handleDragStart(event: DragEvent<HTMLDivElement>, key: string) {
+    setDraggedKey(key);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", key);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>, key: string) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDragOverKey(key);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, key: string) {
+    event.preventDefault();
+
+    if (!draggedKey || draggedKey === key) {
+      return;
+    }
+
+    setStats((current) => {
+      const fromIndex = current.findIndex((item) => item.key === draggedKey);
+      const toIndex = current.findIndex((item) => item.key === key);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+
+    setDraggedKey(null);
+    setDragOverKey(null);
+  }
+
+  function handleDragEnd() {
+    setDraggedKey(null);
+    setDragOverKey(null);
+  }
+
+  return (
+    <AdminFormRow alignTop label="강점">
+      <div className="space-y-3">
+        {stats.map((item, index) => (
+          <div
+            key={item.key}
+            className={`space-y-3 rounded-lg border border-[#E8E4DC] bg-[#FDFCFA] p-4 cursor-grab active:cursor-grabbing ${
+              dragOverKey === item.key ? "bg-[#F4F1EA]" : ""
+            } ${draggedKey === item.key ? "opacity-50" : ""}`}
+            draggable
+            onDragEnd={handleDragEnd}
+            onDragStart={(event) => handleDragStart(event, item.key)}
+            onDragOver={(event) => handleDragOver(event, item.key)}
+            onDrop={(event) => handleDrop(event, item.key)}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <GripVertical aria-hidden="true" className="size-4 text-[#8A847C]" />
+                <p className="text-xs font-medium text-[#8A847C]">항목 {index + 1}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {stats.length > 1 ? (
+                  <AdminButton
+                    className="h-8 w-auto gap-1.5 px-2.5"
+                    onClick={() => removeItem(index)}
+                    size="sm"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Trash2 aria-hidden="true" className="size-3.5" />
+                    삭제
+                  </AdminButton>
+                ) : null}
+              </div>
+            </div>
+
+            <AdminInput
+              className={panelInputClassName}
+              defaultValue={item.name}
+              name={`stats.${index}.name`}
+              placeholder="강점명"
+              required
+              type="text"
+            />
+            <AdminInput
+              className={panelInputClassName}
+              defaultValue={item.value}
+              name={`stats.${index}.value`}
+              placeholder="기본값"
+              required
+              type="number"
+            />
+            <AdminTextarea
+              className={panelTextareaClassName}
+              defaultValue={item.desc}
+              name={`stats.${index}.desc`}
+              placeholder="강점 설명"
+            />
+          </div>
+        ))}
+
+        <AdminButton
+          className="h-9 w-auto gap-1.5 px-3"
+          onClick={addItem}
+          size="sm"
+          type="button"
+          variant="secondary"
+        >
+          <Plus aria-hidden="true" className="size-3.5" />
+          강점 추가
         </AdminButton>
       </div>
     </AdminFormRow>
@@ -230,13 +375,21 @@ function TurnStatFields({ items }: { items: TurnStatItem[] }) {
 export function CharacterPanelForm({ categoryOptions, character, mode }: CharacterPanelFormProps) {
   const isCreate = mode === "create";
   const keywordsValue = character?.keywords.join(", ") ?? "";
-  const turnStats =
-    character?.turn_stats.map((item) => ({
-      key: `existing-${item.id ?? `${item.name}-${item.value}`}`,
-      id: item.id,
+  const statItems =
+    character?.stats.map((item, index) => ({
+      key: `existing-${index}-${item.name}`,
       name: item.name,
       value: String(item.value),
+      desc: item.desc,
     })) ?? [];
+  const turnStatItems =
+    character?.turn_stats.map((item, index) => ({
+      key: `existing-turn-${index}-${item.id}`,
+      id: item.id,
+      name: item.name,
+    })) ?? [];
+
+  const associatedStories = character?.associated_stories ?? {};
 
   return (
     <div className="space-y-6">
@@ -291,7 +444,7 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
           >
             {categoryOptions.map((category) => (
               <option key={category.id} value={category.id}>
-                {formatIdDotLabel(category.id, category.title)}
+                {category.label}
               </option>
             ))}
           </AdminSelect>
@@ -454,8 +607,44 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
         </AdminFormRow>
       </FormSection>
 
-      <FormSection title="능력치">
-        <TurnStatFields items={turnStats} />
+      <FormSection title="강점">
+        <StatFields items={statItems} />
+      </FormSection>
+
+      <FormSection title="턴 능력치">
+        <TurnStatFields items={turnStatItems} />
+      </FormSection>
+
+      <FormSection title="연관 스토리">
+        <AdminFormRow alignTop htmlFor="associated-stories-prsn" label="인물 (prsn)">
+          <AdminTextarea
+            className={panelTextareaClassName}
+            defaultValue={formatStoryIds(associatedStories.prsn)}
+            id="associated-stories-prsn"
+            name="associated_stories.prsn"
+            placeholder="쉼표로 구분 (예: 370, 371, 372)"
+          />
+        </AdminFormRow>
+
+        <AdminFormRow alignTop htmlFor="associated-stories-cltur" label="문화 (cltur)">
+          <AdminTextarea
+            className={panelTextareaClassName}
+            defaultValue={formatStoryIds(associatedStories.cltur)}
+            id="associated-stories-cltur"
+            name="associated_stories.cltur"
+            placeholder="쉼표로 구분"
+          />
+        </AdminFormRow>
+
+        <AdminFormRow alignTop htmlFor="associated-stories-textbook" label="국사교과서">
+          <AdminTextarea
+            className={panelTextareaClassName}
+            defaultValue={formatStoryIds(associatedStories.국사교과서)}
+            id="associated-stories-textbook"
+            name="associated_stories.국사교과서"
+            placeholder="쉼표로 구분"
+          />
+        </AdminFormRow>
       </FormSection>
 
       <FormSection title="기타">

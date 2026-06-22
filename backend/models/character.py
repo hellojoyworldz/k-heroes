@@ -17,7 +17,7 @@ class StatItem(BaseModel):
 
 
 class ChoiceTurnStatItem(BaseModel):
-    stat_id: int
+    turn_stats_id: int
     delta: int
 
 
@@ -55,6 +55,13 @@ class StoryItem(BaseModel):
     sido: str
     sigungu: str
 
+
+class TurnStatGameItem(BaseModel):
+    id: int
+    name: str
+    value: int = 50
+
+
 class CharacterCard(BaseModel):
     id: Optional[int] = None
     name: str
@@ -71,25 +78,42 @@ class CharacterCard(BaseModel):
     mbti_nickname: str
     mbti_details: MBTIDetails
     stats: List[StatItem]
+    turn_stats: List[TurnStatGameItem] = []
     intro_quote: str
     intro_desc: str
     associated_stories: Dict[str, List[int]] = {}
     scenarios: List[ScenarioItem] = []
 
 
-class TurnStatWrite(BaseModel):
-    id: Optional[int] = Field(None, ge=1, description="기존 능력치 DB id. 수정·유지 시 필수, 신규 추가 시 생략")
-    name: str = Field(..., min_length=1, max_length=100, description="능력치 이름")
-    value: int = Field(..., description="능력치 값")
+class StatCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="강점 이름")
+    value: int = Field(..., description="강점 값")
+    desc: str = Field(default="", description="강점 설명")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class StatWrite(StatCreate):
+    """인물 강점 수정 항목."""
 
     model_config = ConfigDict(extra="forbid")
 
 
 class TurnStatCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100, description="능력치 이름")
-    value: int = Field(..., description="능력치 값")
+    name: str = Field(..., min_length=1, max_length=100, description="시뮬 능력치 이름")
 
     model_config = ConfigDict(extra="forbid")
+
+
+class TurnStatWrite(TurnStatCreate):
+    id: Optional[int] = Field(None, ge=1, description="기존 turn_stats DB id. 수정·유지 시 필수")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class TurnStatItem(BaseModel):
+    id: int
+    name: str
 
 
 class AssociatedStoriesWrite(BaseModel):
@@ -106,12 +130,6 @@ class AssociatedStoriesWrite(BaseModel):
 
     def to_storage_dict(self) -> Dict[str, List[int]]:
         return self.model_dump(by_alias=True, exclude_defaults=True)
-
-
-class TurnStatItem(BaseModel):
-    id: int
-    name: str
-    value: int
 
 
 class CharacterCreate(BaseModel):
@@ -137,9 +155,13 @@ class CharacterCreate(BaseModel):
         default_factory=AssociatedStoriesWrite,
         description="연관 역사 스토리 ID (선택)",
     )
+    stats: List[StatCreate] = Field(
+        default_factory=list,
+        description="인물 강점 목록 (선택)",
+    )
     turn_stats: List[TurnStatCreate] = Field(
         default_factory=list,
-        description="능력치 목록 (선택). 생성 시 name·value만",
+        description="시뮬 능력치 정의 (선택)",
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -168,9 +190,13 @@ class CharacterUpdate(BaseModel):
     associated_stories: Optional[AssociatedStoriesWrite] = Field(
         None, description="연관 역사 스토리 ID"
     )
+    stats: Optional[List[StatWrite]] = Field(
+        None,
+        description="인물 강점 전체 교체 (배열 순서)",
+    )
     turn_stats: Optional[List[TurnStatWrite]] = Field(
         None,
-        description="능력치 전체 sync. id 있으면 수정, 없으면 추가, 배열에서 빠지면 삭제",
+        description="시뮬 능력치 정의 전체 sync",
     )
 
     model_config = ConfigDict(extra="forbid")
@@ -204,6 +230,7 @@ class CharacterAdminResponse(BaseModel):
     intro_desc: str
     keywords: List[str]
     associated_stories: dict
+    stats: List[StatItem] = Field(default_factory=list)
     turn_stats: List[TurnStatItem] = Field(default_factory=list)
     is_active: bool
     deleted_at: Optional[datetime] = None
@@ -212,16 +239,26 @@ class CharacterAdminResponse(BaseModel):
 
     @model_validator(mode="wrap")
     @classmethod
-    def attach_turn_stats(cls, value, handler):
-        if hasattr(value, "stats"):
-            result = handler(value)
-            active = sorted(
-                (s for s in value.stats if s.deleted_at is None),
-                key=lambda s: s.sort_order,
+    def attach_stats(cls, value, handler):
+        if hasattr(value, "__table__"):
+            from repositories.character_stats import stat_items_from_json
+
+            active_turn_stats = sorted(
+                (row for row in value.turn_stats if row.deleted_at is None),
+                key=lambda row: row.sort_order,
             )
-            turn_stats = [
-                TurnStatItem(id=s.id, name=s.name, value=s.value) for s in active
-            ]
-            return result.model_copy(update={"turn_stats": turn_stats})
+            prepared = {
+                **{
+                    column.key: getattr(value, column.key)
+                    for column in value.__table__.columns
+                    if column.key != "stats"
+                },
+                "category": value.category,
+                "stats": stat_items_from_json(value.stats),
+                "turn_stats": [
+                    TurnStatItem(id=row.id, name=row.name) for row in active_turn_stats
+                ],
+            }
+            return handler(prepared)
         return handler(value)
 

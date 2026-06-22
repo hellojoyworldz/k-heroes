@@ -7,7 +7,7 @@ from db.database import get_db
 from models.pagination import ALLOWED_PAGE_SIZES, PaginatedResponse
 from models.turn import TurnAdminResponse, TurnCreate, TurnReorderRequest, TurnUpdate
 from repositories import turn as turn_repository
-from repositories.character import CharacterNotFoundError, TurnStatNotFoundError
+from repositories.character import CharacterNotFoundError, CharacterStatNotFoundError
 from repositories.scenario import ScenarioNotFoundError
 from router.v2.deps import require_content_admin
 
@@ -97,7 +97,7 @@ def create_turn(body: TurnCreate, db: Session = Depends(get_db)):
     except ScenarioNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except TurnStatNotFoundError as exc:
+    except CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -116,7 +116,7 @@ def update_turn(turn_id: int, body: TurnUpdate, db: Session = Depends(get_db)):
     except ScenarioNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except TurnStatNotFoundError as exc:
+    except CharacterStatNotFoundError as exc:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

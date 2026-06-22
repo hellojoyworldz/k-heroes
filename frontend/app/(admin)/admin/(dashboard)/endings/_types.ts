@@ -26,6 +26,7 @@ export type RecommendedPlace = {
   address: string;
   name: string;
   description: string;
+  link: string;
   image_url: string;
 };
 
@@ -34,6 +35,7 @@ export type EndingListItem = {
   scenario_id: number;
   scenario: EndingScenarioRef;
   character: EndingCharacterRef;
+  sort_order: number;
   path_key: string;
   ending_type: string;
   title: string;
@@ -44,5 +46,6 @@ export type EndingListItem = {
   image_url: string;
   summary_items: SummaryItem[];
   recommended_places: RecommendedPlace[];
+  is_active: boolean;
   deleted_at: string | null;
 };

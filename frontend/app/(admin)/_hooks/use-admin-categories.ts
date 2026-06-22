@@ -9,6 +9,20 @@ import {
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
 import type { CharacterCategoryListItem } from "@/app/(admin)/admin/(dashboard)/character-categories/_types";
+import { formatIdDotLabel } from "@/app/(admin)/_utils";
+
+export type CategoryOption = CharacterCategoryListItem & { label: string };
+
+function toCategoryOption(category: CharacterCategoryListItem): CategoryOption {
+  return {
+    ...category,
+    label: formatIdDotLabel(category.id, category.title),
+  };
+}
+
+export function pickCategoryOptionLabel(options: CategoryOption[], id: number) {
+  return options.find((option) => option.id === id)?.label ?? "";
+}
 
 export const adminCategoryKeys = {
   all: ["admin", "categories"] as const,
@@ -43,7 +57,9 @@ function categoryOptionsQuery() {
   return {
     queryKey: adminCategoryKeys.options(),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
-      fetchCategoryList("all", 1, 100, signal).then((data) => data.items),
+      fetchCategoryList("all", 1, 100, signal).then((data) =>
+        data.items.map(toCategoryOption),
+      ),
     staleTime: Infinity,
     gcTime: Infinity,
   };
@@ -57,8 +73,9 @@ export function useAdminCategories(
   return useQuery({
     queryKey: adminCategoryKeys.list(filter, page, pageSize),
     queryFn: ({ signal }) => fetchCategoryList(filter, page, pageSize, signal),
-    staleTime: Infinity,
-    gcTime: Infinity,
+    staleTime: 0,
+    refetchOnMount: "always",
+    gcTime: 10 * 60 * 1000,
   });
 }
 

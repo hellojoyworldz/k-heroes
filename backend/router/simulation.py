@@ -12,7 +12,7 @@ from simulation_data_manager import (
     get_recommended_places,
     get_pre_generated_ending
 )
-from repositories.turn_stats import map_turn_stats_to_effects, ordered_stat_ids
+from repositories.turn_stats import map_turn_stats_to_effects, ordered_turn_stats_ids
 import uuid
 from models.character import CharacterCard
 from rag_evaluator import RAGEvaluator
@@ -51,7 +51,7 @@ async def start_simulation(payload: StartRequest):
         
         # 초기 스탯 딕셔너리 생성 (카드에 적힌 고유 수치로 초기화)
         initial_stats = {}
-        for i, stat in enumerate(character_card.stats):
+        for i, stat in enumerate(character_card.turn_stats):
             initial_stats[f"stat_{i+1}"] = GameStateStat(name=stat.name, value=stat.value)
             
         initial_state = GameState(
@@ -103,13 +103,13 @@ async def play_turn(payload: TurnRequest):
         if not choice_a_raw or not choice_b_raw:
             raise ValueError(f"Turn {current_step} does not have both Choice A and Choice B.")
 
-        stat_ids = ordered_stat_ids(character_card.stats)
+        turn_stats_ids = ordered_turn_stats_ids(character_card.turn_stats)
 
         choice_a = ChoiceDetail(
             is_historical=choice_a_raw.is_historical,
             title=choice_a_raw.title,
             description=choice_a_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, stat_ids),
+            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, turn_stats_ids),
             choice_image=choice_a_raw.choice_image if getattr(choice_a_raw, "choice_image", None) else ""
         )
 
@@ -117,7 +117,7 @@ async def play_turn(payload: TurnRequest):
             is_historical=choice_b_raw.is_historical,
             title=choice_b_raw.title,
             description=choice_b_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, stat_ids),
+            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, turn_stats_ids),
             choice_image=choice_b_raw.choice_image if getattr(choice_b_raw, "choice_image", None) else ""
         )
         
@@ -181,8 +181,8 @@ async def generate_ending(payload: EndingRequest):
         # 1.5. Calculate history_score, check historical choices, and compute final game_stats
         total_turns = len(scenario.turns)
         historical_choices_count = 0
-        stat_lookup = {stat.id: stat for stat in character_card.stats}
-        current_by_id = {stat.id: stat.value for stat in character_card.stats}
+        stat_lookup = {stat.id: stat for stat in character_card.turn_stats}
+        current_by_id = {stat.id: stat.value for stat in character_card.turn_stats}
 
         for idx, turn in enumerate(scenario.turns):
             user_choice_id = choices_path[idx] if idx < len(choices_path) else "A"
@@ -194,13 +194,13 @@ async def generate_ending(payload: EndingRequest):
                 historical_choices_count += 1
 
             for item in user_choice.turn_stats:
-                if item.stat_id in current_by_id:
-                    current_by_id[item.stat_id] += item.delta
+                if item.turn_stats_id in current_by_id:
+                    current_by_id[item.turn_stats_id] += item.delta
 
         current_stats = {
-            stat_lookup[stat_id].name: value
-            for stat_id, value in current_by_id.items()
-            if stat_id in stat_lookup
+            stat_lookup[turn_stats_id].name: value
+            for turn_stats_id, value in current_by_id.items()
+            if turn_stats_id in stat_lookup
         }
                     
         history_score = int((historical_choices_count / total_turns) * 100) if total_turns > 0 else 100
@@ -229,6 +229,7 @@ async def generate_ending(payload: EndingRequest):
                         address=item.get("address", ""),
                         name=item.get("name", ""),
                         description=item.get("description", ""),
+                        link=item.get("link", "") or "",
                         image_url=item.get("image_url", "")
                     )
                     for item in recommended_places_raw
