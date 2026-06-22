@@ -48,6 +48,9 @@ app.include_router(ending_v2.admin_router)
 # 서버 가동 시점에 전역 캐시 로드 가동
 @app.on_event("startup")
 async def startup_event():
+    from scripts.ensure_db import ensure_database
+
+    ensure_database()
     simulation_data_manager.load_regions_to_memory()
 
 @app.get("/")
