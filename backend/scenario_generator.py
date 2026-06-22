@@ -1039,8 +1039,8 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
         print(f"[ERROR] '{character_name}' 인물 프로필 정보가 characters.json에 없습니다.")
         return
         
-    db_char = character_database[character_name]
-    character_card = CharacterCard(**db_char)
+    from simulation_data_manager import get_character_card
+    character_card = get_character_card(character_name)
     
     # endings 디렉토리 생성
     endings_dir = os.path.join(BASE_DIR, "data", "endings")
@@ -1361,8 +1361,8 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
         print(f"[ERROR] '{character_name}' 인물 정보가 characters.json에 없습니다.")
         return
         
-    db_char = character_database[character_name]
-    character_card = CharacterCard(**db_char)
+    from simulation_data_manager import get_character_card
+    character_card = get_character_card(character_name)
     
     for scenario in character_card.scenarios:
         s_id = scenario.sort_order + 1

@@ -105,8 +105,16 @@ def normalize_json_character_profile(profile: dict) -> dict:
         stat["id"] = stat_id
         stat_name_to_id[stat["name"]] = stat_id
 
-    for scenario in profile.get("scenarios", []):
-        for turn in scenario.get("turns", []):
+    for s_index, scenario in enumerate(profile.get("scenarios", [])):
+        if "id" not in scenario:
+            scenario["id"] = scenario.get("scenario_id", s_index + 1)
+        if "sort_order" not in scenario:
+            scenario["sort_order"] = s_index
+            
+        for t_index, turn in enumerate(scenario.get("turns", [])):
+            if "sort_order" not in turn:
+                turn["sort_order"] = turn.get("turn_no", t_index + 1) - 1
+                
             for choice in turn.get("choices", {}).values():
                 choice["turn_stats"] = resolve_choice_turn_stats_for_db(
                     stat_name_to_id,
