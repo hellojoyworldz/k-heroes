@@ -12,6 +12,7 @@ from models.character_category import (
     CharacterCategoryReorderRequest,
     CharacterCategoryUpdate,
 )
+from models.pagination import ALLOWED_PAGE_SIZES, PaginatedResponse
 from router.v2.deps import require_content_admin
 
 router = APIRouter(prefix="/api/v2/character-categories", tags=["Character Categories v2"])
@@ -21,20 +22,39 @@ admin_router = APIRouter(
     dependencies=[Depends(require_content_admin)],
 )
 
-
 @router.get("", response_model=List[CharacterCategoryPublicItem])
 def list_character_categories(db: Session = Depends(get_db)):
     """공개 API — 활성 카테고리 목록."""
     return character_category_repository.list_public_categories(db)
 
 
-@admin_router.get("", response_model=List[CharacterCategoryAdminResponse])
+@admin_router.get("", response_model=PaginatedResponse[CharacterCategoryAdminResponse])
 def list_character_categories_admin(
     is_active: Optional[bool] = Query(None, description="true=활성만, false=비활성만, 생략=전체"),
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    page_size: int = Query(20, ge=1, le=100, description="페이지당 항목 수"),
     db: Session = Depends(get_db),
 ):
     """어드민 — 카테고리 목록."""
-    return character_category_repository.list_categories(db, is_active=is_active)
+    if page_size not in ALLOWED_PAGE_SIZES:
+        raise HTTPException(
+            status_code=422,
+            detail="페이지당 항목 수는 10, 20, 50, 100 중 하나여야 합니다.",
+        )
+
+    categories, total = character_category_repository.list_categories(
+        db,
+        is_active=is_active,
+        page=page,
+        page_size=page_size,
+    )
+    return PaginatedResponse[CharacterCategoryAdminResponse](
+        items=categories,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
+    )
 
 
 @admin_router.patch("/reorder", response_model=List[CharacterCategoryAdminResponse])

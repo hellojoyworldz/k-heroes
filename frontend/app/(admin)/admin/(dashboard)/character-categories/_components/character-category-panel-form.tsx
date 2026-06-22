@@ -26,20 +26,6 @@ export function CharacterCategoryPanelForm({ category, mode }: CharacterCategory
   return (
     <AdminFormTable>
       {!isCreate ? (
-        <AdminFormRow htmlFor="category-id" label="ID">
-          <AdminInput
-            className={panelInputClassName}
-            defaultValue={category?.id}
-            disabled
-            id="category-id"
-            name="id"
-            readOnly
-            type="text"
-          />
-        </AdminFormRow>
-      ) : null}
-
-      {!isCreate ? (
         <AdminFormRow label="상태">
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
             <input
@@ -50,6 +36,20 @@ export function CharacterCategoryPanelForm({ category, mode }: CharacterCategory
             />
             사용
           </label>
+        </AdminFormRow>
+      ) : null}
+
+      {!isCreate ? (
+        <AdminFormRow htmlFor="category-id" label="ID">
+          <AdminInput
+            className={panelInputClassName}
+            defaultValue={category?.id}
+            disabled
+            id="category-id"
+            name="id"
+            readOnly
+            type="text"
+          />
         </AdminFormRow>
       ) : null}
 
@@ -66,14 +66,14 @@ export function CharacterCategoryPanelForm({ category, mode }: CharacterCategory
         />
       </AdminFormRow>
 
-      <AdminFormRow alignTop htmlFor="category-description" label="설명" required={isCreate}>
+      <AdminFormRow alignTop htmlFor="category-description" label="설명" required>
         <AdminTextarea
           className={panelTextareaClassName}
           defaultValue={category?.description}
           id="category-description"
           name="description"
           placeholder="카테고리 설명을 입력하세요"
-          required={isCreate}
+          required
         />
       </AdminFormRow>
     </AdminFormTable>
