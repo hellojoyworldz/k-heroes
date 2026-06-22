@@ -5,17 +5,25 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AdminButton } from "@/app/(admin)/_components/admin-button";
 import { AdminPanelFooter } from "@/app/(admin)/_components/admin-panel-footer";
+import {
+  AdminPagination,
+  type AdminPageSize,
+} from "@/app/(admin)/_components/admin-pagination";
 import { AdminPageHeader } from "@/app/(admin)/_components/admin-page-header";
 import { AdminSlidePanel } from "@/app/(admin)/_components/admin-slide-panel";
-import { fetchAdminApi } from "@/app/(admin)/_lib/admin-api";
+import { fetchAdminApi, type PaginatedResponse } from "@/app/(admin)/_lib/admin-api";
 import { AdminUserPanelForm } from "@/app/(admin)/admin/(dashboard)/admin-users/_components/admin-user-panel-form";
 import { AdminUserTable } from "@/app/(admin)/admin/(dashboard)/admin-users/_components/admin-user-table";
 import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
 
 type PanelMode = "create" | "edit" | null;
 
-function requestAdminUsers(signal?: AbortSignal) {
-  return fetchAdminApi("/api/v2/admin/admin-users", {
+function requestAdminUsers(page: number, pageSize: AdminPageSize, signal?: AbortSignal) {
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  return fetchAdminApi(`/api/v2/admin/admin-users?${params.toString()}`, {
     cache: "no-store",
     signal,
   });
@@ -27,35 +35,36 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserListItem[]>([]);
   const [panelMode, setPanelMode] = useState<PanelMode>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserListItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<AdminPageSize>(20);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pageError, setPageError] = useState("");
   const [panelError, setPanelError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function loadUsers() {
+  function reloadUsers() {
     setIsLoading(true);
     setPageError("");
+    setReloadKey((current) => current + 1);
+  }
 
-    try {
-      const response = await requestAdminUsers();
+  function changePage(nextPage: number) {
+    if (nextPage === page) return;
+    setIsLoading(true);
+    setPageError("");
+    setPage(nextPage);
+  }
 
-      if (response.status === 401) {
-        router.replace("/admin/login");
-        return;
-      }
-      if (!response.ok) {
-        throw new Error("어드민 목록을 불러오지 못했습니다.");
-      }
-
-      setUsers((await response.json()) as AdminUserListItem[]);
-    } catch (error) {
-      setPageError(
-        error instanceof Error ? error.message : "어드민 목록을 불러오지 못했습니다.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+  function changePageSize(nextPageSize: AdminPageSize) {
+    if (nextPageSize === pageSize) return;
+    setIsLoading(true);
+    setPageError("");
+    setPage(1);
+    setPageSize(nextPageSize);
   }
 
   useEffect(() => {
@@ -63,7 +72,7 @@ export default function AdminUsersPage() {
 
     async function loadInitialUsers() {
       try {
-        const response = await requestAdminUsers(controller.signal);
+        const response = await requestAdminUsers(page, pageSize, controller.signal);
 
         if (response.status === 401) {
           router.replace("/admin/login");
@@ -73,7 +82,10 @@ export default function AdminUsersPage() {
           throw new Error("어드민 목록을 불러오지 못했습니다.");
         }
 
-        setUsers((await response.json()) as AdminUserListItem[]);
+        const data = (await response.json()) as PaginatedResponse<AdminUserListItem>;
+        setUsers(data.items);
+        setTotal(data.total);
+        setTotalPages(data.total_pages);
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
           setPageError(
@@ -89,7 +101,7 @@ export default function AdminUsersPage() {
 
     void loadInitialUsers();
     return () => controller.abort();
-  }, [router]);
+  }, [page, pageSize, reloadKey, router]);
 
   function openCreatePanel() {
     setSelectedUser(null);
@@ -173,13 +185,9 @@ export default function AdminUsersPage() {
         return;
       }
 
-      const savedUser = (await response.json()) as AdminUserListItem;
-      setUsers((current) =>
-        panelMode === "create"
-          ? [...current, savedUser].sort((a, b) => a.id - b.id)
-          : current.map((user) => (user.id === savedUser.id ? savedUser : user)),
-      );
+      await response.json();
       resetPanel();
+      reloadUsers();
     } catch {
       setPanelError("API 서버에 연결할 수 없습니다.");
     } finally {
@@ -205,8 +213,15 @@ export default function AdminUsersPage() {
         return;
       }
 
-      setUsers((current) => current.filter((user) => user.id !== selectedUser.id));
+      const shouldMoveToPreviousPage = users.length === 1 && page > 1;
       resetPanel();
+      setIsLoading(true);
+      setPageError("");
+      if (shouldMoveToPreviousPage) {
+        setPage((current) => current - 1);
+      } else {
+        setReloadKey((current) => current + 1);
+      }
     } catch {
       setPanelError("API 서버에 연결할 수 없습니다.");
     } finally {
@@ -231,26 +246,24 @@ export default function AdminUsersPage() {
         title="어드민 회원"
       />
 
-      {pageError ? (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-[#E6C9C5] bg-[#FDF6F5] px-5 py-4 text-sm text-[#9A3F38]">
-          <p>{pageError}</p>
-          <button
-            className="shrink-0 font-medium underline"
-            onClick={() => void loadUsers()}
-            type="button"
-          >
-            다시 시도
-          </button>
-        </div>
-      ) : null}
+      <AdminPagination
+        disabled={isLoading}
+        onPageChange={changePage}
+        onPageSizeChange={changePageSize}
+        onRefresh={reloadUsers}
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        totalPages={totalPages}
+      />
 
-      {isLoading ? (
-        <div className="rounded-xl border border-[#E8E4DC] bg-white px-5 py-16 text-center text-sm text-[#8A847C]">
-          어드민 목록을 불러오고 있습니다.
-        </div>
-      ) : (
-        <AdminUserTable onRowClick={openEditPanel} users={users} />
-      )}
+      <AdminUserTable
+        errorMessage={pageError}
+        isLoading={isLoading}
+        onRetry={reloadUsers}
+        onRowClick={openEditPanel}
+        users={users}
+      />
 
       <AdminSlidePanel
         description={

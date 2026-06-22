@@ -11,6 +11,14 @@ export type AdminUser = {
   deleted_at: string | null;
 };
 
+export type PaginatedResponse<T> = {
+  items: T[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};
+
 const ADMIN_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 

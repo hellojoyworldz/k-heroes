@@ -9,10 +9,10 @@ import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-us
 
 const columns: AdminTableColumn[] = [
   { key: "id", header: "ID", className: "w-16" },
-  { key: "username", header: "아이디" },
+  { key: "username", header: "아이디", className: "w-36" },
   { key: "role", header: "역할", className: "w-32" },
   { key: "status", header: "상태", className: "w-24" },
-  { key: "last_login", header: "마지막 로그인", className: "w-44" },
+  { key: "last_login", header: "마지막 로그인", className: "w-56" },
   { key: "created_at", header: "생성일", className: "w-32" },
 ];
 
@@ -33,20 +33,33 @@ function formatDate(value: string, includeTime = false) {
 
 type AdminUserTableProps = {
   users: AdminUserListItem[];
+  errorMessage?: string;
+  isLoading?: boolean;
   onRowClick: (user: AdminUserListItem) => void;
+  onRetry?: () => void;
 };
 
-export function AdminUserTable({ onRowClick, users }: AdminUserTableProps) {
+export function AdminUserTable({
+  errorMessage,
+  isLoading,
+  onRetry,
+  onRowClick,
+  users,
+}: AdminUserTableProps) {
   return (
     <AdminDataTable
       columns={columns}
       emptyMessage="등록된 어드민이 없습니다."
+      errorMessage={errorMessage}
       isEmpty={users.length === 0}
+      isLoading={isLoading}
+      loadingMessage="어드민 목록을 불러오고 있습니다."
+      onRetry={onRetry}
     >
       {users.map((user) => (
         <AdminTableRow key={user.id} onClick={() => onRowClick(user)}>
           <AdminTableCell className="text-[#8A847C]">{user.id}</AdminTableCell>
-          <AdminTableCell className="font-medium text-[#1A1714]">
+          <AdminTableCell className="max-w-36 truncate font-medium text-[#1A1714]">
             {user.username}
           </AdminTableCell>
           <AdminTableCell>
@@ -55,7 +68,7 @@ export function AdminUserTable({ onRowClick, users }: AdminUserTableProps) {
           <AdminTableCell>
             <AdminStatusBadge isActive={user.is_active} />
           </AdminTableCell>
-          <AdminTableCell className="text-[#8A847C]">
+          <AdminTableCell className="whitespace-nowrap text-[#8A847C]">
             {user.last_login_at ? formatDate(user.last_login_at, true) : "—"}
           </AdminTableCell>
           <AdminTableCell className="text-[#8A847C]">

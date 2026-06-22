@@ -17,20 +17,6 @@ export function AdminUserPanelForm({ mode, user }: AdminUserPanelFormProps) {
   return (
     <AdminFormTable>
       {!isCreate ? (
-        <AdminFormRow htmlFor="admin-id" label="ID">
-          <AdminInput
-            className={panelInputClassName}
-            defaultValue={user?.id}
-            disabled
-            id="admin-id"
-            name="id"
-            readOnly
-            type="text"
-          />
-        </AdminFormRow>
-      ) : null}
-
-      {!isCreate ? (
         <AdminFormRow label="상태">
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3A3530]">
             <input
@@ -41,6 +27,20 @@ export function AdminUserPanelForm({ mode, user }: AdminUserPanelFormProps) {
             />
             활성 계정
           </label>
+        </AdminFormRow>
+      ) : null}
+
+      {!isCreate ? (
+        <AdminFormRow htmlFor="admin-id" label="ID">
+          <AdminInput
+            className={panelInputClassName}
+            defaultValue={user?.id}
+            disabled
+            id="admin-id"
+            name="id"
+            readOnly
+            type="text"
+          />
         </AdminFormRow>
       ) : null}
 

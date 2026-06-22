@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from db.models import AdminRole, AdminUser
 from models.admin_user import AdminUserCreate, AdminUserResponse, AdminUserUpdate
+from models.pagination import ALLOWED_PAGE_SIZES, PaginatedResponse
 from repositories import admin_user as admin_user_repository
 from router.v2.deps import require_roles
 
@@ -16,19 +17,36 @@ admin_router = APIRouter(
 )
 
 
-@admin_router.get("", response_model=List[AdminUserResponse])
+@admin_router.get("", response_model=PaginatedResponse[AdminUserResponse])
 def list_admin_users(
     role: Optional[AdminRole] = Query(None, description="superadmin | admin | partner"),
     is_active: Optional[bool] = Query(None, description="true=활성만, false=비활성만, 생략=전체"),
     username: Optional[str] = Query(None, description="아이디 부분 일치"),
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    page_size: int = Query(20, ge=1, le=100, description="페이지당 항목 수"),
     db: Session = Depends(get_db),
 ):
     """어드민 — 어드민 회원 목록."""
-    return admin_user_repository.list_admin_users(
+    if page_size not in ALLOWED_PAGE_SIZES:
+        raise HTTPException(
+            status_code=422,
+            detail="페이지당 항목 수는 10, 20, 50, 100 중 하나여야 합니다.",
+        )
+
+    users, total = admin_user_repository.list_admin_users(
         db,
         role=role,
         is_active=is_active,
         username=username,
+        page=page,
+        page_size=page_size,
+    )
+    return PaginatedResponse[AdminUserResponse](
+        items=users,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
     )
 
 

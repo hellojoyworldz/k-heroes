@@ -26,8 +26,12 @@ def test_list_admin_users(client):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
-    assert {item["username"] for item in data} == {SUPERADMIN_USERNAME, ADMIN_USERNAME}
+    assert len(data["items"]) == 2
+    assert {item["username"] for item in data["items"]} == {SUPERADMIN_USERNAME, ADMIN_USERNAME}
+    assert data["page"] == 1
+    assert data["page_size"] == 20
+    assert data["total"] == 2
+    assert data["total_pages"] == 1
 
 
 @pytest.mark.usefixtures("jwt_env", "superadmin_user", "admin_user")
@@ -39,8 +43,19 @@ def test_list_admin_users_filter_role(client):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
-    assert data[0]["username"] == ADMIN_USERNAME
+    assert len(data["items"]) == 1
+    assert data["items"][0]["username"] == ADMIN_USERNAME
+    assert data["total"] == 1
+
+
+@pytest.mark.usefixtures("jwt_env", "superadmin_user")
+def test_list_admin_users_rejects_invalid_page_size(client):
+    response = client.get(
+        "/api/v2/admin/admin-users?page_size=30",
+        headers=login_headers(client, SUPERADMIN_USERNAME, SUPERADMIN_PASSWORD),
+    )
+
+    assert response.status_code == 422
 
 
 @pytest.mark.usefixtures("jwt_env", "superadmin_user")
@@ -154,7 +169,7 @@ def test_delete_admin_user_soft_delete(client, db_session, superadmin_user, admi
         "/api/v2/admin/admin-users",
         headers=login_headers(client, SUPERADMIN_USERNAME, SUPERADMIN_PASSWORD),
     )
-    assert len(list_response.json()) == 1
+    assert len(list_response.json()["items"]) == 1
 
     get_response = client.get(
         f"/api/v2/admin/admin-users/{target.id}",

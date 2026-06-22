@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from core.security import hash_password
@@ -93,19 +93,26 @@ def list_admin_users(
     role: Optional[AdminRole] = None,
     is_active: Optional[bool] = None,
     username: Optional[str] = None,
-) -> List[AdminUser]:
+    page: int = 1,
+    page_size: int = 20,
+) -> Tuple[List[AdminUser], int]:
+    conditions = [AdminUser.deleted_at.is_(None)]
+    if role is not None:
+        conditions.append(AdminUser.role == role)
+    if is_active is not None:
+        conditions.append(AdminUser.is_active == is_active)
+    if username:
+        conditions.append(AdminUser.username.contains(username))
+
+    total = db.scalar(select(func.count(AdminUser.id)).where(*conditions)) or 0
     query = (
         select(AdminUser)
-        .where(AdminUser.deleted_at.is_(None))
+        .where(*conditions)
         .order_by(AdminUser.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
-    if role is not None:
-        query = query.where(AdminUser.role == role)
-    if is_active is not None:
-        query = query.where(AdminUser.is_active == is_active)
-    if username:
-        query = query.where(AdminUser.username.contains(username))
-    return list(db.scalars(query))
+    return list(db.scalars(query)), total
 
 
 def get_admin_user_by_id(db: Session, admin_user_id: int) -> AdminUser:
