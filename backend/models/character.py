@@ -10,7 +10,7 @@ class MBTIDetails(BaseModel):
     J_P: str
 
 class StatItem(BaseModel):
-    id: int
+    id: Optional[int] = None
     name: str
     value: int
     desc: str
@@ -25,6 +25,7 @@ class ChoiceItem(BaseModel):
     title: str
     description: str
     choice_image: str = ""
+    stats: Dict[str, int] = Field(default_factory=dict)
     turn_stats: List[ChoiceTurnStatItem] = []
     result_text: str
     is_historical: bool

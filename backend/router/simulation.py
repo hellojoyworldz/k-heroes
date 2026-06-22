@@ -109,7 +109,7 @@ async def play_turn(payload: TurnRequest):
             is_historical=choice_a_raw.is_historical,
             title=choice_a_raw.title,
             description=choice_a_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_a_raw.turn_stats, turn_stats_ids),
+            stat_effects=choice_a_raw.stats if choice_a_raw.stats else map_turn_stats_to_effects(choice_a_raw.turn_stats, stat_ids),
             choice_image=choice_a_raw.choice_image if getattr(choice_a_raw, "choice_image", None) else ""
         )
 
@@ -117,7 +117,7 @@ async def play_turn(payload: TurnRequest):
             is_historical=choice_b_raw.is_historical,
             title=choice_b_raw.title,
             description=choice_b_raw.description,
-            stat_effects=map_turn_stats_to_effects(choice_b_raw.turn_stats, turn_stats_ids),
+            stat_effects=choice_b_raw.stats if choice_b_raw.stats else map_turn_stats_to_effects(choice_b_raw.turn_stats, stat_ids),
             choice_image=choice_b_raw.choice_image if getattr(choice_b_raw, "choice_image", None) else ""
         )
         
