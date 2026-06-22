@@ -20,20 +20,22 @@ def test_list_scenarios_admin(admin_client):
     assert data[0]["character"]["category"]["title"]
 
 
-def test_list_scenarios_filter_by_character_name(admin_client):
+def test_list_scenarios_filter_by_character_id(admin_client, db_session):
+    character = get_character(db_session, "이순신")
+    assert character is not None
+
     response = admin_client.get(
-        f"{SCENARIOS_URL}?name=이순신",
+        f"{SCENARIOS_URL}?character_id={character.id}",
         headers=admin_headers(admin_client),
     )
 
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 1
-    assert all("이순신" in item["character"]["name"] for item in data)
-    assert all(item["id"] >= 1 for item in data)
+    assert all(item["character_id"] == character.id for item in data)
 
     other_response = admin_client.get(
-        f"{SCENARIOS_URL}?name=없는인물",
+        f"{SCENARIOS_URL}?character_id=99999",
         headers=admin_headers(admin_client),
     )
     assert other_response.json() == []
@@ -46,11 +48,11 @@ def test_list_scenarios_filter_is_active(admin_client, db_session):
     db_session.flush()
 
     active_response = admin_client.get(
-        f"{SCENARIOS_URL}?name=이순신&is_active=true",
+        f"{SCENARIOS_URL}?character_id={scenario.character_id}&is_active=true",
         headers=admin_headers(admin_client),
     )
     inactive_response = admin_client.get(
-        f"{SCENARIOS_URL}?name=이순신&is_active=false",
+        f"{SCENARIOS_URL}?character_id={scenario.character_id}&is_active=false",
         headers=admin_headers(admin_client),
     )
 
@@ -198,7 +200,7 @@ def test_delete_scenario_soft(admin_client, db_session):
     assert delete_response.json()["deleted_at"] is not None
 
     list_response = admin_client.get(
-        f"{SCENARIOS_URL}?name=이순신",
+        f"{SCENARIOS_URL}?character_id={character.id}",
         headers=admin_headers(admin_client),
     )
     assert scenario_db_id not in [item["id"] for item in list_response.json()]
@@ -209,7 +211,7 @@ def test_reorder_scenarios(admin_client, db_session):
     assert character is not None
 
     scenarios = admin_client.get(
-        f"{SCENARIOS_URL}?name=이순신",
+        f"{SCENARIOS_URL}?character_id={character.id}",
         headers=admin_headers(admin_client),
     ).json()
     if len(scenarios) < 2:

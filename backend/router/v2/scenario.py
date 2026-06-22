@@ -27,12 +27,16 @@ def _map_scenarios(scenarios) -> List[ScenarioAdminResponse]:
 
 @admin_router.get("", response_model=List[ScenarioAdminResponse])
 def list_scenarios_admin(
-    name: Optional[str] = Query(None, description="인물 이름 부분 일치"),
+    character_id: Optional[int] = Query(None, ge=1, description="인물 DB id"),
     is_active: Optional[bool] = Query(None, description="true=활성만, false=비활성만, 생략=전체"),
     db: Session = Depends(get_db),
 ):
     """어드민 — 시나리오 목록."""
-    scenarios = scenario_repository.list_scenarios(db, name=name, is_active=is_active)
+    scenarios = scenario_repository.list_scenarios(
+        db,
+        character_id=character_id,
+        is_active=is_active,
+    )
     return _map_scenarios(scenarios)
 
 

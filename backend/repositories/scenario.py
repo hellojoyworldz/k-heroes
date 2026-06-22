@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session, joinedload
 from db.models import Character, Scenario
 from models.scenario import ScenarioCreate, ScenarioReorderRequest, ScenarioUpdate
 from repositories.character import _get_character_or_raise
-from repositories.character_search import apply_character_search_filters
 
 
 class ScenarioNotFoundError(Exception):
@@ -47,7 +46,7 @@ def _scenario_query():
 def list_scenarios(
     db: Session,
     *,
-    name: Optional[str] = None,
+    character_id: Optional[int] = None,
     is_active: Optional[bool] = None,
 ) -> List[Scenario]:
     query = (
@@ -58,7 +57,8 @@ def list_scenarios(
     )
     if is_active is not None:
         query = query.where(Scenario.is_active.is_(is_active))
-    query = apply_character_search_filters(query, name=name)
+    if character_id is not None:
+        query = query.where(Scenario.character_id == character_id)
     return list(db.scalars(query).unique())
 
 
