@@ -6,6 +6,7 @@ import {
   type ReorderableFormItem,
 } from "@/app/(admin)/_components/admin-reorderable-form-list";
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
+import { AdminImageUrlField } from "@/app/(admin)/_components/admin-image-url-field";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
@@ -270,14 +271,14 @@ export function EndingPanelForm({
         </AdminFormRow>
 
         <AdminFormRow htmlFor="ending-image-url" label="이미지 URL">
-          <AdminInput
+          <AdminImageUrlField
             className={panelInputClassName}
             defaultValue={ending?.image_url}
             id="ending-image-url"
             maxLength={500}
             name="image_url"
             placeholder="https://..."
-            type="url"
+            previewAlt="엔딩 이미지 미리보기"
           />
         </AdminFormRow>
       </FormSection>
@@ -343,13 +344,13 @@ export function EndingPanelForm({
                 placeholder="링크 URL (선택)"
                 type="url"
               />
-              <AdminInput
+              <AdminImageUrlField
                 className={panelInputClassName}
                 defaultValue={item.image_url}
                 maxLength={500}
                 name={`recommended_places.${index}.image_url`}
                 placeholder="이미지 URL (선택)"
-                type="url"
+                previewAlt={`방문지 ${index + 1} 이미지 미리보기`}
               />
             </>
           )}
