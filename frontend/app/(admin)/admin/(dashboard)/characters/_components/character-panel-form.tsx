@@ -5,6 +5,7 @@ import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import { AdminButton } from "@/app/(admin)/_components/admin-button";
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
+import { AdminImageUrlField } from "@/app/(admin)/_components/admin-image-url-field";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
@@ -35,50 +36,6 @@ function FormSection({ children, title }: { children: ReactNode; title: string }
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-[#3A3530]">{title}</h3>
       <AdminFormTable>{children}</AdminFormTable>
-    </div>
-  );
-}
-
-function CharacterImageUrlField({ defaultValue }: { defaultValue?: string }) {
-  const [imageUrl, setImageUrl] = useState(defaultValue ?? "");
-  const [hasError, setHasError] = useState(false);
-
-  const trimmedUrl = imageUrl.trim();
-  const showPreview = trimmedUrl.length > 0;
-
-  return (
-    <div className="space-y-3">
-      <AdminInput
-        className={panelInputClassName}
-        id="character-image"
-        name="image_url"
-        onChange={(event) => {
-          setImageUrl(event.target.value);
-          setHasError(false);
-        }}
-        placeholder="https://"
-        type="url"
-        value={imageUrl}
-      />
-
-      {showPreview ? (
-        hasError ? (
-          <p className="rounded-lg border border-[#E8E4DC] bg-[#FDFCFA] px-4 py-6 text-center text-sm text-[#8A847C]">
-            이미지를 불러올 수 없습니다. URL을 확인해 주세요.
-          </p>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-[#E8E4DC] bg-[#FDFCFA] p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt="프로필 이미지 미리보기"
-              className="mx-auto max-h-48 w-full object-contain"
-              onError={() => setHasError(true)}
-              onLoad={() => setHasError(false)}
-              src={trimmedUrl}
-            />
-          </div>
-        )
-      ) : null}
     </div>
   );
 }
@@ -649,7 +606,13 @@ export function CharacterPanelForm({ categoryOptions, character, mode }: Charact
 
       <FormSection title="기타">
         <AdminFormRow htmlFor="character-image" label="이미지 URL">
-          <CharacterImageUrlField defaultValue={character?.image_url} />
+          <AdminImageUrlField
+            className={panelInputClassName}
+            defaultValue={character?.image_url}
+            id="character-image"
+            name="image_url"
+            previewAlt="프로필 이미지 미리보기"
+          />
         </AdminFormRow>
 
         <AdminFormRow htmlFor="character-keywords" label="키워드">

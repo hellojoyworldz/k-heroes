@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
+import { AdminImageUrlField } from "@/app/(admin)/_components/admin-image-url-field";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
 import { AdminTextarea } from "@/app/(admin)/_components/admin-textarea";
@@ -143,13 +144,12 @@ function ChoiceFields({
       </AdminFormRow>
 
       <AdminFormRow htmlFor={`choice-${keyLower}-image`} label="이미지 URL">
-        <AdminInput
+        <AdminImageUrlField
           className={panelInputClassName}
           defaultValue={choice?.choice_image}
           id={`choice-${keyLower}-image`}
           name={`choices.${choiceKey}.choice_image`}
-          placeholder="https://"
-          type="url"
+          previewAlt={`선택지 ${choiceKey} 이미지 미리보기`}
         />
       </AdminFormRow>
 
@@ -334,13 +334,12 @@ export function TurnPanelForm({
         </AdminFormRow>
 
         <AdminFormRow htmlFor="turn-image" label="턴 이미지 URL">
-          <AdminInput
+          <AdminImageUrlField
             className={panelInputClassName}
             defaultValue={turn?.turn_image}
             id="turn-image"
             name="turn_image"
-            placeholder="https://"
-            type="url"
+            previewAlt="턴 이미지 미리보기"
           />
         </AdminFormRow>
 
