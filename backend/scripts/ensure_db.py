@@ -1,5 +1,5 @@
 """
-서버 시작 전 DB를 준비합니다.
+서버 시작 전 DB를 준비합니다 (Supabase/PostgreSQL 전용).
 
 - 테이블 없으면 생성
 - 콘텐츠 없으면 JSON 시드
@@ -14,11 +14,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 
 import db.models  # noqa: F401
 from core.security import hash_password
-from db.database import DATABASE_URL, SessionLocal, configure_sqlite_for_volume, engine
+from db.database import SessionLocal
 from db.models import AdminRole, AdminUser, Character
 from db.seed import run_seed
 from repositories.admin_user import get_admin_user_by_username
@@ -59,7 +59,6 @@ def ensure_admin_user() -> None:
 
 def ensure_database() -> None:
     print("[INFO] DB 준비 중...")
-    configure_sqlite_for_volume()
     init_tables(reset=False)
 
     db = SessionLocal()
@@ -69,7 +68,7 @@ def ensure_database() -> None:
         db.close()
 
     if character_count == 0:
-        print("[INFO] 콘텐츠 데이터 없음 — JSON 시드 실행")
+        print("[INFO] 콘텐츠 데이터 없음 — Supabase JSON 시드 실행")
         run_seed(force=False)
     else:
         print(f"[INFO] 기존 DB 사용 중 (characters={character_count})")
