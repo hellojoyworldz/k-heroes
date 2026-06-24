@@ -69,6 +69,30 @@ class UserPlaySessionItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserPlaySessionSummary(BaseModel):
+    completed_count: int
+    average_history_score: Optional[float] = None
+
+
+class UserPlaySessionListResponse(BaseModel):
+    items: list[UserPlaySessionItem]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+    summary: UserPlaySessionSummary
+
+
+class UserUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, max_length=100, description="이름")
+    email: Optional[str] = Field(None, max_length=255, description="이메일")
+    nickname: Optional[str] = Field(None, max_length=100, description="닉네임")
+    current_password: Optional[str] = Field(None, min_length=1, max_length=128, description="현재 비밀번호")
+    new_password: Optional[str] = Field(None, min_length=8, max_length=128, description="새 비밀번호")
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class AdminPlaySessionItem(BaseModel):
     id: str
     user_id: Optional[int] = None

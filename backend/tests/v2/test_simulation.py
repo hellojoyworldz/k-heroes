@@ -154,9 +154,10 @@ def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_sess
     sessions_response = client.get("/api/v2/auth/sessions")
     assert sessions_response.status_code == 200
     sessions = sessions_response.json()
-    assert len(sessions) == 1
-    assert sessions[0]["id"] == ending_data["uuid"]
-    assert sessions[0]["scenario_id"] == yi_scenario_id
+    assert sessions["total"] == 1
+    assert len(sessions["items"]) == 1
+    assert sessions["items"][0]["id"] == ending_data["uuid"]
+    assert sessions["items"][0]["scenario_id"] == yi_scenario_id
 
 
 def test_generate_ending_not_found(client, yi_scenario_id):

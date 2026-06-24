@@ -6,7 +6,13 @@ from sqlalchemy.orm import Session, selectinload
 
 from core.security import hash_password, verify_password
 from db.models import AuthProvider, PlaySession, User, UserGrade
-from models.user import AdminPlaySessionItem, UserLoginRequest, UserPlaySessionItem, UserSignupRequest
+from models.user import (
+    AdminPlaySessionItem,
+    UserLoginRequest,
+    UserPlaySessionItem,
+    UserSignupRequest,
+    UserUpdateRequest,
+)
 
 
 class UserNotFoundError(Exception):
@@ -130,15 +136,61 @@ def authenticate_google_user(
     return user
 
 
+def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    trimmed = value.strip()
+    return trimmed or None
+
+
+def update_current_user(db: Session, user: User, data: UserUpdateRequest) -> User:
+    updates = data.model_dump(exclude_unset=True)
+
+    if user.auth_provider == AuthProvider.GOOGLE and (
+        "current_password" in updates or "new_password" in updates
+    ):
+        raise ValueError("password change not allowed")
+
+    if user.auth_provider == AuthProvider.LOCAL and (
+        "current_password" in updates or "new_password" in updates
+    ):
+        current_password = updates.pop("current_password", None)
+        new_password = updates.pop("new_password", None)
+        if not current_password or not new_password:
+            raise ValueError("password change requires current and new password")
+        if not user.password_hash or not verify_password(current_password, user.password_hash):
+            raise ValueError("invalid current password")
+        user.password_hash = hash_password(new_password)
+
+    if "name" in updates:
+        user.name = _normalize_optional_text(updates.pop("name"))
+    if "nickname" in updates:
+        user.nickname = _normalize_optional_text(updates.pop("nickname"))
+    if "email" in updates:
+        new_email = _normalize_optional_text(updates.pop("email"))
+        if new_email != user.email:
+            if new_email:
+                existing_email_user = db.scalar(select(User).where(User.email == new_email, User.id != user.id))
+                if existing_email_user:
+                    raise UserDuplicateError("email", new_email)
+            user.email = new_email
+
+    db.flush()
+    db.refresh(user)
+    return user
+
+
 def list_completed_play_sessions(
     db: Session,
     user_id: int,
     *,
+    page: int = 1,
+    page_size: int = 20,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     character_name: Optional[str] = None,
     scenario_title: Optional[str] = None,
-) -> List[UserPlaySessionItem]:
+) -> Tuple[List[UserPlaySessionItem], int, Optional[float]]:
     conditions = [PlaySession.user_id == user_id, PlaySession.status == "completed"]
 
     if date_from is not None:
@@ -150,12 +202,25 @@ def list_completed_play_sessions(
     if scenario_title:
         conditions.append(PlaySession.scenario_title.contains(scenario_title))
 
+    total = db.scalar(
+        select(func.count(PlaySession.id)).where(*conditions)
+    ) or 0
+    average_history_score = db.scalar(
+        select(func.avg(PlaySession.history_score)).where(*conditions)
+    )
+
     sessions = db.scalars(
         select(PlaySession)
         .where(*conditions)
         .order_by(PlaySession.completed_at.desc().nullslast(), PlaySession.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     ).all()
-    return [UserPlaySessionItem.model_validate(session) for session in sessions]
+    return (
+        [UserPlaySessionItem.model_validate(session) for session in sessions],
+        total,
+        float(average_history_score) if average_history_score is not None else None,
+    )
 
 
 def list_play_sessions_for_admin(

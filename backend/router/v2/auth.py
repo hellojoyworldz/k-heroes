@@ -16,10 +16,11 @@ from models.user import (
     GoogleLoginRequest,
     UserAuthResponse,
     UserLoginRequest,
-    UserPlaySessionItem,
+    UserPlaySessionListResponse,
     UserResponse,
     UserSessionResponse,
     UserSignupRequest,
+    UserUpdateRequest,
 )
 from repositories import user as user_repository
 from router.v2.deps import get_current_user
@@ -162,7 +163,32 @@ def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/sessions", response_model=list[UserPlaySessionItem])
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    body: UserUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """회원 — 계정 정보 수정."""
+    try:
+        updated_user = user_repository.update_current_user(db, current_user, body)
+        db.commit()
+        db.refresh(updated_user)
+    except user_repository.UserDuplicateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        message = str(exc)
+        if message == "invalid current password":
+            raise HTTPException(status_code=401, detail="현재 비밀번호가 올바르지 않습니다.") from exc
+        if message == "password change not allowed":
+            raise HTTPException(status_code=400, detail="Google 계정은 비밀번호를 변경할 수 없습니다.") from exc
+        if message == "password change requires current and new password":
+            raise HTTPException(status_code=400, detail="비밀번호 변경에는 현재 비밀번호와 새 비밀번호가 필요합니다.") from exc
+        raise
+    return UserResponse.model_validate(updated_user)
+
+
+@router.get("/sessions", response_model=UserPlaySessionListResponse)
 def list_my_sessions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -170,13 +196,28 @@ def list_my_sessions(
     date_to: date | None = Query(None, description="완료일 종료일(YYYY-MM-DD)"),
     character_name: str | None = Query(None, description="캐릭터 이름 부분 일치"),
     scenario_title: str | None = Query(None, description="시나리오 제목 부분 일치"),
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    page_size: int = Query(20, ge=1, le=100, description="페이지당 항목 수"),
 ):
     """회원 — 완료한 시뮬레이션 기록."""
-    return user_repository.list_completed_play_sessions(
+    items, total, average_history_score = user_repository.list_completed_play_sessions(
         db,
         current_user.id,
+        page=page,
+        page_size=page_size,
         date_from=date_from,
         date_to=date_to,
         character_name=character_name,
         scenario_title=scenario_title,
+    )
+    return UserPlaySessionListResponse(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=(total + page_size - 1) // page_size,
+        summary={
+            "completed_count": total,
+            "average_history_score": average_history_score,
+        },
     )

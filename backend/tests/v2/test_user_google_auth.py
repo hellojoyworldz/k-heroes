@@ -90,3 +90,48 @@ def test_google_session_login_sets_cookie(client, monkeypatch, jwt_env):
     me_response = client.get("/api/v2/auth/me")
     assert me_response.status_code == 200
     assert me_response.json()["provider_user_id"] == "google-sub-3"
+
+
+def test_google_profile_update_without_password(client, db_session, monkeypatch, jwt_env):
+    from router.v2 import auth as auth_router
+
+    monkeypatch.setattr(
+        auth_router,
+        "verify_google_id_token",
+        lambda token: fake_google_payload("google-sub-4"),
+    )
+
+    login_response = client.post("/api/v2/auth/google", json={"id_token": "google-id-token"})
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    update_response = client.patch(
+        "/api/v2/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "새이름", "nickname": "새닉네임"},
+    )
+    assert update_response.status_code == 200
+    data = update_response.json()
+    assert data["name"] == "새이름"
+    assert data["nickname"] == "새닉네임"
+
+
+def test_google_profile_update_rejects_password_change(client, monkeypatch, jwt_env):
+    from router.v2 import auth as auth_router
+
+    monkeypatch.setattr(
+        auth_router,
+        "verify_google_id_token",
+        lambda token: fake_google_payload("google-sub-5"),
+    )
+
+    login_response = client.post("/api/v2/auth/google", json={"id_token": "google-id-token"})
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    update_response = client.patch(
+        "/api/v2/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "anything", "new_password": "new-password-123"},
+    )
+    assert update_response.status_code == 400
