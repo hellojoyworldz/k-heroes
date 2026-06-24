@@ -1,3 +1,5 @@
+import { site } from "@/lib/site";
+
 type BrandLogoProps = {
   compact?: boolean;
   dark?: boolean;
@@ -9,7 +11,7 @@ export function BrandLogo({ compact = false, dark = false, showBeta = false, cla
   return (
     <a
       href="/"
-      aria-label="K-Heroes 홈으로 이동"
+      aria-label={`${site.name} 홈으로 이동`}
       className={`flex items-center gap-2.5 transition-opacity hover:opacity-70 ${className}`}
     >
       <span
@@ -30,7 +32,7 @@ export function BrandLogo({ compact = false, dark = false, showBeta = false, cla
           color: dark ? "#FFFFFF" : "#1A1714",
         }}
       >
-        K-Heroes
+        {site.name}
       </span>
       {showBeta && (
         <span

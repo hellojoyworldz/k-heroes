@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, ChevronRight, Search, X, ChevronLeft } from "lucide-react";
 import mapBg from "../../imports/image-15.png";
 import { CHARACTERS } from "../data/characters";
+import { PagePagination } from "@/components/ui/page-pagination";
 import { BrandLogo } from "./BrandLogo";
 
 /* ──────────────────────────────────────────
@@ -682,83 +683,7 @@ function MbtiPicker({
   );
 }
 
-/* ──────────────────────────────────────────
-   페이지네이션 (PC)
-────────────────────────────────────────── */
 const PAGE_SIZE_DESKTOP = 6;
-
-function Pagination({
-  total,
-  page,
-  pageSize,
-  onChange,
-  accent,
-}: {
-  total: number;
-  page: number;
-  pageSize: number;
-  onChange: (p: number) => void;
-  accent: string;
-}) {
-  const totalPages = Math.ceil(total / pageSize);
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="flex items-center justify-center gap-1.5 pt-4">
-      <button
-        onClick={() => onChange(page - 1)}
-        disabled={page === 0}
-        className="flex items-center justify-center rounded-lg transition-all"
-        style={{
-          width: "32px",
-          height: "32px",
-          background: page === 0 ? "rgba(200,190,175,0.3)" : "rgba(248,242,228,0.9)",
-          border: "1.5px solid rgba(110,80,40,0.15)",
-          color: page === 0 ? "#C0B0A0" : "#4A4035",
-          cursor: page === 0 ? "not-allowed" : "pointer",
-        }}
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-
-      {Array.from({ length: totalPages }).map((_, i) => (
-        <button
-          key={i}
-          onClick={() => onChange(i)}
-          className="flex items-center justify-center rounded-lg transition-all"
-          style={{
-            width: "32px",
-            height: "32px",
-            background: i === page ? accent : "rgba(248,242,228,0.9)",
-            border: i === page ? `1.5px solid ${accent}` : "1.5px solid rgba(110,80,40,0.15)",
-            color: i === page ? "white" : "#4A4035",
-            fontFamily: "'Noto Sans KR', sans-serif",
-            fontSize: "0.78rem",
-            fontWeight: i === page ? 700 : 400,
-          }}
-        >
-          {i + 1}
-        </button>
-      ))}
-
-      <button
-        onClick={() => onChange(page + 1)}
-        disabled={page === totalPages - 1}
-        className="flex items-center justify-center rounded-lg transition-all"
-        style={{
-          width: "32px",
-          height: "32px",
-          background: page === totalPages - 1 ? "rgba(200,190,175,0.3)" : "rgba(248,242,228,0.9)",
-          border: "1.5px solid rgba(110,80,40,0.15)",
-          color: page === totalPages - 1 ? "#C0B0A0" : "#4A4035",
-          cursor: page === totalPages - 1 ? "not-allowed" : "pointer",
-        }}
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
 
 /* ──────────────────────────────────────────
    메인 컴포넌트
@@ -1459,12 +1384,12 @@ export function RegionMapPage({
                     </div>
                   ))}
                 </div>
-                <Pagination
-                  total={filteredChars.length}
+                <PagePagination
+                  accentColor={activeKw.accent}
+                  onPageChange={setDesktopPage}
                   page={desktopPage}
                   pageSize={PAGE_SIZE_DESKTOP}
-                  onChange={setDesktopPage}
-                  accent={activeKw.accent}
+                  total={filteredChars.length}
                 />
               </>
             )}

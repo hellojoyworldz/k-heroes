@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Play, Menu, X } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
@@ -56,6 +57,27 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
 
         {/* CTA */}
         <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="hidden md:inline-flex text-sm transition-colors hover:text-[#2A4232]"
+            style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
+          >
+            로그인
+          </Link>
+          <Link
+            href="/signup"
+            className="hidden md:inline-flex text-sm transition-colors hover:text-[#2A4232]"
+            style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
+          >
+            회원가입
+          </Link>
+          <Link
+            href="/mypage"
+            className="hidden md:inline-flex text-sm transition-colors hover:text-[#2A4232]"
+            style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
+          >
+            마이페이지
+          </Link>
           <button
             onClick={onStart}
             className="hidden md:flex items-center gap-2 text-white text-sm px-4 py-2 rounded-lg transition-all hover:opacity-90"
@@ -102,9 +124,47 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
               {item.label}
             </button>
           ))}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <Link
+              href="/login"
+              className="block w-full rounded-lg border py-2.5 text-center text-sm transition-colors hover:bg-[rgba(42,66,50,0.04)]"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                color: "#4A4438",
+                borderColor: "rgba(42,66,50,0.18)",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              로그인
+            </Link>
+            <Link
+              href="/signup"
+              className="block w-full rounded-lg border py-2.5 text-center text-sm transition-colors hover:bg-[rgba(42,66,50,0.04)]"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                color: "#4A4438",
+                borderColor: "rgba(42,66,50,0.18)",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              회원가입
+            </Link>
+            <Link
+              href="/mypage"
+              className="block w-full rounded-lg border py-2.5 text-center text-sm transition-colors hover:bg-[rgba(42,66,50,0.04)]"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                color: "#4A4438",
+                borderColor: "rgba(42,66,50,0.18)",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              마이페이지
+            </Link>
+          </div>
           <button
             onClick={onStart}
-            className="mt-4 w-full flex items-center justify-center gap-2 text-white text-sm px-4 py-2.5 rounded-lg"
+            className="w-full flex items-center justify-center gap-2 text-white text-sm px-4 py-2.5 rounded-lg"
             style={{ background: "#2A4232" }}
           >
             <Play className="w-3 h-3 fill-current" />
