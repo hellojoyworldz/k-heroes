@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthDivider } from "@/components/auth/auth-divider";
@@ -10,7 +10,7 @@ import { AuthFormField } from "@/components/auth/auth-form-field";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { AuthFormCard, AuthFormLayout } from "@/components/layout/auth-form-layout";
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -89,5 +89,13 @@ export default function LoginPage() {
         <GoogleLoginButton onClick={handleGoogleLogin} />
       </AuthFormCard>
     </AuthFormLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
