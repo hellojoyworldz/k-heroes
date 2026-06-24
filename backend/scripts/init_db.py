@@ -8,12 +8,15 @@ DB 테이블 생성 스크립트 (데이터 시드 없음).
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
-BASE_DIR = __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import text
 
 from db.database import DATABASE_URL, Base, engine
@@ -208,6 +211,13 @@ def _migrate_character_turn_stats(conn) -> None:
             )
 
 
+def _run_alembic_upgrade() -> None:
+    alembic_cfg = Config(os.path.join(BASE_DIR, "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", os.path.join(BASE_DIR, "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+    command.upgrade(alembic_cfg, "head")
+
+
 def migrate_schema() -> None:
     if not DATABASE_URL.startswith("sqlite"):
         return
@@ -245,6 +255,8 @@ def migrate_schema() -> None:
                             text("UPDATE endings SET sort_order = :sort_order WHERE id = :ending_id"),
                             {"sort_order": index, "ending_id": ending_id},
                         )
+
+    _run_alembic_upgrade()
 
 
 def init_tables(reset: bool = False) -> None:
