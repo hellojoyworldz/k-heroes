@@ -715,8 +715,8 @@ export function RegionMapPage({
   const mbtiFilterColor = getMbtiColor(mbtiFilter);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setIntroReady(true), 1500);
-    return () => window.clearTimeout(timer);
+    const timer = setTimeout(() => setIntroReady(true), 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
