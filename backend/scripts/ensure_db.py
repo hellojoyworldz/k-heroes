@@ -21,7 +21,7 @@ from core.security import hash_password
 from db.database import SessionLocal
 from db.models import AdminRole, AdminUser, Character
 from db.seed import run_seed
-from repositories.admin_user import get_admin_user_by_username
+from repositories.auth.admin_user import get_admin_user_by_username
 from scripts.init_db import init_tables
 
 

@@ -12,6 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    Float,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
@@ -89,7 +90,7 @@ class Character(ManagedContentMixin, Base):
 
 
 class CharacterTurnStat(SoftDeleteMixin, Base):
-    __tablename__ = "character_turn_stats"
+    __tablename__ = "character_stats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     character_id: Mapped[int] = mapped_column(
@@ -122,7 +123,7 @@ class Scenario(ManagedContentMixin, Base):
 
 
 class Turn(ManagedContentMixin, Base):
-    __tablename__ = "turns"
+    __tablename__ = "scenario_turns"
     __table_args__ = (UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_turn"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -141,11 +142,11 @@ class Turn(ManagedContentMixin, Base):
 
 
 class Choice(SoftDeleteMixin, Base):
-    __tablename__ = "choices"
+    __tablename__ = "scenario_turn_choices"
     __table_args__ = (UniqueConstraint("turn_id", "choice_key", name="uq_turn_choice"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    turn_id: Mapped[int] = mapped_column(ForeignKey("turns.id", ondelete="CASCADE"), nullable=False)
+    turn_id: Mapped[int] = mapped_column(ForeignKey("scenario_turns.id", ondelete="CASCADE"), nullable=False)
     choice_key: Mapped[str] = mapped_column(String(1), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -158,7 +159,7 @@ class Choice(SoftDeleteMixin, Base):
 
 
 class Ending(ManagedContentMixin, Base):
-    __tablename__ = "endings"
+    __tablename__ = "scenario_endings"
     __table_args__ = (
         UniqueConstraint("scenario_id", "path_key", name="uq_scenario_path"),
         UniqueConstraint("scenario_id", "sort_order", name="uq_scenario_ending"),
@@ -198,7 +199,7 @@ class AuthProvider(str, enum.Enum):
 
 
 class AdminUser(SoftDeleteMixin, Base):
-    __tablename__ = "admin_users"
+    __tablename__ = "admins"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
@@ -252,7 +253,7 @@ class User(Base):
 class PlaySession(Base):
     """유저 플레이 기록. 엔딩 본문은 endings 테이블 조인, 당시 제목은 스냅샷으로 보존."""
 
-    __tablename__ = "play_sessions"
+    __tablename__ = "simulation_sessions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -260,7 +261,7 @@ class PlaySession(Base):
         ForeignKey("scenarios.id", ondelete="SET NULL"), nullable=True
     )
     ending_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("endings.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("scenario_endings.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[str] = mapped_column(String(20), default="completed")
     choices_path: Mapped[list] = mapped_column(JSON, default=list)
@@ -277,7 +278,7 @@ class PlaySession(Base):
 
 
 class UserScenarioProgress(Base):
-    __tablename__ = "user_scenario_progress"
+    __tablename__ = "simulation_progress"
     __table_args__ = (UniqueConstraint("user_id", "scenario_id", name="uq_user_scenario_progress"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -295,3 +296,33 @@ class UserScenarioProgress(Base):
 
     user: Mapped["User"] = relationship(back_populates="scenario_progress")
     scenario: Mapped[Optional["Scenario"]] = relationship()
+
+
+class RAGEvalLog(Base):
+    __tablename__ = "logs_rag_eval"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    character_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    era_tag: Mapped[str] = mapped_column(String(100), nullable=False)
+    query: Mapped[str] = mapped_column(Text, nullable=False)
+    latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
+    avg_retrieval_score: Mapped[float] = mapped_column(Float, nullable=False)
+    avg_rerank_score: Mapped[float] = mapped_column(Float, nullable=False)
+    keyword_overlap: Mapped[float] = mapped_column(Float, nullable=False)
+    llm_evaluated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    context_relevance: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    faithfulness: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    relevance_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    faithfulness_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class GenerationMetricsLog(Base):
+    __tablename__ = "logs_generation_metrics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    character_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    mode: Mapped[str] = mapped_column(String(100), nullable=False)
+    metrics: Mapped[dict] = mapped_column(JSON, default=dict)
+

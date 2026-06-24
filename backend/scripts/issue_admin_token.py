@@ -29,7 +29,7 @@ import db.models  # noqa: F401
 from core.security import create_access_token, get_jwt_secret, hash_password, verify_password
 from db.database import SessionLocal
 from db.models import AdminRole, AdminUser
-from repositories.admin_user import get_admin_user_by_username
+from repositories.auth.admin_user import get_admin_user_by_username
 
 
 def bootstrap_superadmin(db, username: str, password: str) -> AdminUser:

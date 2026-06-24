@@ -12,13 +12,13 @@ from simulation_data_manager import (
     get_recommended_places,
     get_pre_generated_ending
 )
-from repositories.turn_stats import map_turn_stats_to_effects, ordered_turn_stats_ids
+from repositories.scenario.turn_stats import map_turn_stats_to_effects, ordered_turn_stats_ids
 import uuid
-from models.character import CharacterCard
+from models.character.character import CharacterCard
 from rag_evaluator import RAGEvaluator
 
 rag_evaluator = RAGEvaluator()
-from models.simulation import (
+from models.simulation.simulation import (
     StartRequest,
     GameStateStat,
     GameState,

@@ -11,11 +11,11 @@ from sqlalchemy import func, inspect, select
 from db.database import SessionLocal, engine
 from db.models import Character, CharacterCategory, CharacterTurnStat, Choice, Ending, Scenario, Turn
 from db.seed.category_seed_data import DEFAULT_CHARACTER_CATEGORIES
-from repositories.turn_stats import (
+from repositories.scenario.turn_stats import (
     collect_turn_stat_names_from_profile,
     resolve_choice_turn_stats_for_db,
 )
-from repositories.character_turn_stats import seed_turn_stats_for_character
+from repositories.character.character_turn_stats import seed_turn_stats_for_character
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHARACTERS_JSON_PATH = os.path.join(BASE_DIR, "data", "characters.json")
@@ -25,9 +25,9 @@ CONTENT_TABLES = (
     "character_categories",
     "characters",
     "scenarios",
-    "turns",
-    "choices",
-    "endings",
+    "scenario_turns",
+    "scenario_turn_choices",
+    "scenario_endings",
 )
 
 

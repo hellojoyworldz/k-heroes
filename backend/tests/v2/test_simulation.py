@@ -128,7 +128,7 @@ def test_generate_ending_and_get_result(client, db_session, yi_scenario_id):
     assert result_data["ending_markdown"]
 
 
-def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_session, yi_scenario_id):
+def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_session, yi_scenario_id, jwt_env):
     seed_local_user(db_session)
     login_response = client.post(
         "/api/v2/auth/session",

@@ -72,7 +72,8 @@ def test_browser_session(client):
     assert not client.cookies.get("k_heroes_admin_session")
 
 
-def test_login_without_jwt_secret(client, superadmin_user):
+def test_login_without_jwt_secret(client, superadmin_user, monkeypatch):
+    monkeypatch.delenv("JWT_SECRET", raising=False)
     response = client.post(
         "/api/v2/admin/auth/login",
         json={"username": SUPERADMIN_USERNAME, "password": SUPERADMIN_PASSWORD},

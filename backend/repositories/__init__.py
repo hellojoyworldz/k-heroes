@@ -1,1 +1,1 @@
-"""DB 데이터 접근 레이어."""
+# repositories package

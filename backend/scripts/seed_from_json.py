@@ -21,7 +21,7 @@ from db.seed import run_seed
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="JSON 데이터를 SQLite DB로 시드")
+    parser = argparse.ArgumentParser(description="JSON 데이터를 데이터베이스로 시드")
     parser.add_argument(
         "--force",
         action="store_true",

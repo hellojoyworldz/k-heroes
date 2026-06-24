@@ -7,6 +7,8 @@ import numpy as np
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
+from db.database import SessionLocal
+from db.models import RAGEvalLog, GenerationMetricsLog
 
 load_dotenv()
 
@@ -137,13 +139,37 @@ Output your evaluation STRICTLY in JSON format:
             "faithfulness_reason": faithfulness_reason
         }
         
-        # 3. JSONL 파일로 추가 저장
+        # 3. JSONL 파일로 추가 저장 (로컬 백업용)
         try:
             os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
             with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
         except Exception as e:
             print(f"[RAG EVAL] Failed to write log to file: {e}")
+
+        # 4. Supabase DB에 저장
+        try:
+            db = SessionLocal()
+            db_log = RAGEvalLog(
+                character_name=character_name,
+                era_tag=era_tag,
+                query=query,
+                latency_ms=latency_ms,
+                avg_retrieval_score=avg_retrieval_score,
+                avg_rerank_score=avg_rerank_score,
+                keyword_overlap=keyword_overlap,
+                llm_evaluated=should_eval_llm,
+                context_relevance=context_relevance,
+                faithfulness=faithfulness,
+                relevance_reason=relevance_reason,
+                faithfulness_reason=faithfulness_reason
+            )
+            db.add(db_log)
+            db.commit()
+        except Exception as e:
+            print(f"[RAG EVAL] Failed to write log to Supabase: {e}")
+        finally:
+            db.close()
             
         return log_entry
 
@@ -254,6 +280,22 @@ Output your evaluation STRICTLY in JSON format:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
         except Exception as e:
             print(f"[METRIC EVAL] Failed to write log to file: {e}")
+
+        # Supabase DB에 저장
+        try:
+            db = SessionLocal()
+            db_log = GenerationMetricsLog(
+                character_name=character_name,
+                mode=mode,
+                metrics=metrics
+            )
+            db.add(db_log)
+            db.commit()
+        except Exception as e:
+            print(f"[METRIC EVAL] Failed to write log to Supabase: {e}")
+        finally:
+            db.close()
+            
         return log_entry
 
     def evaluate_ending_quality(
@@ -478,33 +520,86 @@ Output your evaluation STRICTLY in JSON format:
         return self._write_metrics_log(character_name, "choice_balance", eval_data)
 
 def get_rag_statistics(limit: int = 200) -> Dict[str, Any]:
-    """저장된 JSONL 로그 파일을 분석하여 평균 지표 및 통계 데이터 반환"""
-    if not os.path.exists(LOG_FILE_PATH):
-        return {
-            "total_queries": 0,
-            "avg_latency_ms": 0.0,
-            "avg_retrieval_score": 0.0,
-            "avg_rerank_score": 0.0,
-            "avg_keyword_overlap": 0.0,
-            "llm_evaluated_count": 0,
-            "avg_context_relevance": None,
-            "avg_faithfulness": None,
-            "recent_logs": []
-        }
-        
-    logs = []
+    """저장된 Supabase DB 로그 데이터를 분석하여 평균 지표 및 통계 데이터 반환"""
+    db = SessionLocal()
     try:
-        with open(LOG_FILE_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    logs.append(json.loads(line))
-    except Exception as e:
-        print(f"[RAG EVAL] Error reading log file: {e}")
+        from sqlalchemy import func
         
-    recent_logs = logs[-limit:][::-1]
-    
-    total = len(logs)
-    if total == 0:
+        # 1. 전체 쿼리 개수 조회
+        total = db.query(func.count(RAGEvalLog.id)).scalar() or 0
+        if total == 0:
+            return {
+                "total_queries": 0,
+                "avg_latency_ms": 0.0,
+                "avg_retrieval_score": 0.0,
+                "avg_rerank_score": 0.0,
+                "avg_keyword_overlap": 0.0,
+                "llm_evaluated_count": 0,
+                "avg_context_relevance": None,
+                "avg_faithfulness": None,
+                "recent_logs": []
+            }
+            
+        # 2. 전체 통계 계산 (평균)
+        stats = db.query(
+            func.avg(RAGEvalLog.latency_ms),
+            func.avg(RAGEvalLog.avg_retrieval_score),
+            func.avg(RAGEvalLog.avg_rerank_score),
+            func.avg(RAGEvalLog.keyword_overlap)
+        ).first()
+        
+        avg_latency = float(stats[0]) if stats[0] is not None else 0.0
+        avg_retrieval = float(stats[1]) if stats[1] is not None else 0.0
+        avg_rerank = float(stats[2]) if stats[2] is not None else 0.0
+        avg_overlap = float(stats[3]) if stats[3] is not None else 0.0
+        
+        # 3. LLM 평가가 포함된 로그의 개수 및 통계 계산
+        llm_count = db.query(func.count(RAGEvalLog.id)).filter(RAGEvalLog.llm_evaluated == True).scalar() or 0
+        
+        avg_relevance = None
+        avg_faithfulness = None
+        if llm_count > 0:
+            llm_stats = db.query(
+                func.avg(RAGEvalLog.context_relevance),
+                func.avg(RAGEvalLog.faithfulness)
+            ).filter(RAGEvalLog.llm_evaluated == True).first()
+            
+            avg_relevance = float(llm_stats[0]) if llm_stats[0] is not None else None
+            avg_faithfulness = float(llm_stats[1]) if llm_stats[1] is not None else None
+            
+        # 4. 최근 로그 목록 조회
+        recent_records = db.query(RAGEvalLog).order_by(RAGEvalLog.id.desc()).limit(limit).all()
+        recent_logs = []
+        for r in recent_records:
+            recent_logs.append({
+                "timestamp": r.timestamp.isoformat() + "Z" if r.timestamp else None,
+                "character_name": r.character_name,
+                "era_tag": r.era_tag,
+                "query": r.query,
+                "latency_ms": r.latency_ms,
+                "avg_retrieval_score": r.avg_retrieval_score,
+                "avg_rerank_score": r.avg_rerank_score,
+                "keyword_overlap": r.keyword_overlap,
+                "llm_evaluated": r.llm_evaluated,
+                "context_relevance": r.context_relevance,
+                "faithfulness": r.faithfulness,
+                "relevance_reason": r.relevance_reason,
+                "faithfulness_reason": r.faithfulness_reason
+            })
+            
+        return {
+            "total_queries": total,
+            "avg_latency_ms": round(avg_latency, 2),
+            "avg_retrieval_score": round(avg_retrieval, 4),
+            "avg_rerank_score": round(avg_rerank, 4),
+            "avg_keyword_overlap": round(avg_overlap, 4),
+            "llm_evaluated_count": llm_count,
+            "avg_context_relevance": round(avg_relevance, 2) if avg_relevance is not None else None,
+            "avg_faithfulness": round(avg_faithfulness, 2) if avg_faithfulness is not None else None,
+            "recent_logs": recent_logs
+        }
+    except Exception as e:
+        print(f"[RAG EVAL] Error reading logs from Supabase: {e}")
         return {
             "total_queries": 0,
             "avg_latency_ms": 0.0,
@@ -516,30 +611,5 @@ def get_rag_statistics(limit: int = 200) -> Dict[str, Any]:
             "avg_faithfulness": None,
             "recent_logs": []
         }
-        
-    # 통계 계산
-    avg_latency = float(np.mean([l["latency_ms"] for l in logs]))
-    avg_retrieval = float(np.mean([l["avg_retrieval_score"] for l in logs]))
-    avg_rerank = float(np.mean([l["avg_rerank_score"] for l in logs]))
-    avg_overlap = float(np.mean([l["keyword_overlap"] for l in logs]))
-    
-    llm_logs = [l for l in logs if l.get("llm_evaluated")]
-    llm_count = len(llm_logs)
-    
-    avg_relevance = None
-    avg_faithfulness = None
-    if llm_count > 0:
-        avg_relevance = float(np.mean([l["context_relevance"] for l in llm_logs if l.get("context_relevance") is not None]))
-        avg_faithfulness = float(np.mean([l["faithfulness"] for l in llm_logs if l.get("faithfulness") is not None]))
-        
-    return {
-        "total_queries": total,
-        "avg_latency_ms": round(avg_latency, 2),
-        "avg_retrieval_score": round(avg_retrieval, 4),
-        "avg_rerank_score": round(avg_rerank, 4),
-        "avg_keyword_overlap": round(avg_overlap, 4),
-        "llm_evaluated_count": llm_count,
-        "avg_context_relevance": round(avg_relevance, 2) if avg_relevance is not None else None,
-        "avg_faithfulness": round(avg_faithfulness, 2) if avg_faithfulness is not None else None,
-        "recent_logs": recent_logs
-    }
+    finally:
+        db.close()

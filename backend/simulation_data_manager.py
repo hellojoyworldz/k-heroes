@@ -4,9 +4,9 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 from dotenv import load_dotenv
 
-from models.character import CharacterCard
-from models.simulation import RecommendedPlace
-from repositories.turn_stats import normalize_json_character_profile
+from models.character.character import CharacterCard
+from models.simulation.simulation import RecommendedPlace
+from repositories.scenario.turn_stats import normalize_json_character_profile
 from openai import OpenAI
 
 from google.cloud import storage

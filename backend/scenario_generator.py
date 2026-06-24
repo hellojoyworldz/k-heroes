@@ -1024,7 +1024,7 @@ def generate_endings_text_for_character_scenario(character_name: str, target_sce
     지정된 캐릭터의 시나리오별 8가지 분기 경로(A-A-A ~ B-B-B)에 대한 엔딩 텍스트를 생성하고
     backend/data/endings/{character_name}_{scenario_id}.json 파일로 빌드.
     """
-    from models.character import CharacterCard
+    from models.character.character import CharacterCard
     from simulation_data_manager import get_recommended_places
     
     # 1. characters.json 로딩
@@ -1351,7 +1351,7 @@ def generate_endings_images_for_character_scenario(character_name: str, target_s
     기존에 생성된 backend/data/endings/{character_name}_{scenario_id}.json 파일을 로드하여,
     각 분기 경로별 엔딩 일러스트를 gpt-image-2로 생성하고 GCS에 업로드하여 image_url을 업데이트.
     """
-    from models.character import CharacterCard
+    from models.character.character import CharacterCard
     
     endings_dir = os.path.join(BASE_DIR, "data", "endings")
     

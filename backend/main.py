@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import character, simulation
+# from router import character, simulation
 from router.v2 import auth as auth_v2, admin_auth as admin_auth_v2, admin_play_session as admin_play_session_v2, admin_user as admin_user_v2, character as character_v2, character_category as character_category_v2, ending as ending_v2, scenario as scenario_v2, simulation as simulation_v2, turn as turn_v2, landing as landing_v2
 import simulation_data_manager
 
@@ -28,8 +28,12 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(character.router)
-app.include_router(simulation.router)
+
+# 인메모리 작업 (v1) - 비활성화
+# app.include_router(character.router)
+# app.include_router(simulation.router)
+
+# Supabase (v2)
 app.include_router(auth_v2.router)
 app.include_router(character_category_v2.router)
 app.include_router(character_v2.router)
