@@ -3,9 +3,9 @@ JSON 데이터(characters.json, endings/*.json)를 DB에 시드합니다.
 테이블 생성은 init_db.py에서 먼저 실행하세요.
 
 사용법 (backend 디렉터리에서):
-    python scripts/init_db.py
-    python scripts/seed_from_json.py
-    python scripts/seed_from_json.py --force   # 기존 콘텐츠 삭제 후 재시드
+    python3 scripts/init_db.py
+    python3 scripts/seed_from_json.py
+    python3 scripts/seed_from_json.py --force   # 기존 콘텐츠 삭제 후 재시드
 """
 from __future__ import annotations
 

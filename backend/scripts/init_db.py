@@ -2,8 +2,8 @@
 DB 테이블 생성 스크립트 (데이터 시드 없음).
 
 사용법 (backend 디렉터리에서):
-    python scripts/init_db.py           # 테이블 없으면 생성 + 스키마 마이그레이션
-    python scripts/init_db.py --reset   # 기존 테이블 전부 삭제 후 재생성
+    python3 scripts/init_db.py           # 테이블 없으면 생성 + 스키마 마이그레이션
+    python3 scripts/init_db.py --reset   # 기존 테이블 전부 삭제 후 재생성
 """
 from __future__ import annotations
 
