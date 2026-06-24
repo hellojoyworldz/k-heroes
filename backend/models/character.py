@@ -10,7 +10,7 @@ class MBTIDetails(BaseModel):
     J_P: str
 
 class StatItem(BaseModel):
-    id: int
+    id: Optional[int] = None
     name: str
     value: int
     desc: str
@@ -261,4 +261,3 @@ class CharacterAdminResponse(BaseModel):
             }
             return handler(prepared)
         return handler(value)
-
