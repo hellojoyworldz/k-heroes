@@ -279,7 +279,7 @@ export function CharacterSection({
   useEffect(() => {
     let isActive = true;
 
-    fetch(`${API_BASE_URL}/api/characters`)
+    fetch(`${API_BASE_URL}/api/v2/characters`)
       .then(async (response) => {
         if (!response.ok) throw new Error("대표 인물 조회 실패");
         return (await response.json()) as ApiCharacter[];

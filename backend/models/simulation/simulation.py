@@ -90,3 +90,9 @@ class EndingResponse(BaseModel):
     output_file_path: str
     ending_image: Optional[str] = ""
     uuid: Optional[str] = ""
+    final_stats: Optional[Dict[str, int]] = None
+    choices_history: Optional[List[bool]] = None
+    character_name: Optional[str] = ""
+
+
+

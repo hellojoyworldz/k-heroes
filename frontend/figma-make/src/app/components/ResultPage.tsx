@@ -253,25 +253,81 @@ function StatBar({ icon, label, value, isPercent, max }: { icon: string; label: 
 }
 
 /* ─── 메인 컴포넌트 ─── */
+interface SummaryItem {
+  title: string;
+  desc: string;
+}
+
+interface RecommendedPlace {
+  address: string;
+  name: string;
+  description: string;
+  link?: string;
+  image_url?: string;
+}
+
+export interface EndingResponse {
+  result_code: string;
+  ending_type: string;
+  title: string;
+  history_fact: string;
+  story_headline: string;
+  story_contents: string;
+  factual_contents?: string;
+  summary_items: SummaryItem[];
+  recommended_places: RecommendedPlace[];
+  ending_markdown: string;
+  output_file_path: string;
+  ending_image?: string;
+  uuid?: string;
+  final_stats?: Record<string, number>;
+  choices_history?: boolean[];
+  character_name?: string;
+}
+
+function getResultNum(code: string) {
+  const map: Record<string, number> = {
+    "A-A-A": 1,
+    "A-A-B": 2,
+    "A-B-A": 3,
+    "A-B-B": 4,
+    "B-A-A": 5,
+    "B-A-B": 6,
+    "B-B-A": 7,
+    "B-B-B": 8,
+  };
+  return map[code] || 1;
+}
+
+function getStatIcon(name: string): string {
+  if (name.includes("자금") || name.includes("돈") || name.includes("재정")) return "💰";
+  if (name.includes("팀워크") || name.includes("신뢰") || name.includes("협동") || name.includes("민심")) return "🤝";
+  if (name.includes("성공") || name.includes("확률") || name.includes("명중")) return "🎯";
+  if (name.includes("체력") || name.includes("건강") || name.includes("생명")) return "❤️";
+  if (name.includes("명예") || name.includes("위신") || name.includes("덕망")) return "👑";
+  return "⚡";
+}
+
 export function ResultPage({
   charId,
-  selections,
+  ending,
   onBack,
   onNextChar,
 }: {
   charId: string;
-  selections: Record<number, "A" | "B">;
+  ending: EndingResponse;
   onBack: () => void;
   onNextChar: () => void;
 }) {
-  const key = `${selections[0] ?? "A"}-${selections[1] ?? "B"}-${selections[2] ?? "A"}`;
-  const result = RESULTS[key] ?? RESULTS["A-B-A"];
   const char = CHARACTERS[charId];
+  const isReal = ending.ending_type.toLowerCase().includes("true") || ending.ending_type.toLowerCase().includes("real");
+  const resultNum = getResultNum(ending.result_code);
+  const choicesHistory = ending.choices_history || [false, false, false];
 
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleShare = async () => {
-    const text = `K-Heroes: ${char?.name} 시뮬레이션에서 RESULT ${result.resultNum}을 달성했습니다!\n"${result.title}"`;
+    const text = `K-Heroes: ${char?.name || "인물"} 시뮬레이션에서 최종 결과를 달성했습니다!\n"${ending.title}"`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "K-Heroes 시뮬레이션 결과", text });
@@ -283,6 +339,21 @@ export function ResultPage({
       alert("결과가 클립보드에 복사되었습니다!");
     }
   };
+
+  // Convert final_stats dictionary entries to standard stats list
+  const statsData = ending.final_stats && Object.keys(ending.final_stats).length > 0
+    ? Object.entries(ending.final_stats).map(([name, val]) => ({
+        name,
+        value: val,
+        isPercent: name.includes("확률"),
+        icon: getStatIcon(name)
+      }))
+    : char?.strengths?.map(s => ({
+        name: s.name,
+        value: s.value,
+        isPercent: s.name.includes("확률"),
+        icon: getStatIcon(s.name)
+      })) || [];
 
   return (
     <div
@@ -325,7 +396,7 @@ export function ResultPage({
       {/* ── 히어로 (다크) ── */}
       <div
         style={{
-          background: result.isReal
+          background: isReal
             ? "linear-gradient(135deg, #1A2820 0%, #2E4A38 60%, #1E3328 100%)"
             : "linear-gradient(135deg, #1A1814 0%, #2A2420 60%, #1E1A16 100%)",
           position: "relative",
@@ -394,7 +465,7 @@ export function ResultPage({
           <div className="flex items-center gap-3 mb-4">
             <div
               style={{
-                background: result.isReal
+                background: isReal
                   ? "linear-gradient(135deg, #C9933A, #E8B84B)"
                   : "rgba(255,255,255,0.1)",
                 borderRadius: "6px",
@@ -402,24 +473,24 @@ export function ResultPage({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
-                border: result.isReal ? "none" : "1px solid rgba(255,255,255,0.15)",
+                border: isReal ? "none" : "1px solid rgba(255,255,255,0.15)",
               }}
             >
-              {result.isReal && <span style={{ fontSize: "12px" }}>★</span>}
+              {isReal && <span style={{ fontSize: "12px" }}>★</span>}
               <span
                 style={{
                   fontFamily: "'Noto Serif KR', serif",
                   fontWeight: 800,
                   fontSize: "0.72rem",
-                  color: result.isReal ? "#1A1714" : "rgba(255,255,255,0.7)",
+                  color: isReal ? "#1A1714" : "rgba(255,255,255,0.7)",
                   letterSpacing: "0.08em",
                 }}
               >
-                RESULT {result.resultNum}
+                RESULT {resultNum}
               </span>
             </div>
 
-            {result.isReal && (
+            {isReal && (
               <div
                 style={{
                   background: "rgba(42,150,80,0.2)",
@@ -445,14 +516,14 @@ export function ResultPage({
 
           {/* 콤보 아이콘 */}
           <div className="flex items-center gap-3 mb-5">
-            {result.icons.map((isR, i) => (
+            {choicesHistory.map((isR, i) => (
               <ComboIcon key={i} isReal={isR} step={i + 1} />
             ))}
           </div>
 
           {/* 타이틀 */}
           <div>
-            {!result.isReal && (
+            {!isReal && (
               <p
                 style={{
                   fontFamily: "'Noto Sans KR', sans-serif",
@@ -470,11 +541,11 @@ export function ResultPage({
                 fontFamily: "'Noto Serif KR', serif",
                 fontWeight: 700,
                 fontSize: "clamp(1.2rem, 2.8vw, 1.9rem)",
-                color: result.isReal ? "#F5E9CC" : "rgba(255,255,255,0.88)",
+                color: isReal ? "#F5E9CC" : "rgba(255,255,255,0.88)",
                 lineHeight: 1.35,
               }}
             >
-              {result.title}
+              {ending.title}
             </h1>
           </div>
         </div>
@@ -504,9 +575,16 @@ export function ResultPage({
             최종 능력치
           </p>
           <div className="flex flex-col gap-4">
-            <StatBar icon="💰" label="독립 자금" value={result.stats.money} max={100} />
-            <StatBar icon="🤝" label="팀워크" value={result.stats.team} max={100} />
-            <StatBar icon="🎯" label="성공 확률" value={result.stats.success} isPercent max={120} />
+            {statsData.map((stat) => (
+              <StatBar
+                key={stat.name}
+                icon={stat.icon}
+                label={stat.name}
+                value={stat.value}
+                isPercent={stat.isPercent}
+                max={100}
+              />
+            ))}
           </div>
         </div>
 
@@ -555,7 +633,7 @@ export function ResultPage({
                   marginTop: "12px",
                 }}
               >
-                {result.historicalNote}
+                {ending.history_fact}
               </p>
             </div>
           )}
@@ -593,10 +671,10 @@ export function ResultPage({
             <div
               className="rounded-xl px-5 py-4 mb-4"
               style={{
-                background: result.isReal
+                background: isReal
                   ? "linear-gradient(135deg, rgba(42,66,50,0.07), rgba(42,66,50,0.04))"
                   : "rgba(42,66,50,0.03)",
-                border: result.isReal
+                border: isReal
                   ? "1px solid rgba(42,66,50,0.15)"
                   : "1px solid rgba(42,66,50,0.07)",
               }}
@@ -605,7 +683,7 @@ export function ResultPage({
                 style={{
                   fontFamily: "Georgia, serif",
                   fontSize: "3rem",
-                  color: result.isReal ? "rgba(42,66,50,0.2)" : "rgba(42,66,50,0.1)",
+                  color: isReal ? "rgba(42,66,50,0.2)" : "rgba(42,66,50,0.1)",
                   lineHeight: 0.6,
                   display: "block",
                   marginBottom: "2px",
@@ -622,7 +700,7 @@ export function ResultPage({
                   lineHeight: 1.55,
                 }}
               >
-                {result.storyQuote}
+                {ending.story_headline}
               </p>
             </div>
 
@@ -635,7 +713,7 @@ export function ResultPage({
                 lineHeight: 1.9,
               }}
             >
-              {result.storyBody}
+              {ending.story_contents}
             </p>
           </div>
         </div>
@@ -666,18 +744,15 @@ export function ResultPage({
             </span>
           </div>
           <div className="px-5 py-4 flex flex-col gap-3">
-            {result.summaryPoints.map((pt, i) => {
-              const colonIdx = pt.indexOf(":");
-              const bold = colonIdx >= 0 ? pt.slice(0, colonIdx) : "";
-              const rest = colonIdx >= 0 ? pt.slice(colonIdx + 1).trim() : pt;
+            {ending.summary_items.map((item, i) => {
               return (
                 <div key={i} className="flex gap-3">
                   <div
-                    style={{
+                     style={{
                       width: "22px",
                       height: "22px",
                       borderRadius: "50%",
-                      background: result.isReal
+                      background: isReal
                         ? "linear-gradient(135deg, #C9933A, #E8B84B)"
                         : "rgba(42,66,50,0.12)",
                       display: "flex",
@@ -692,7 +767,7 @@ export function ResultPage({
                         fontFamily: "'Noto Serif KR', serif",
                         fontWeight: 800,
                         fontSize: "0.65rem",
-                        color: result.isReal ? "#1A1714" : "#5A5248",
+                        color: isReal ? "#1A1714" : "#5A5248",
                         lineHeight: 1,
                       }}
                     >
@@ -707,10 +782,10 @@ export function ResultPage({
                       lineHeight: 1.8,
                     }}
                   >
-                    {bold && (
-                      <span style={{ fontWeight: 700, color: "#2A2420" }}>{bold}: </span>
+                    {item.title && (
+                      <span style={{ fontWeight: 700, color: "#2A2420" }}>{item.title}: </span>
                     )}
-                    {rest}
+                    {item.desc}
                   </p>
                 </div>
               );
@@ -734,7 +809,7 @@ export function ResultPage({
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {PLACES.map((place) => (
+            {ending.recommended_places.map((place) => (
               <div
                 key={place.name}
                 className="rounded-2xl overflow-hidden"
@@ -746,7 +821,7 @@ export function ResultPage({
               >
                 <div style={{ height: "140px", overflow: "hidden" }}>
                   <img
-                    src={place.img}
+                    src={place.image_url || "https://images.unsplash.com/photo-1548115184-bc6544d06a58?w=600&q=80&fit=crop"}
                     alt={place.name}
                     style={{
                       width: "100%",
@@ -766,7 +841,7 @@ export function ResultPage({
                         color: "#A89E8E",
                       }}
                     >
-                      {place.location}
+                      {place.address}
                     </p>
                   </div>
                   <p
@@ -788,7 +863,7 @@ export function ResultPage({
                       lineHeight: 1.7,
                     }}
                   >
-                    {place.desc}
+                    {place.description}
                   </p>
                 </div>
               </div>
@@ -858,3 +933,4 @@ export function ResultPage({
     </div>
   );
 }
+

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Ending, PlaySession, Scenario, User
+from db.models import Ending, PlaySession, Scenario, User, Turn
 from repositories.simulation.content import (
     CharacterNotFoundError,
     EndingNotFoundError,
@@ -180,6 +180,18 @@ async def generate_ending(
     db.add(play_session)
     db.commit()
 
+    choices_history = []
+    for idx, turn in enumerate(scenario.turns):
+        if idx < len(payload.choices_path):
+            user_choice_key = payload.choices_path[idx]
+            user_choice = turn.choices.get(user_choice_key)
+            if not user_choice:
+                user_choice = next(iter(turn.choices.values()), None)
+            if user_choice:
+                choices_history.append(user_choice.is_historical)
+            else:
+                choices_history.append(False)
+
     return EndingResponse(
         result_code="-".join(payload.choices_path),
         ending_type=ending_type,
@@ -194,6 +206,9 @@ async def generate_ending(
         ending_image=ending_image,
         output_file_path="",
         uuid=result_id,
+        final_stats=current_stats,
+        choices_history=choices_history,
+        character_name=payload.character_name,
     )
 
 
@@ -218,6 +233,18 @@ def _play_session_to_response(session: PlaySession, ending: Ending) -> EndingRes
         ending_image=ending.image_url or "",
     )
 
+    choices_history = []
+    if session.scenario and session.choices_path:
+        turns = sorted(session.scenario.turns, key=lambda t: t.sort_order)
+        for idx, turn in enumerate(turns):
+            if idx < len(session.choices_path):
+                user_choice_key = session.choices_path[idx]
+                user_choice = next((c for c in turn.choices if c.choice_key == user_choice_key), None)
+                if user_choice:
+                    choices_history.append(user_choice.is_historical)
+                else:
+                    choices_history.append(False)
+
     return EndingResponse(
         result_code="-".join(session.choices_path or []),
         ending_type=ending.ending_type,
@@ -232,6 +259,9 @@ def _play_session_to_response(session: PlaySession, ending: Ending) -> EndingRes
         ending_image=ending.image_url or "",
         output_file_path="",
         uuid=session.id,
+        final_stats=session.final_stats,
+        choices_history=choices_history,
+        character_name=session.character_name,
     )
 
 
@@ -240,7 +270,12 @@ async def get_simulation_result_api(uuid: str, db: Session = Depends(get_db)):
     session = db.scalar(
         select(PlaySession)
         .where(PlaySession.id == uuid)
-        .options(selectinload(PlaySession.ending))
+        .options(
+            selectinload(PlaySession.ending),
+            selectinload(PlaySession.scenario)
+            .selectinload(Scenario.turns)
+            .selectinload(Turn.choices)
+        )
     )
     if not session:
         raise HTTPException(status_code=404, detail="해당 UUID의 시뮬레이션 결과를 찾을 수 없습니다.")

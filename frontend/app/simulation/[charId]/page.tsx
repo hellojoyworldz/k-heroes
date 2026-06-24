@@ -1,25 +1,35 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { SimulationPage } from "@/figma-make/src/app/components/SimulationPage";
+import { Suspense } from "react";
 
 function normalizeCharId(charId: string) {
   return charId === "yi-sunsin" ? "yi_sunsin" : charId;
 }
 
-function encodeChoices(selections: Record<number, "A" | "B">) {
-  return [0, 1, 2].map((step) => selections[step] ?? "A").join("-");
-}
-
-export default function SimulationRoutePage() {
+function SimulationInner() {
   const router = useRouter();
   const params = useParams<{ charId: string }>();
+  const searchParams = useSearchParams();
   const charId = normalizeCharId(params.charId);
+  const scenarioStr = searchParams.get("scenario") ?? "0";
+  const scenarioIdx = parseInt(scenarioStr, 10) || 0;
 
   return (
     <SimulationPage
+      charId={charId}
+      scenarioIdx={scenarioIdx}
       onBack={() => router.push(`/character-detail/${charId}`)}
-      onComplete={(selections) => router.push(`/result/${charId}/${encodeChoices(selections)}`)}
+      onComplete={(uuid) => router.push(`/result/${uuid}`)}
     />
+  );
+}
+
+export default function SimulationRoutePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FDFAF4] text-[#7A7060]">로딩 중...</div>}>
+      <SimulationInner />
+    </Suspense>
   );
 }

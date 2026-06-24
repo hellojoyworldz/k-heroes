@@ -32,6 +32,7 @@ interface ApiScenarioTurn {
 }
 
 interface ApiScenario {
+  id?: number | string;
   scenario_id?: number | string;
   title: string;
   description: string;
@@ -182,7 +183,7 @@ function makeSubtitle(scenario: ApiScenario) {
 
 function toScenarioMetas(data: ApiCharacterDetail, charId: string): ScenarioMeta[] {
   return (data.scenarios ?? []).map((scenario, index) => ({
-    id: `${charId}-${scenario.scenario_id ?? index}`,
+    id: `${charId}-${scenario.id ?? scenario.scenario_id ?? index}`,
     charId,
     index,
     title: scenario.title,
@@ -205,12 +206,31 @@ async function fetchCharacterDetail(charId: string): Promise<CharacterDetailPayl
   const pending = detailRequestCache.get(cacheKey);
   if (pending) return pending;
 
-  const request = fetch(`${API_BASE_URL}/api/characters/${encodeURIComponent(apiName)}`)
+  const request = fetch(`${API_BASE_URL}/api/v2/characters`)
     .then(async (response) => {
       if (!response.ok) {
-        throw new Error(`인물 상세 조회 실패: ${response.status}`);
+        throw new Error(`인물 목록 조회 실패: ${response.status}`);
       }
-      const data = (await response.json()) as ApiCharacterDetail;
+      return (await response.json()) as Array<{ id: number; name: string }>;
+    })
+    .then(async (list) => {
+      const matched = list.find(
+        (c) =>
+          c.name.trim() === apiName.trim() ||
+          c.name.trim() === charId.trim() ||
+          apiName.trim().includes(c.name.trim()) ||
+          c.name.trim().includes(apiName.trim())
+      );
+      if (!matched) {
+        throw new Error(`매칭되는 인물을 데이터베이스에서 찾을 수 없습니다: ${apiName}`);
+      }
+      const response = await fetch(`${API_BASE_URL}/api/v2/characters/${matched.id}`);
+      if (!response.ok) {
+        throw new Error(`인물 상세 조회 실패 (${matched.id}): ${response.status}`);
+      }
+      return (await response.json()) as ApiCharacterDetail;
+    })
+    .then((data) => {
       const payload = {
         char: toCharacterData(data, charId),
         scenarios: toScenarioMetas(data, data.name || charId),

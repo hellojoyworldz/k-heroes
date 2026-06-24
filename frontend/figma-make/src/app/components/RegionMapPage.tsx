@@ -137,7 +137,7 @@ async function fetchAllCharacters() {
   if (allCharactersCache) return allCharactersCache;
   if (allCharactersRequest) return allCharactersRequest;
 
-  allCharactersRequest = fetch(`${API_BASE_URL}/api/characters`)
+  allCharactersRequest = fetch(`${API_BASE_URL}/api/v2/characters`)
     .then((response) => {
       if (!response.ok) {
         throw new Error(`캐릭터 조회 실패 (${response.status})`);

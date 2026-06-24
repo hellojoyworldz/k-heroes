@@ -1,7 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Check } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { storyPageBackground } from "./storyPageBackground";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+const LEGACY_API_NAMES: Record<string, string> = {
+  'yi-sunsin': '이순신',
+  yi_sunsin: '이순신',
+  yunbongil: '윤봉길',
+  sejong: '세종대왕',
+};
+
+function getApiName(charId: string) {
+  return LEGACY_API_NAMES[charId] ?? charId;
+}
+
+function getStatIcon(name: string): string {
+  if (name.includes("자금") || name.includes("국력") || name.includes("돈")) return "💰";
+  if (name.includes("팀워크") || name.includes("지지") || name.includes("동료") || name.includes("위로") || name.includes("백성")) return "🤝";
+  if (name.includes("확률") || name.includes("성공")) return "🎯";
+  if (name.includes("전투") || name.includes("무력")) return "⚔️";
+  if (name.includes("예술") || name.includes("문학")) return "🎨";
+  if (name.includes("학문") || name.includes("지식") || name.includes("실용")) return "📚";
+  return "📊";
+}
+
 
 /* ────────────────────────────
    타입
@@ -566,48 +590,284 @@ function ChoiceCard({
    메인 컴포넌트
 ──────────────────────────── */
 export function SimulationPage({
+  charId,
+  scenarioIdx,
   onBack,
   onComplete,
 }: {
+  charId: string;
+  scenarioIdx: number;
   onBack: () => void;
-  onComplete: (selections: Record<number, "A" | "B">) => void;
+  onComplete: (uuid: string) => void;
 }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selections, setSelections] = useState<Record<number, "A" | "B">>({});
+  const [resolvedCharName, setResolvedCharName] = useState<string | null>(null);
+  const [scenarioId, setScenarioId] = useState<number | null>(null);
+  const [characterCard, setCharacterCard] = useState<any | null>(null);
+  const [gameState, setGameState] = useState<any | null>(null);
+  const [currentTurn, setCurrentTurn] = useState<any | null>(null);
+  const [choicesPath, setChoicesPath] = useState<string[]>([]);
+  const [selectedChoice, setSelectedChoice] = useState<"A" | "B" | null>(null);
   const [toggleOpen, setToggleOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const step = STEPS[currentStep];
-  const selected = selections[currentStep];
-  const isLast = currentStep === STEPS.length - 1;
+  // Initialize Simulation
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError(null);
 
-  const handleNext = () => {
-    if (!selected) return;
-    if (isLast) {
-      onComplete(selections);
-    } else {
-      setCurrentStep((p) => p + 1);
-      setToggleOpen(false);
+    const init = async () => {
+      try {
+        const apiName = getApiName(charId);
+        
+        // 1. Fetch character list to find ID
+        const listRes = await fetch(`${API_BASE_URL}/api/v2/characters`);
+        if (!listRes.ok) throw new Error("인물 목록 조회 실패");
+        const list = await listRes.json();
+        
+        const matched = list.find(
+          (c: any) =>
+            c.name.trim() === apiName.trim() ||
+            c.name.trim() === charId.trim() ||
+            apiName.trim().includes(c.name.trim()) ||
+            c.name.trim().includes(apiName.trim())
+        );
+        if (!matched) throw new Error(`인물을 찾을 수 없습니다: ${apiName}`);
+        
+        // 2. Fetch full character details
+        const detailRes = await fetch(`${API_BASE_URL}/api/v2/characters/${matched.id}`);
+        if (!detailRes.ok) throw new Error("인물 상세 조회 실패");
+        const detail = await detailRes.json();
+        
+        const scenario = detail.scenarios?.[scenarioIdx];
+        if (!scenario) throw new Error(`인물에게 지정된 시나리오가 없습니다 (index: ${scenarioIdx})`);
+
+        setResolvedCharName(detail.name);
+        setScenarioId(scenario.id);
+
+        // 3. Start simulation
+        const startRes = await fetch(`${API_BASE_URL}/api/v2/simulation/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ character_name: detail.name, scenario_id: scenario.id }),
+        });
+        if (!startRes.ok) throw new Error("시뮬레이션 시작 실패");
+        const startData = await startRes.json();
+        
+        setCharacterCard(startData.character_card);
+        setGameState(startData.initial_state);
+
+        // 4. Load first turn
+        const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            character_name: detail.name,
+            scenario_id: scenario.id,
+            current_step: 1,
+            choices_path: [],
+            game_stats: startData.initial_state.game_stats,
+          }),
+        });
+        if (!turnRes.ok) throw new Error("첫 단계 조회 실패");
+        const turnData = await turnRes.json();
+        
+        if (!active) return;
+        setCurrentTurn(turnData);
+      } catch (e: any) {
+        if (!active) return;
+        console.error(e);
+        setError(e.message || "시뮬레이션을 초기화하는 도중 오류가 발생했습니다.");
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    init();
+    return () => {
+      active = false;
+    };
+  }, [charId, scenarioIdx]);
+
+  const handleNext = async () => {
+    if (!selectedChoice || !currentTurn || !resolvedCharName || !scenarioId || !gameState) return;
+    setIsLoading(true);
+
+    const nextPath = [...choicesPath, selectedChoice];
+    const isLast = currentTurn.current_step === currentTurn.total_steps;
+
+    try {
+      if (isLast) {
+        // Generate Ending
+        const endRes = await fetch(`${API_BASE_URL}/api/v2/simulation/ending`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            character_name: resolvedCharName,
+            scenario_id: scenarioId,
+            choices_path: nextPath,
+            game_stats: gameState.game_stats,
+          }),
+        });
+        if (!endRes.ok) throw new Error("엔딩 생성 실패");
+        const endingData = await endRes.json();
+        onComplete(endingData.uuid);
+      } else {
+        // Load next turn
+        const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            character_name: resolvedCharName,
+            scenario_id: scenarioId,
+            current_step: currentTurn.current_step + 1,
+            choices_path: nextPath,
+            game_stats: gameState.game_stats,
+          }),
+        });
+        if (!turnRes.ok) throw new Error("다음 단계 조회 실패");
+        const turnData = await turnRes.json();
+        
+        setChoicesPath(nextPath);
+        setCurrentTurn(turnData);
+        setSelectedChoice(null);
+        setToggleOpen(false);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleBack = () => {
-    if (currentStep === 0) {
+  const handleBack = async () => {
+    if (!currentTurn || !resolvedCharName || !scenarioId || !gameState) return;
+
+    if (currentTurn.current_step === 1) {
       onBack();
-    } else {
-      setCurrentStep((p) => p - 1);
+      return;
+    }
+
+    setIsLoading(true);
+    const prevPath = choicesPath.slice(0, -1);
+
+    try {
+      const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          character_name: resolvedCharName,
+          scenario_id: scenarioId,
+          current_step: currentTurn.current_step - 1,
+          choices_path: prevPath,
+          game_stats: gameState.game_stats,
+        }),
+      });
+      if (!turnRes.ok) throw new Error("이전 단계 조회 실패");
+      const turnData = await turnRes.json();
+      
+      setChoicesPath(prevPath);
+      setCurrentTurn(turnData);
+      setSelectedChoice(null);
       setToggleOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSelect = (id: "A" | "B") => {
-    setSelections((prev) => ({ ...prev, [currentStep]: id }));
+  if (isLoading && !currentTurn) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FDFAF4]" style={storyPageBackground}>
+        <div className="w-8 h-8 border-4 border-[#2A4232] border-t-transparent rounded-full animate-spin mb-4" />
+        <p style={{ fontFamily: "'Noto Sans KR', sans-serif", color: "#7A7060", fontSize: "0.9rem" }}>
+          역사 시뮬레이션을 불러오는 중...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FDFAF4] px-6 text-center" style={storyPageBackground}>
+        <span className="text-4xl mb-4">⚠️</span>
+        <p className="mb-6" style={{ fontFamily: "'Noto Sans KR', sans-serif", color: "#8B2525", fontSize: "1rem", fontWeight: 700 }}>
+          {error}
+        </p>
+        <button
+          onClick={onBack}
+          className="px-6 py-2.5 rounded-xl text-white font-bold transition-opacity"
+          style={{ background: "linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)", fontSize: "0.85rem" }}
+        >
+          돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  if (!currentTurn || !characterCard) return null;
+
+  // Convert turn + card to original design shape
+  const getIndicators = (choice: any) => {
+    return Object.entries(choice.stat_effects || {}).map(([key, delta]) => {
+      const idx = parseInt(key.replace("stat_", ""), 10) - 1;
+      const statDef = characterCard.turn_stats?.[idx];
+      const name = statDef ? statDef.name : "능력치";
+      return {
+        icon: getStatIcon(name),
+        label: name,
+        value: delta as number,
+        isPercent: name.includes("확률"),
+      };
+    });
   };
+
+  const stepData: StepData = {
+    step: currentTurn.current_step,
+    title: currentTurn.title,
+    year: characterCard.years || "",
+    situation: currentTurn.situation,
+    img: currentTurn.turn_image || characterCard.image_url || "/logo.svg",
+    toggleQ: currentTurn.toggle_question,
+    toggleA: currentTurn.toggle_answer,
+    choices: [
+      {
+        id: "A",
+        tag: currentTurn.choice_a.is_historical ? "실제 역사" : "가상 분기",
+        title: currentTurn.choice_a.title,
+        desc: currentTurn.choice_a.description,
+        img: currentTurn.choice_a.choice_image || characterCard.image_url || "/logo.svg",
+        indicators: getIndicators(currentTurn.choice_a),
+      },
+      {
+        id: "B",
+        tag: currentTurn.choice_b.is_historical ? "실제 역사" : "가상 분기",
+        title: currentTurn.choice_b.title,
+        desc: currentTurn.choice_b.description,
+        img: currentTurn.choice_b.choice_image || characterCard.image_url || "/logo.svg",
+        indicators: getIndicators(currentTurn.choice_b),
+      },
+    ],
+  };
+
+  const isLast = currentTurn.current_step === currentTurn.total_steps;
 
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
       style={storyPageBackground}
     >
+      {/* 로딩 오버레이 */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-50 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-[#2A4232] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
       {/* ── 헤더 ── */}
       <header
         className="sticky top-0 z-10 h-14 border-b"
@@ -628,7 +888,7 @@ export function SimulationPage({
             <span className="hidden sm:inline">돌아가기</span>
           </button>
 
-          <ProgressIndicator current={currentStep + 1} total={STEPS.length} />
+          <ProgressIndicator current={currentTurn.current_step} total={currentTurn.total_steps} />
 
           <BrandLogo compact />
         </div>
@@ -637,12 +897,12 @@ export function SimulationPage({
       {/* ── 본문 ── */}
       <div className="max-w-[860px] mx-auto px-4 sm:px-6 pt-5 pb-28">
         {/* 시나리오 카드 */}
-        <ScenarioCard data={step} />
+        <ScenarioCard data={stepData} />
 
         {/* 역사 토글 */}
         <HistoryToggle
-          question={step.toggleQ}
-          answer={step.toggleA}
+          question={stepData.toggleQ}
+          answer={stepData.toggleA}
           open={toggleOpen}
           onToggle={() => setToggleOpen((v) => !v)}
         />
@@ -661,12 +921,12 @@ export function SimulationPage({
             당신의 선택
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {step.choices.map((choice) => (
+            {stepData.choices.map((choice) => (
               <ChoiceCard
                 key={choice.id}
                 choice={choice}
-                selected={selected === choice.id}
-                onSelect={() => handleSelect(choice.id)}
+                selected={selectedChoice === choice.id}
+                onSelect={() => setSelectedChoice(choice.id)}
               />
             ))}
           </div>
@@ -682,25 +942,25 @@ export function SimulationPage({
           right: 0,
           zIndex: 20,
           padding: "16px 16px 24px",
-          pointerEvents: selected ? "auto" : "none",
+          pointerEvents: selectedChoice ? "auto" : "none",
         }}
       >
         <div style={{ maxWidth: "860px", margin: "0 auto" }}>
           <button
             onClick={handleNext}
-            disabled={!selected}
+            disabled={!selectedChoice}
             className="w-full flex items-center justify-center gap-2 py-4 rounded-xl transition-all"
             style={{
-              background: selected
+              background: selectedChoice
                 ? "linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)"
                 : "rgba(42,66,50,0.12)",
-              color: selected ? "white" : "#A89E8C",
+              color: selectedChoice ? "white" : "#A89E8C",
               fontFamily: "'Noto Sans KR', sans-serif",
               fontWeight: 700,
               fontSize: "1rem",
               letterSpacing: "0.02em",
-              cursor: selected ? "pointer" : "not-allowed",
-              boxShadow: selected
+              cursor: selectedChoice ? "pointer" : "not-allowed",
+              boxShadow: selectedChoice
                 ? "0 4px 20px rgba(30,51,40,0.3)"
                 : "none",
               pointerEvents: "auto",
