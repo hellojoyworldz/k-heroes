@@ -6,16 +6,16 @@ from core.security import hash_password
 from db.models import AuthProvider, PlaySession, User, UserGrade
 from tests.helpers import get_scenario
 
-TEST_LOGIN_ID = "student01"
+TEST_LOGIN_ID = "studentone"
 TEST_PASSWORD = "user-secret"
 
 
-def seed_user(db_session):
+def seed_user(db_session, *, login_id: str = TEST_LOGIN_ID):
     user = User(
         auth_provider=AuthProvider.LOCAL,
-        login_id=TEST_LOGIN_ID,
+        login_id=login_id,
         name="학생1",
-        email="student01@example.com",
+        email=f"{login_id}@example.com",
         password_hash=hash_password(TEST_PASSWORD),
         nickname="학생1",
         grade=UserGrade.STUDENT,
@@ -78,14 +78,14 @@ def test_signup_without_name_and_email(client):
     response = client.post(
         "/api/v2/auth/signup",
         json={
-            "login_id": "student02",
+            "login_id": "studenttwo",
             "password": TEST_PASSWORD,
         },
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["user"]["login_id"] == "student02"
+    assert data["user"]["login_id"] == "studenttwo"
     assert data["user"]["name"] is None
     assert data["user"]["email"] is None
 
@@ -104,6 +104,69 @@ def test_signup_duplicate_login_id(client, db_session):
     )
 
     assert response.status_code == 409
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_signup_rejects_short_login_id(client):
+    response = client.post(
+        "/api/v2/auth/signup",
+        json={
+            "login_id": "abc",
+            "password": TEST_PASSWORD,
+            "name": "학생2",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "아이디는 4자 이상 50자 이하로 입력해 주세요."
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_signup_allows_digits_and_specials(client):
+    response = client.post(
+        "/api/v2/auth/signup",
+        json={
+            "login_id": "user123",
+            "password": TEST_PASSWORD,
+            "name": "학생2",
+        },
+    )
+
+    assert response.status_code == 201
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_login_rejects_short_login_id(client):
+    response = client.post(
+        "/api/v2/auth/login",
+        json={"login_id": "abc", "password": TEST_PASSWORD},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "아이디는 4자 이상 50자 이하로 입력해 주세요."
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_login_allows_digits_and_specials(client, db_session):
+    seed_user(db_session, login_id="user123")
+
+    response = client.post(
+        "/api/v2/auth/login",
+        json={"login_id": "user123", "password": TEST_PASSWORD},
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_login_rejects_invalid_start_character(client):
+    response = client.post(
+        "/api/v2/auth/login",
+        json={"login_id": "User123", "password": TEST_PASSWORD},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "아이디는 소문자로 시작해 주세요."
 
 
 @pytest.mark.usefixtures("jwt_env")
@@ -305,7 +368,7 @@ def test_update_my_profile_duplicate_email(client, db_session):
     seed_user(db_session)
     other_user = User(
         auth_provider=AuthProvider.LOCAL,
-        login_id="student02",
+        login_id="studenttwo",
         name="학생2",
         email="duplicate@example.com",
         password_hash=hash_password(TEST_PASSWORD),

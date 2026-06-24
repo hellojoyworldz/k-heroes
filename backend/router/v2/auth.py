@@ -10,6 +10,7 @@ from core.security import (
     get_jwt_expire_hours,
     verify_google_id_token,
 )
+from core.auth_policy import InvalidLoginIdError
 from db.database import get_db
 from db.models import User
 from models.user import (
@@ -42,6 +43,8 @@ def issue_token(user: User) -> str:
 def authenticate_user(body: UserLoginRequest, db: Session) -> User:
     try:
         return user_repository.authenticate_local_user(db, body)
+    except InvalidLoginIdError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError:
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.") from None
 
@@ -80,6 +83,8 @@ def signup(body: UserSignupRequest, db: Session = Depends(get_db)):
         user = user_repository.create_local_user(db, body)
         db.commit()
         db.refresh(user)
+    except InvalidLoginIdError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except user_repository.UserDuplicateError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
