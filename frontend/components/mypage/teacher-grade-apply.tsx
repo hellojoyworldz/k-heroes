@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/figma-make/src/app/components/ui/dialog";
+} from "@/components/ui/dialog";
 
 type TeacherGradeApplyDialogProps = {
   disabled?: boolean;

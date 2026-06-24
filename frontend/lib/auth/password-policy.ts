@@ -40,12 +40,12 @@ export function countPasswordCharacterTypes(password: string) {
 }
 
 export function validatePassword(password: string): string | null {
-  if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
-    return `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 ${PASSWORD_MAX_LENGTH}자 이하로 입력해 주세요.`;
-  }
-
-  if (countPasswordCharacterTypes(password) < 2) {
-    return "비밀번호는 영문, 숫자, 특수문자 중 2가지 이상을 조합해 주세요.";
+  if (
+    password.length < PASSWORD_MIN_LENGTH ||
+    password.length > PASSWORD_MAX_LENGTH ||
+    countPasswordCharacterTypes(password) < 2
+  ) {
+    return "비밀번호 조건을 확인해 주세요.";
   }
 
   return null;

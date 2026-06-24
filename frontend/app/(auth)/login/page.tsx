@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { AuthButton } from "@/components/auth/auth-button";
@@ -10,8 +11,10 @@ import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { AuthFormCard, AuthFormLayout } from "@/components/layout/auth-form-layout";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const signupSuccess = searchParams.get("signup") === "success";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,7 +48,13 @@ export default function LoginPage() {
         }
         title="로그인"
       >
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        {signupSuccess ? (
+          <div className="mb-5">
+            <AuthAlert message="회원가입이 완료되었습니다. 로그인해 주세요." variant="info" />
+          </div>
+        ) : null}
+
+        <form className="space-y-5" noValidate onSubmit={handleSubmit}>
           <AuthFormField
             autoComplete="username"
             id="login_id"
@@ -58,6 +67,7 @@ export default function LoginPage() {
 
           <AuthFormField
             autoComplete="current-password"
+            showPasswordToggle
             id="password"
             label="비밀번호"
             minLength={8}
