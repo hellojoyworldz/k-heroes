@@ -14,12 +14,12 @@ def yi_scenario_id(db_session):
     return scenario.id
 
 
-def seed_local_user(db_session, login_id: str = "user01", password: str = "user-secret") -> User:
+def seed_local_user(db_session, login_id: str = "userone", password: str = "user-secret") -> User:
     user = User(
         auth_provider=AuthProvider.LOCAL,
         login_id=login_id,
         name="회원1",
-        email="user01@example.com",
+        email="userone@example.com",
         password_hash=hash_password(password),
         nickname="회원1",
         grade=UserGrade.STUDENT,
@@ -132,7 +132,7 @@ def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_sess
     seed_local_user(db_session)
     login_response = client.post(
         "/api/v2/auth/session",
-        json={"login_id": "user01", "password": "user-secret"},
+        json={"login_id": "userone", "password": "user-secret"},
     )
     assert login_response.status_code == 200
 

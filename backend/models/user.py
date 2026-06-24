@@ -22,7 +22,7 @@ class UserResponse(BaseModel):
 
 
 class UserSignupRequest(BaseModel):
-    login_id: str = Field(..., min_length=1, max_length=50, description="로그인 아이디")
+    login_id: str = Field(..., min_length=1, max_length=50, description="소문자로 시작하는 로그인 아이디")
     password: str = Field(..., min_length=8, max_length=128, description="비밀번호")
     name: Optional[str] = Field(None, max_length=100, description="이름")
     email: Optional[str] = Field(None, max_length=255, description="이메일")
@@ -32,7 +32,7 @@ class UserSignupRequest(BaseModel):
 
 
 class UserLoginRequest(BaseModel):
-    login_id: str = Field(..., min_length=1, max_length=50)
+    login_id: str = Field(..., min_length=1, max_length=50, description="소문자로 시작하는 로그인 아이디")
     password: str = Field(..., min_length=1, max_length=128)
 
     model_config = ConfigDict(extra="forbid")

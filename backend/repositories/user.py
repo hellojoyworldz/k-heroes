@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from core.auth_policy import InvalidLoginIdError, validate_login_id
 from core.security import hash_password, verify_password
 from db.models import AuthProvider, PlaySession, User, UserGrade
 from models.user import (
@@ -64,14 +65,15 @@ def get_user_by_google_provider_user_id(db: Session, provider_user_id: str) -> O
 
 
 def create_local_user(db: Session, data: UserSignupRequest) -> User:
-    _ensure_unique_login_id(db, data.login_id)
+    login_id = validate_login_id(data.login_id)
+    _ensure_unique_login_id(db, login_id)
     if data.email:
         _ensure_unique_email(db, data.email)
 
     user = User(
         auth_provider=AuthProvider.LOCAL,
         provider_user_id=None,
-        login_id=data.login_id,
+        login_id=login_id,
         name=data.name,
         email=data.email,
         password_hash=hash_password(data.password),
@@ -85,7 +87,8 @@ def create_local_user(db: Session, data: UserSignupRequest) -> User:
 
 
 def authenticate_local_user(db: Session, body: UserLoginRequest) -> User:
-    user = get_user_by_login_id(db, body.login_id)
+    login_id = validate_login_id(body.login_id)
+    user = get_user_by_login_id(db, login_id)
     if not user or user.auth_provider != AuthProvider.LOCAL:
         raise ValueError("invalid credentials")
     if not user.password_hash or not verify_password(body.password, user.password_hash):
