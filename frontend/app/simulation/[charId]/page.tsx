@@ -5,7 +5,7 @@ import { SimulationPage } from "@/figma-make/src/app/components/SimulationPage";
 import { Suspense } from "react";
 
 function normalizeCharId(charId: string) {
-  return charId === "yi-sunsin" ? "yi_sunsin" : charId;
+  return decodeURIComponent(charId);
 }
 
 function SimulationInner() {

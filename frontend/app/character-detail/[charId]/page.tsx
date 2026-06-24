@@ -4,8 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CharacterDetailPage } from "@/figma-make/src/app/components/CharacterDetailPage";
 
 function normalizeCharId(charId: string) {
-  const decodedCharId = decodeURIComponent(charId);
-  return decodedCharId === "yi-sunsin" ? "yi_sunsin" : decodedCharId;
+  return decodeURIComponent(charId);
 }
 
 export default function CharacterDetailRoutePage() {
