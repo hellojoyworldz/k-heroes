@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site } from "@/lib/site";
 
 const navItems = [
   { href: "/", label: "홈" },
@@ -11,7 +12,7 @@ export function SiteHeader() {
     <header className="border-b border-[var(--border)] bg-white/70 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="text-lg font-bold tracking-tight">
-          K-Heroes
+          {site.name}
         </Link>
         <nav className="flex items-center gap-4 text-sm font-medium text-[var(--muted-foreground)]">
           {navItems.map((item) => (

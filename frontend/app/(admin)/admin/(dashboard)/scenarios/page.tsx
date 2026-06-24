@@ -72,7 +72,8 @@ export default function ScenariosPage() {
   const characterOptions = characterOptionsQuery.data ?? [];
   const total = scenariosQuery.data?.total ?? 0;
   const totalPages = scenariosQuery.data?.total_pages ?? 0;
-  const isLoading = scenariosQuery.isFetching;
+  const isLoading = scenariosQuery.isPending;
+  const isRefreshing = scenariosQuery.isFetching && !scenariosQuery.isPending;
   const isSaving = createScenario.isPending || updateScenario.isPending;
   const isDeleting = deleteScenario.isPending;
   const tableError = pageError || (scenariosQuery.error?.message ?? "");
@@ -326,6 +327,7 @@ export default function ScenariosPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
+          isRefreshing={isRefreshing}
           onPageChange={setPage}
           onPageSizeChange={(value) => {
             setPage(1);

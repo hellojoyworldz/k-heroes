@@ -131,7 +131,8 @@ export default function EndingsPage() {
   const endings = endingsQuery.data?.items ?? [];
   const total = endingsQuery.data?.total ?? 0;
   const totalPages = endingsQuery.data?.total_pages ?? 0;
-  const isLoading = endingsQuery.isFetching;
+  const isLoading = endingsQuery.isPending;
+  const isRefreshing = endingsQuery.isFetching && !endingsQuery.isPending;
   const isSaving = createEnding.isPending || updateEnding.isPending;
   const isDeleting = deleteEnding.isPending;
   const tableError = pageError || (endingsQuery.error?.message ?? "");
@@ -425,6 +426,7 @@ export default function EndingsPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
+          isRefreshing={isRefreshing}
           onPageChange={setPage}
           onPageSizeChange={(value) => {
             setPage(1);

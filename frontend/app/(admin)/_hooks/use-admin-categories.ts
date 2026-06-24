@@ -8,6 +8,7 @@ import {
   fetchAdminApiJson,
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
+import { adminListQueryOptions } from "@/app/(admin)/_lib/admin-query-config";
 import type { CharacterCategoryListItem } from "@/app/(admin)/admin/(dashboard)/character-categories/_types";
 import { formatIdDotLabel } from "@/app/(admin)/_utils";
 
@@ -73,9 +74,7 @@ export function useAdminCategories(
   return useQuery({
     queryKey: adminCategoryKeys.list(filter, page, pageSize),
     queryFn: ({ signal }) => fetchCategoryList(filter, page, pageSize, signal),
-    staleTime: 0,
-    refetchOnMount: "always",
-    gcTime: 10 * 60 * 1000,
+    ...adminListQueryOptions,
   });
 }
 

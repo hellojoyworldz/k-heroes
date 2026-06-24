@@ -1,9 +1,32 @@
+import Link from "next/link";
+import { getCopyrightNotice, site } from "@/lib/site";
 import { BrandLogo } from "./BrandLogo";
 
-const FOOTER_LINKS = {
-  서비스: ["서비스 소개", "지역 선택", "역사 아카이브", "이용 가이드"],
-  지원: ["교육기관 문의", "공지사항", "자주 묻는 질문", "개인정보처리방침"],
-  연계기관: ["국립중앙박물관", "국사편찬위원회", "문화재청", "한국학중앙연구원"],
+type FooterLink = {
+  label: string;
+  href: string;
+};
+
+const FOOTER_LINKS: Record<string, FooterLink[]> = {
+  서비스: [
+    { label: "서비스 소개", href: "#" },
+    { label: "지역 선택", href: "/select" },
+    { label: "역사 아카이브", href: "#" },
+    { label: "이용 가이드", href: "#" },
+  ],
+  지원: [
+    { label: "교육기관 문의", href: "#" },
+    { label: "공지사항", href: "#" },
+    { label: "자주 묻는 질문", href: "#" },
+    { label: "이용약관", href: "/terms" },
+    { label: "개인정보처리방침", href: "/privacy" },
+  ],
+  연계기관: [
+    { label: "국립중앙박물관", href: "#" },
+    { label: "국사편찬위원회", href: "#" },
+    { label: "문화재청", href: "#" },
+    { label: "한국학중앙연구원", href: "#" },
+  ],
 };
 
 export function Footer() {
@@ -48,18 +71,18 @@ export function Footer() {
               </p>
               <ul className="flex flex-col gap-2.5">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
+                  <li key={link.label}>
+                    <Link
                       className="transition-colors hover:text-white"
+                      href={link.href}
                       style={{
                         fontFamily: "'Noto Sans KR', sans-serif",
                         fontSize: "0.8rem",
                         color: "rgba(255,255,255,0.38)",
                       }}
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -81,7 +104,7 @@ export function Footer() {
               color: "rgba(255,255,255,0.25)",
             }}
           >
-            © 2024 K-Heroes. All rights reserved.
+            {getCopyrightNotice()}
           </p>
           <p
             style={{
@@ -90,7 +113,7 @@ export function Footer() {
               color: "rgba(255,255,255,0.25)",
             }}
           >
-            문화 빅데이터 기반 역사 인터랙티브 시뮬레이션
+            {site.tagline}
           </p>
         </div>
       </div>

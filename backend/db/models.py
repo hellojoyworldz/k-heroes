@@ -187,6 +187,16 @@ class AdminRole(str, enum.Enum):
     PARTNER = "partner"
 
 
+class UserGrade(str, enum.Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+
+
+class AuthProvider(str, enum.Enum):
+    LOCAL = "local"
+    GOOGLE = "google"
+
+
 class AdminUser(SoftDeleteMixin, Base):
     __tablename__ = "admin_users"
 
@@ -207,11 +217,29 @@ class AdminUser(SoftDeleteMixin, Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("auth_provider", "provider_user_id", name="uq_users_provider_user_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    nickname: Mapped[str] = mapped_column(String(100), nullable=False)
+    auth_provider: Mapped[AuthProvider] = mapped_column(
+        Enum(AuthProvider, native_enum=False, length=20),
+        nullable=False,
+        default=AuthProvider.LOCAL,
+        server_default=AuthProvider.LOCAL.value,
+    )
+    provider_user_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    login_id: Mapped[Optional[str]] = mapped_column(String(50), unique=True, nullable=True, index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    nickname: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    grade: Mapped[UserGrade] = mapped_column(
+        Enum(UserGrade, native_enum=False, length=20),
+        nullable=False,
+        default=UserGrade.STUDENT,
+        server_default=UserGrade.STUDENT.value,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

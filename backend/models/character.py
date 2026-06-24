@@ -262,4 +262,3 @@ class CharacterAdminResponse(BaseModel):
             }
             return handler(prepared)
         return handler(value)
-

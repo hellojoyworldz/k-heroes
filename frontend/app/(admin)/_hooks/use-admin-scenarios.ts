@@ -8,6 +8,7 @@ import {
   fetchAdminApiJson,
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
+import { adminListQueryOptions } from "@/app/(admin)/_lib/admin-query-config";
 import type { ScenarioListItem } from "@/app/(admin)/admin/(dashboard)/scenarios/_types";
 import { formatIdDotLabel } from "@/app/(admin)/_utils";
 
@@ -105,9 +106,7 @@ export function useAdminScenarios(
   return useQuery({
     queryKey: adminScenarioKeys.list(filters, page, pageSize),
     queryFn: ({ signal }) => fetchScenarioList(filters, page, pageSize, signal),
-    staleTime: 0,
-    refetchOnMount: "always",
-    gcTime: 10 * 60 * 1000,
+    ...adminListQueryOptions,
   });
 }
 
