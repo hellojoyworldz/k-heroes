@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from db.models import Ending, PlaySession, Scenario, User
 from repositories.content import (
     CharacterNotFoundError,
     EndingNotFoundError,
@@ -18,7 +19,6 @@ from repositories.content import (
     map_summary_items,
 )
 from db.database import get_db
-from db.models import Ending, PlaySession, Scenario
 from models.simulation import (
     ChoiceDetail,
     EndingRequest,
@@ -31,6 +31,7 @@ from models.simulation import (
     TurnResponse,
 )
 from repositories.turn_stats import map_turn_stats_to_effects, ordered_turn_stats_ids
+from router.v2.deps import get_optional_current_user
 from simulation_data_manager import get_recommended_places
 
 router = APIRouter(prefix="/api/v2/simulation", tags=["Simulation v2"])
@@ -112,7 +113,11 @@ async def play_turn(payload: TurnRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/ending", response_model=EndingResponse)
-async def generate_ending(payload: EndingRequest, db: Session = Depends(get_db)):
+async def generate_ending(
+    payload: EndingRequest,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_current_user),
+):
     try:
         ending, scenario, character_card = get_ending_by_path(
             db, payload.character_name, payload.scenario_id, payload.choices_path
@@ -161,6 +166,7 @@ async def generate_ending(payload: EndingRequest, db: Session = Depends(get_db))
     result_id = str(uuid.uuid4())
     play_session = PlaySession(
         id=result_id,
+        user_id=current_user.id if current_user else None,
         scenario_id=ending.scenario_id,
         ending_id=ending.id,
         status="completed",

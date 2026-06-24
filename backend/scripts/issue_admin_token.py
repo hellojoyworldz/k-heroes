@@ -64,7 +64,7 @@ def issue_token(*, username: str, password: str) -> str:
             raise RuntimeError("비밀번호가 올바르지 않습니다")
 
         token = create_access_token(
-            admin_user_id=admin_user.id,
+            subject_id=admin_user.id,
             role=admin_user.role.value,
         )
         print(f"[INFO] role={admin_user.role.value}, expires_in_hours={os.environ.get('JWT_EXPIRE_HOURS', '8')}")
