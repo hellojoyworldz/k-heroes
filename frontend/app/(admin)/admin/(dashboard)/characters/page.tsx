@@ -75,7 +75,8 @@ export default function CharactersPage() {
   const categories = categoryOptionsQuery.data ?? [];
   const total = charactersQuery.data?.total ?? 0;
   const totalPages = charactersQuery.data?.total_pages ?? 0;
-  const isLoading = charactersQuery.isFetching;
+  const isLoading = charactersQuery.isPending;
+  const isRefreshing = charactersQuery.isFetching && !charactersQuery.isPending;
   const isSaving = createCharacter.isPending || updateCharacter.isPending;
   const isDeleting = deleteCharacter.isPending;
   const tableError = pageError || (charactersQuery.error?.message ?? "");
@@ -415,6 +416,7 @@ export default function CharactersPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
+          isRefreshing={isRefreshing}
           onPageChange={setPage}
           onPageSizeChange={(value) => {
             setPage(1);

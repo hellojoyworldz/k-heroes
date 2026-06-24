@@ -1,0 +1,292 @@
+from datetime import date, datetime, time
+from typing import List, Optional, Tuple
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
+
+from core.security import hash_password, verify_password
+from db.models import AuthProvider, PlaySession, User, UserGrade
+from models.user import (
+    AdminPlaySessionItem,
+    UserLoginRequest,
+    UserPlaySessionItem,
+    UserSignupRequest,
+    UserUpdateRequest,
+)
+
+
+class UserNotFoundError(Exception):
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        super().__init__(f"회원 계정을 찾을 수 없습니다. (ID: {user_id})")
+
+
+class UserDuplicateError(Exception):
+    def __init__(self, field_name: str, value: str):
+        self.field_name = field_name
+        self.value = value
+        super().__init__(f"이미 사용 중인 {field_name}입니다. ({value})")
+
+
+def _get_user_or_raise(db: Session, user_id: int) -> User:
+    user = db.get(User, user_id)
+    if not user:
+        raise UserNotFoundError(user_id)
+    return user
+
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    return db.get(User, user_id)
+
+
+def get_user_by_login_id(db: Session, login_id: str) -> Optional[User]:
+    return db.scalar(select(User).where(User.login_id == login_id))
+
+
+def _ensure_unique_login_id(db: Session, login_id: str) -> None:
+    if get_user_by_login_id(db, login_id):
+        raise UserDuplicateError("login_id", login_id)
+
+
+def _ensure_unique_email(db: Session, email: str) -> None:
+    existing = db.scalar(select(User).where(User.email == email))
+    if existing:
+        raise UserDuplicateError("email", email)
+
+
+def get_user_by_google_provider_user_id(db: Session, provider_user_id: str) -> Optional[User]:
+    return db.scalar(
+        select(User).where(
+            User.auth_provider == AuthProvider.GOOGLE,
+            User.provider_user_id == provider_user_id,
+        )
+    )
+
+
+def create_local_user(db: Session, data: UserSignupRequest) -> User:
+    _ensure_unique_login_id(db, data.login_id)
+    if data.email:
+        _ensure_unique_email(db, data.email)
+
+    user = User(
+        auth_provider=AuthProvider.LOCAL,
+        provider_user_id=None,
+        login_id=data.login_id,
+        name=data.name,
+        email=data.email,
+        password_hash=hash_password(data.password),
+        nickname=data.nickname,
+        grade=UserGrade.STUDENT,
+    )
+    db.add(user)
+    db.flush()
+    db.refresh(user)
+    return user
+
+
+def authenticate_local_user(db: Session, body: UserLoginRequest) -> User:
+    user = get_user_by_login_id(db, body.login_id)
+    if not user or user.auth_provider != AuthProvider.LOCAL:
+        raise ValueError("invalid credentials")
+    if not user.password_hash or not verify_password(body.password, user.password_hash):
+        raise ValueError("invalid credentials")
+    return user
+
+
+def authenticate_google_user(
+    db: Session,
+    *,
+    provider_user_id: str,
+    email: Optional[str] = None,
+    name: Optional[str] = None,
+) -> User:
+    user = get_user_by_google_provider_user_id(db, provider_user_id)
+    if user:
+        if name and not user.name:
+            user.name = name
+        if email and not user.email:
+            existing_email_user = db.scalar(select(User).where(User.email == email, User.id != user.id))
+            if not existing_email_user:
+                user.email = email
+        if name and not user.nickname:
+            user.nickname = name
+        db.flush()
+        db.refresh(user)
+        return user
+
+    stored_email = email
+    if stored_email:
+        existing_email_user = db.scalar(select(User).where(User.email == stored_email))
+        if existing_email_user:
+            stored_email = None
+
+    user = User(
+        auth_provider=AuthProvider.GOOGLE,
+        provider_user_id=provider_user_id,
+        login_id=None,
+        name=name,
+        email=stored_email,
+        password_hash=None,
+        nickname=name,
+        grade=UserGrade.STUDENT,
+    )
+    db.add(user)
+    db.flush()
+    db.refresh(user)
+    return user
+
+
+def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    trimmed = value.strip()
+    return trimmed or None
+
+
+def update_current_user(db: Session, user: User, data: UserUpdateRequest) -> User:
+    updates = data.model_dump(exclude_unset=True)
+
+    if user.auth_provider == AuthProvider.GOOGLE and (
+        "current_password" in updates or "new_password" in updates
+    ):
+        raise ValueError("password change not allowed")
+
+    if user.auth_provider == AuthProvider.LOCAL and (
+        "current_password" in updates or "new_password" in updates
+    ):
+        current_password = updates.pop("current_password", None)
+        new_password = updates.pop("new_password", None)
+        if not current_password or not new_password:
+            raise ValueError("password change requires current and new password")
+        if not user.password_hash or not verify_password(current_password, user.password_hash):
+            raise ValueError("invalid current password")
+        user.password_hash = hash_password(new_password)
+
+    if "name" in updates:
+        user.name = _normalize_optional_text(updates.pop("name"))
+    if "nickname" in updates:
+        user.nickname = _normalize_optional_text(updates.pop("nickname"))
+    if "email" in updates:
+        new_email = _normalize_optional_text(updates.pop("email"))
+        if new_email != user.email:
+            if new_email:
+                existing_email_user = db.scalar(select(User).where(User.email == new_email, User.id != user.id))
+                if existing_email_user:
+                    raise UserDuplicateError("email", new_email)
+            user.email = new_email
+
+    db.flush()
+    db.refresh(user)
+    return user
+
+
+def list_completed_play_sessions(
+    db: Session,
+    user_id: int,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    character_name: Optional[str] = None,
+    scenario_title: Optional[str] = None,
+) -> Tuple[List[UserPlaySessionItem], int, Optional[float]]:
+    conditions = [PlaySession.user_id == user_id, PlaySession.status == "completed"]
+
+    if date_from is not None:
+        conditions.append(PlaySession.completed_at >= datetime.combine(date_from, time.min))
+    if date_to is not None:
+        conditions.append(PlaySession.completed_at <= datetime.combine(date_to, time.max))
+    if character_name:
+        conditions.append(PlaySession.character_name.contains(character_name))
+    if scenario_title:
+        conditions.append(PlaySession.scenario_title.contains(scenario_title))
+
+    total = db.scalar(
+        select(func.count(PlaySession.id)).where(*conditions)
+    ) or 0
+    average_history_score = db.scalar(
+        select(func.avg(PlaySession.history_score)).where(*conditions)
+    )
+
+    sessions = db.scalars(
+        select(PlaySession)
+        .where(*conditions)
+        .order_by(PlaySession.completed_at.desc().nullslast(), PlaySession.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    return (
+        [UserPlaySessionItem.model_validate(session) for session in sessions],
+        total,
+        float(average_history_score) if average_history_score is not None else None,
+    )
+
+
+def list_play_sessions_for_admin(
+    db: Session,
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    status: Optional[str] = None,
+    user_login_id: Optional[str] = None,
+    character_name: Optional[str] = None,
+    scenario_title: Optional[str] = None,
+) -> Tuple[List[AdminPlaySessionItem], int]:
+    conditions = []
+    if date_from is not None:
+        conditions.append(PlaySession.completed_at >= datetime.combine(date_from, time.min))
+    if date_to is not None:
+        conditions.append(PlaySession.completed_at <= datetime.combine(date_to, time.max))
+    if status:
+        conditions.append(PlaySession.status == status)
+    if character_name:
+        conditions.append(PlaySession.character_name.contains(character_name))
+    if scenario_title:
+        conditions.append(PlaySession.scenario_title.contains(scenario_title))
+    if user_login_id:
+        conditions.append(User.login_id.contains(user_login_id))
+
+    total = (
+        db.scalar(
+            select(func.count(PlaySession.id))
+            .select_from(PlaySession)
+            .join(User, PlaySession.user_id == User.id, isouter=True)
+            .where(*conditions)
+        )
+        or 0
+    )
+
+    sessions = db.scalars(
+        select(PlaySession)
+        .options(selectinload(PlaySession.user))
+        .join(User, PlaySession.user_id == User.id, isouter=True)
+        .where(*conditions)
+        .order_by(PlaySession.completed_at.desc().nullslast(), PlaySession.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+
+    items = [
+        AdminPlaySessionItem(
+            id=session.id,
+            user_id=session.user.id if session.user else None,
+            user_login_id=session.user.login_id if session.user else None,
+            user_name=session.user.name if session.user else None,
+            user_grade=session.user.grade if session.user else None,
+            scenario_id=session.scenario_id,
+            ending_id=session.ending_id,
+            scenario_title=session.scenario_title,
+            character_name=session.character_name,
+            status=session.status,
+            history_score=session.history_score,
+            choices_path=session.choices_path or [],
+            created_at=session.created_at,
+            completed_at=session.completed_at,
+            completed_date=session.completed_at.date().isoformat() if session.completed_at else None,
+        )
+        for session in sessions
+    ]
+    return items, total

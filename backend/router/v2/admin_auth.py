@@ -35,7 +35,7 @@ def authenticate_admin(body: AdminLoginRequest, db: Session) -> AdminUser:
 def issue_token(admin_user: AdminUser) -> str:
     try:
         return create_access_token(
-            admin_user_id=admin_user.id,
+            subject_id=admin_user.id,
             role=admin_user.role.value,
         )
     except RuntimeError as exc:

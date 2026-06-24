@@ -2,6 +2,7 @@ from db.database import Base, SessionLocal, engine, get_db
 from db.models import (
     AdminRole,
     AdminUser,
+    AuthProvider,
     Character,
     CharacterCategory,
     Choice,
@@ -12,6 +13,7 @@ from db.models import (
     SoftDeleteMixin,
     Turn,
     User,
+    UserGrade,
     UserScenarioProgress,
 )
 
@@ -24,6 +26,7 @@ __all__ = [
     "SoftDeleteMixin",
     "AdminRole",
     "AdminUser",
+    "AuthProvider",
     "Character",
     "CharacterCategory",
     "Scenario",
@@ -31,6 +34,7 @@ __all__ = [
     "Choice",
     "Ending",
     "User",
+    "UserGrade",
     "PlaySession",
     "UserScenarioProgress",
 ]

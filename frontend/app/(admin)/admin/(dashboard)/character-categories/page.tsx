@@ -63,7 +63,8 @@ export default function CharacterCategoriesPage() {
   const categories = categoriesQuery.data?.items ?? [];
   const total = categoriesQuery.data?.total ?? 0;
   const totalPages = categoriesQuery.data?.total_pages ?? 0;
-  const isLoading = categoriesQuery.isFetching;
+  const isLoading = categoriesQuery.isPending;
+  const isRefreshing = categoriesQuery.isFetching && !categoriesQuery.isPending;
   const isSaving = createCategory.isPending || updateCategory.isPending;
   const isDeleting = deleteCategory.isPending;
   const tableError = pageError || (categoriesQuery.error?.message ?? "");
@@ -250,6 +251,7 @@ export default function CharacterCategoriesPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
+          isRefreshing={isRefreshing}
           onPageChange={setPage}
           onPageSizeChange={(value) => {
             setPage(1);

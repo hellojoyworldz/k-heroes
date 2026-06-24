@@ -106,7 +106,8 @@ export default function TurnsPage() {
   const turns = turnsQuery.data?.items ?? [];
   const total = turnsQuery.data?.total ?? 0;
   const totalPages = turnsQuery.data?.total_pages ?? 0;
-  const isLoading = turnsQuery.isFetching;
+  const isLoading = turnsQuery.isPending;
+  const isRefreshing = turnsQuery.isFetching && !turnsQuery.isPending;
   const isSaving = createTurn.isPending || updateTurn.isPending;
   const isDeleting = deleteTurn.isPending;
   const tableError = pageError || (turnsQuery.error?.message ?? "");
@@ -419,6 +420,7 @@ export default function TurnsPage() {
       {!isReorderMode ? (
         <AdminPagination
           disabled={isLoading}
+          isRefreshing={isRefreshing}
           onPageChange={setPage}
           onPageSizeChange={(value) => {
             setPage(1);

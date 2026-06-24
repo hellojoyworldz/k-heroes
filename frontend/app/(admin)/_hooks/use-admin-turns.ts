@@ -8,6 +8,7 @@ import {
   fetchAdminApiJson,
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
+import { adminListQueryOptions } from "@/app/(admin)/_lib/admin-query-config";
 import type { TurnListItem } from "@/app/(admin)/admin/(dashboard)/turns/_types";
 
 type ChoiceWrite = {
@@ -80,9 +81,7 @@ export function useAdminTurns(
   return useQuery({
     queryKey: adminTurnKeys.list(filters, page, pageSize),
     queryFn: ({ signal }) => fetchTurnList(filters, page, pageSize, signal),
-    staleTime: 0,
-    refetchOnMount: "always",
-    gcTime: 10 * 60 * 1000,
+    ...adminListQueryOptions,
   });
 }
 

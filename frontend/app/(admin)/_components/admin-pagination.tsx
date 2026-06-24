@@ -10,6 +10,7 @@ type AdminPaginationProps = {
   total: number;
   totalPages: number;
   disabled?: boolean;
+  isRefreshing?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: AdminPageSize) => void;
   onRefresh: () => void;
@@ -19,6 +20,7 @@ const pageSizes: AdminPageSize[] = [10, 20, 50, 100];
 
 export function AdminPagination({
   disabled = false,
+  isRefreshing = false,
   onPageChange,
   onPageSizeChange,
   onRefresh,
@@ -41,7 +43,10 @@ export function AdminPagination({
           title="현재 조건으로 새로고침"
           type="button"
         >
-          <RefreshCw aria-hidden="true" className={disabled ? "size-4 animate-spin" : "size-4"} />
+          <RefreshCw
+            aria-hidden="true"
+            className={disabled || isRefreshing ? "size-4 animate-spin" : "size-4"}
+          />
         </button>
       </div>
 

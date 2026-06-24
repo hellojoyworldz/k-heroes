@@ -8,6 +8,7 @@ import {
   fetchAdminApiJson,
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
+import { adminListQueryOptions } from "@/app/(admin)/_lib/admin-query-config";
 import type {
   EndingListItem,
   RecommendedPlace,
@@ -79,9 +80,7 @@ export function useAdminEndings(
   return useQuery({
     queryKey: adminEndingKeys.list(filters, page, pageSize),
     queryFn: ({ signal }) => fetchEndingList(filters, page, pageSize, signal),
-    staleTime: 0,
-    refetchOnMount: "always",
-    gcTime: 10 * 60 * 1000,
+    ...adminListQueryOptions,
   });
 }
 

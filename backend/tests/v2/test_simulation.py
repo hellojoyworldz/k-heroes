@@ -1,7 +1,9 @@
 import pytest
 from sqlalchemy import select
 
+from core.security import hash_password
 from db.models import PlaySession
+from db.models import AuthProvider, User, UserGrade
 from tests.helpers import get_scenario
 
 
@@ -10,6 +12,21 @@ def yi_scenario_id(db_session):
     scenario = get_scenario(db_session, "이순신", 0)
     assert scenario is not None
     return scenario.id
+
+
+def seed_local_user(db_session, login_id: str = "user01", password: str = "user-secret") -> User:
+    user = User(
+        auth_provider=AuthProvider.LOCAL,
+        login_id=login_id,
+        name="회원1",
+        email="user01@example.com",
+        password_hash=hash_password(password),
+        nickname="회원1",
+        grade=UserGrade.STUDENT,
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
 
 
 def test_start_simulation(client, yi_scenario_id):
@@ -109,6 +126,38 @@ def test_generate_ending_and_get_result(client, db_session, yi_scenario_id):
     assert result_data["uuid"] == ending_data["uuid"]
     assert result_data["title"] == ending_data["title"]
     assert result_data["ending_markdown"]
+
+
+def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_session, yi_scenario_id):
+    seed_local_user(db_session)
+    login_response = client.post(
+        "/api/v2/auth/session",
+        json={"login_id": "user01", "password": "user-secret"},
+    )
+    assert login_response.status_code == 200
+
+    ending_response = client.post(
+        "/api/v2/simulation/ending",
+        json={
+            "character_name": "이순신",
+            "scenario_id": yi_scenario_id,
+            "choices_path": ["A", "A", "A"],
+        },
+    )
+    assert ending_response.status_code == 200
+    ending_data = ending_response.json()
+
+    session = db_session.scalar(select(PlaySession).where(PlaySession.id == ending_data["uuid"]))
+    assert session is not None
+    assert session.user_id is not None
+
+    sessions_response = client.get("/api/v2/auth/sessions")
+    assert sessions_response.status_code == 200
+    sessions = sessions_response.json()
+    assert sessions["total"] == 1
+    assert len(sessions["items"]) == 1
+    assert sessions["items"][0]["id"] == ending_data["uuid"]
+    assert sessions["items"][0]["scenario_id"] == yi_scenario_id
 
 
 def test_generate_ending_not_found(client, yi_scenario_id):
