@@ -273,8 +273,12 @@ export function CharacterSection({
   const { ref, isVisible } = useRevealOnView<HTMLElement>();
   const fallbackCharacters = useMemo(() => CHARACTER_LIST.map(mapStaticCharacter), []);
   const [characters, setCharacters] = useState<LandingCharacter[]>(fallbackCharacters);
-  const [seed, setSeed] = useState(() => Date.now());
+  const [seed, setSeed] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    setSeed(Date.now());
+  }, []);
 
   useEffect(() => {
     let isActive = true;
