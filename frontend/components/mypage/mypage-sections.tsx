@@ -1,13 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, Mail, Shield, UserRound } from "lucide-react";
-import { useState } from "react";
 import { ChoicePathSteps } from "@/components/mypage/choice-path-steps";
 import { MypageCollapsibleSection } from "@/components/mypage/mypage-collapsible-section";
 import {
-  emptySessionHistoryFilters,
   MypageSessionFilters,
   type SessionHistoryFilters,
 } from "@/components/mypage/mypage-session-filters";
@@ -23,9 +21,11 @@ const SESSION_PAGE_SIZE = 5;
 
 type MypageProfileCardProps = {
   user: UserProfile;
+  completedCount: number;
+  averageHistoryScore: number | null;
 };
 
-export function MypageProfileCard({ user }: MypageProfileCardProps) {
+export function MypageProfileCard({ user, completedCount, averageHistoryScore }: MypageProfileCardProps) {
   const displayName = user.nickname || user.name || user.login_id || "회원";
   const initials = displayName.slice(0, 2);
 
@@ -65,8 +65,11 @@ export function MypageProfileCard({ user }: MypageProfileCardProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:min-w-[220px]">
-          <StatBox label="완료한 이야기" value="2" />
-          <StatBox label="평균 역사 점수" value="89점" />
+          <StatBox label="완료한 이야기" value={`${completedCount}`} />
+          <StatBox
+            label="평균 역사 점수"
+            value={`${Math.round(averageHistoryScore ?? 0)}점`}
+          />
         </div>
       </div>
     </section>
@@ -141,22 +144,56 @@ export function MypageAccountInfo({ user, footer }: MypageAccountInfoProps) {
 }
 
 type MypageSessionHistoryProps = {
+  currentPage: number;
+  errorMessage?: string | null;
+  isLoading?: boolean;
+  onPageChange: Dispatch<SetStateAction<number>>;
+  onReset: () => void;
+  onSearch: () => void;
+  onFiltersChange: Dispatch<SetStateAction<SessionHistoryFilters>>;
   sessions: PlaySessionItem[];
+  total: number;
+  totalPages: number;
+  values: SessionHistoryFilters;
 };
 
-export function MypageSessionHistory({ sessions }: MypageSessionHistoryProps) {
-  const [filters, setFilters] = useState<SessionHistoryFilters>(emptySessionHistoryFilters);
-
+export function MypageSessionHistory({
+  currentPage,
+  errorMessage = null,
+  isLoading = false,
+  onFiltersChange,
+  onPageChange,
+  onReset,
+  onSearch,
+  sessions,
+  total,
+  totalPages,
+  values,
+}: MypageSessionHistoryProps) {
   return (
-    <MypageCollapsibleSection meta={`총 ${sessions.length}건`} title="나의 시뮬레이션 기록">
+    <MypageCollapsibleSection meta={`총 ${total}건`} title="나의 시뮬레이션 기록">
       <MypageSessionFilters
-        onChange={setFilters}
-        onReset={() => setFilters(emptySessionHistoryFilters)}
-        onSearch={() => undefined}
-        values={filters}
+        onChange={onFiltersChange}
+        onReset={onReset}
+        onSearch={onSearch}
+        values={values}
       />
 
-      {sessions.length === 0 ? (
+      {errorMessage ? (
+        <p
+          className="mt-8 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-[#8A847C]"
+          style={{ borderColor: "rgba(42,66,50,0.15)" }}
+        >
+          {errorMessage}
+        </p>
+      ) : isLoading ? (
+        <p
+          className="mt-8 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-[#8A847C]"
+          style={{ borderColor: "rgba(42,66,50,0.15)" }}
+        >
+          시뮬레이션 기록을 불러오는 중입니다.
+        </p>
+      ) : sessions.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-[#8A847C]" style={{ borderColor: "rgba(42,66,50,0.15)" }}>
           아직 완료한 시뮬레이션이 없습니다. 첫 이야기를 시작해 보세요.
         </p>
@@ -169,11 +206,11 @@ export function MypageSessionHistory({ sessions }: MypageSessionHistoryProps) {
           </ul>
 
           <PagePagination
-            alwaysShow
-            onPageChange={() => undefined}
-            page={0}
+            alwaysShow={totalPages > 1}
+            onPageChange={onPageChange}
+            page={currentPage}
             pageSize={SESSION_PAGE_SIZE}
-            total={sessions.length}
+            total={total}
           />
         </>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
@@ -9,6 +10,7 @@ import {
   MypageProfileCard,
   MypageSessionHistory,
 } from "@/components/mypage/mypage-sections";
+import { emptySessionHistoryFilters, type SessionHistoryFilters } from "@/components/mypage/mypage-session-filters";
 import { TeacherGradeApplyDialog } from "@/components/mypage/teacher-grade-apply";
 import {
   Dialog,
@@ -18,16 +20,73 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuthMe } from "@/hooks/use-auth-me";
+import { useMySessions } from "@/hooks/use-my-sessions";
 import { useLogout } from "@/hooks/use-logout";
-import { mockPlaySessions, mockUserProfile } from "@/lib/mypage/mock-data";
+
+const SESSION_PAGE_SIZE = 5;
 
 export default function MypagePage() {
   const router = useRouter();
+  const authMeQuery = useAuthMe();
+  const [filters, setFilters] = useState<SessionHistoryFilters>(emptySessionHistoryFilters);
+  const [submittedFilters, setSubmittedFilters] = useState<SessionHistoryFilters>(emptySessionHistoryFilters);
+  const [page, setPage] = useState(0);
   const { handleLogout, isLoggingOut, logoutDialogOpen, setLogoutDialogOpen } = useLogout();
+  const sessionsQuery = useMySessions(
+    {
+      page: page + 1,
+      pageSize: SESSION_PAGE_SIZE,
+      dateFrom: submittedFilters.dateFrom || undefined,
+      dateTo: submittedFilters.dateTo || undefined,
+      characterName: submittedFilters.characterName.trim() || undefined,
+      scenarioTitle: submittedFilters.scenarioTitle.trim() || undefined,
+    },
+    Boolean(authMeQuery.data),
+  );
 
-  // TODO: /api/v2/auth/me, /api/v2/auth/sessions 연동
-  const user = mockUserProfile;
-  const sessions = mockPlaySessions;
+  useEffect(() => {
+    if (!authMeQuery.isLoading && authMeQuery.data === null) {
+      router.replace("/login");
+    }
+  }, [authMeQuery.data, authMeQuery.isLoading, router]);
+
+  if (authMeQuery.isLoading) {
+    return null;
+  }
+
+  if (authMeQuery.isError) {
+    return (
+      <SitePageShell>
+        <div className="mx-auto max-w-4xl px-6 py-10 sm:py-14">
+          <div
+            className="rounded-xl border px-4 py-10 text-center text-sm text-[#6B6458]"
+            style={{ borderColor: "rgba(42,66,50,0.12)", background: "rgba(253,250,244,0.8)" }}
+          >
+            회원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </div>
+        </div>
+      </SitePageShell>
+    );
+  }
+
+  const user = authMeQuery.data;
+  const sessionsData = sessionsQuery.data;
+
+  function handleSearch() {
+    setPage(0);
+    setSubmittedFilters(filters);
+  }
+
+  function handleReset() {
+    setFilters(emptySessionHistoryFilters);
+    setSubmittedFilters(emptySessionHistoryFilters);
+    setPage(0);
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
@@ -51,37 +110,49 @@ export default function MypagePage() {
             </p>
           </header>
 
-          <div
-            className="mb-6 rounded-xl border px-4 py-3 text-sm text-[#6B6458]"
-            style={{ borderColor: "rgba(42,66,50,0.12)", background: "rgba(253,250,244,0.8)" }}
-          >
-            현재는 UI 미리보기입니다. 로그인 API 연동 후 실제 계정 정보가 표시됩니다.
-          </div>
-
           <div className="space-y-6">
-            <MypageProfileCard user={user} />
+            <div className="flex justify-end">
+              <AuthButton
+                isLoading={isLoggingOut}
+                loadingText="로그아웃 중..."
+                onClick={handleLogout}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <LogOut aria-hidden="true" className="size-4" />
+                로그아웃
+              </AuthButton>
+            </div>
+
+            <MypageProfileCard
+              averageHistoryScore={sessionsData?.summary.average_history_score ?? null}
+              completedCount={sessionsData?.summary.completed_count ?? 0}
+              user={user}
+            />
 
             <MypageAccountInfo
               footer={
                 <>
                   {user.grade === "student" ? <TeacherGradeApplyDialog /> : null}
-                  <AuthButton
-                    isLoading={isLoggingOut}
-                    loadingText="로그아웃 중..."
-                    onClick={handleLogout}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <LogOut aria-hidden="true" className="size-4" />
-                    로그아웃
-                  </AuthButton>
                 </>
               }
               user={user}
             />
 
-            <MypageSessionHistory sessions={sessions} />
+            <MypageSessionHistory
+              currentPage={page}
+              errorMessage={sessionsQuery.isError ? "시뮬레이션 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." : null}
+              isLoading={sessionsQuery.isLoading}
+              onFiltersChange={setFilters}
+              onPageChange={setPage}
+              onReset={handleReset}
+              onSearch={handleSearch}
+              sessions={sessionsData?.items ?? []}
+              total={sessionsData?.total ?? 0}
+              totalPages={sessionsData?.total_pages ?? 0}
+              values={filters}
+            />
 
             <AuthButton className="sm:max-w-xs" onClick={() => router.push("/map")} type="button">
               새 이야기 시작하기

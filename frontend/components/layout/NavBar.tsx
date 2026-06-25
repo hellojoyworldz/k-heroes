@@ -76,25 +76,14 @@ export function NavBar({ onStart }: { onStart?: () => void }) {
           <div className="flex items-center gap-3">
             {!isCheckingAuth && (
               isLoggedIn ? (
-                <>
-                  <Link
-                    href="/mypage"
-                    className="hidden md:inline-flex max-w-40 truncate text-sm font-medium transition-colors hover:text-[#2A4232]"
-                    style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
-                    title={`${displayName}님 마이페이지로 이동`}
-                  >
-                    {displayName}님 환영합니다
-                  </Link>
-                  <button
-                    className="hidden md:inline-flex text-sm transition-colors hover:text-[#2A4232] disabled:opacity-60"
-                    disabled={isLoggingOut}
-                    onClick={handleLogout}
-                    style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
-                    type="button"
-                  >
-                    {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-                  </button>
-                </>
+                <Link
+                  href="/mypage"
+                  className="hidden md:inline-flex max-w-40 truncate text-sm font-medium transition-colors hover:text-[#2A4232]"
+                  style={{ color: "#4A4438", fontFamily: "'Noto Sans KR', sans-serif" }}
+                  title={`${displayName}님 마이페이지로 이동`}
+                >
+                  {displayName}님 환영합니다
+                </Link>
               ) : (
                 <>
                   <Link

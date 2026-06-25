@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { cn } from "@/lib/utils/cn";
 
@@ -20,7 +20,7 @@ export const emptySessionHistoryFilters: SessionHistoryFilters = {
 
 type MypageSessionFiltersProps = {
   values: SessionHistoryFilters;
-  onChange: (values: SessionHistoryFilters) => void;
+  onChange: Dispatch<SetStateAction<SessionHistoryFilters>>;
   onSearch: () => void;
   onReset: () => void;
 };

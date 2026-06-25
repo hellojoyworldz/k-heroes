@@ -26,6 +26,20 @@ export type PlaySessionItem = {
   completed_at: string | null;
 };
 
+export type PlaySessionSummary = {
+  completed_count: number;
+  average_history_score: number | null;
+};
+
+export type PlaySessionListResponse = {
+  items: PlaySessionItem[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  summary: PlaySessionSummary;
+};
+
 export const gradeLabels: Record<UserGrade, string> = {
   student: "학생",
   teacher: "교사",
