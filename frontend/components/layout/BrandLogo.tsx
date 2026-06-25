@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { site } from "@/lib/site";
 
 type BrandLogoProps = {
@@ -9,7 +10,7 @@ type BrandLogoProps = {
 
 export function BrandLogo({ compact = false, dark = false, showBeta = false, className = "" }: BrandLogoProps) {
   return (
-    <a
+    <Link
       href="/"
       aria-label={`${site.name} 홈으로 이동`}
       className={`flex items-center gap-2.5 transition-opacity hover:opacity-70 ${className}`}
@@ -47,6 +48,6 @@ export function BrandLogo({ compact = false, dark = false, showBeta = false, cla
           BETA
         </span>
       )}
-    </a>
+    </Link>
   );
 }
