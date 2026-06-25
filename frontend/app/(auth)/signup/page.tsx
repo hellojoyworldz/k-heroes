@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthFormField } from "@/components/auth/auth-form-field";
@@ -25,6 +26,16 @@ import { site } from "@/lib/site";
 
 type SubmitDialogFocusTarget = "login_id" | "email" | null;
 
+type SignupFormValues = {
+  login_id: string;
+  password: string;
+  password_confirm: string;
+  name: string;
+  nickname: string;
+  email: string;
+  agreed_to_terms: boolean;
+};
+
 function getSignupErrorFocusTarget(message: string): SubmitDialogFocusTarget {
   if (message.includes("login_id")) return "login_id";
   if (message.includes("email")) return "email";
@@ -37,59 +48,30 @@ function getSignupErrorMessage(message: string) {
 
 export default function SignupPage() {
   const router = useRouter();
-  const loginIdInputRef = useRef<HTMLInputElement>(null);
-  const passwordInputRef = useRef<HTMLInputElement>(null);
-  const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
-  const emailInputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [termsError, setTermsError] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginId, setLoginId] = useState("");
-  const [loginIdError, setLoginIdError] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordConfirmError, setPasswordConfirmError] = useState("");
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const {
+    formState: { errors, isSubmitting },
+    getValues,
+    handleSubmit,
+    register,
+    setFocus,
+    trigger,
+    watch,
+  } = useForm<SignupFormValues>({
+    defaultValues: {
+      login_id: "",
+      password: "",
+      password_confirm: "",
+      name: "",
+      nickname: "",
+      email: "",
+      agreed_to_terms: false,
+    },
+    mode: "onChange",
+  });
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [submitDialogMessage, setSubmitDialogMessage] = useState("");
   const [submitDialogFocusTarget, setSubmitDialogFocusTarget] = useState<SubmitDialogFocusTarget>(null);
-
-  function handleLoginIdChange(value: string) {
-    setLoginId(value);
-    setLoginIdError(validateLoginId(value) ?? "");
-  }
-
-  function handlePasswordChange(value: string) {
-    setPassword(value);
-    setPasswordError(validatePassword(value) ?? "");
-
-    if (passwordConfirm) {
-      setPasswordConfirmError(value === passwordConfirm ? "" : "비밀번호가 일치하지 않습니다.");
-    }
-  }
-
-  function handlePasswordConfirmChange(value: string) {
-    setPasswordConfirm(value);
-    setPasswordConfirmError(password === value ? "" : "비밀번호가 일치하지 않습니다.");
-  }
-
-  function handleEmailChange(value: string) {
-    setEmail(value);
-    setEmailError(validateOptionalEmail(value) ?? "");
-  }
-
-  function focusField(target: SubmitDialogFocusTarget) {
-    if (target === "login_id") {
-      loginIdInputRef.current?.focus();
-      return;
-    }
-
-    if (target === "email") {
-      emailInputRef.current?.focus();
-    }
-  }
+  const password = watch("password");
 
   function openSubmitDialog(message: string, focusTarget: SubmitDialogFocusTarget = null) {
     setSubmitDialogMessage(message);
@@ -97,53 +79,11 @@ export default function SignupPage() {
     setSubmitDialogOpen(true);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
-    const nextLoginId = String(formData.get("login_id") ?? "").trim();
-    const nextPassword = String(formData.get("password") ?? "");
-    const nextPasswordConfirm = String(formData.get("password_confirm") ?? "");
-    const name = String(formData.get("name") ?? "").trim();
-    const nextEmail = String(formData.get("email") ?? "").trim();
-    const nickname = String(formData.get("nickname") ?? "").trim();
-
-    const nextLoginIdError = validateLoginId(nextLoginId);
-    setLoginIdError(nextLoginIdError ?? "");
-    if (nextLoginIdError) {
-      loginIdInputRef.current?.focus();
-      return;
-    }
-
-    const nextPasswordError = validatePassword(nextPassword);
-    setPasswordError(nextPasswordError ?? "");
-    if (nextPasswordError) {
-      passwordInputRef.current?.focus();
-      return;
-    }
-
-    if (nextPassword !== nextPasswordConfirm) {
-      setPasswordConfirmError("비밀번호가 일치하지 않습니다.");
-      passwordConfirmInputRef.current?.focus();
-      return;
-    }
-
-    setPasswordConfirmError("");
-
-    const nextEmailError = validateOptionalEmail(nextEmail);
-    setEmailError(nextEmailError ?? "");
-    if (nextEmailError) {
-      emailInputRef.current?.focus();
-      return;
-    }
-
-    if (!agreedToTerms) {
-      setTermsError("서비스 이용약관 및 개인정보 처리방침에 동의해 주세요.");
-      return;
-    }
-    setTermsError("");
-
-    setIsSubmitting(true);
+  async function submitSignup(data: SignupFormValues) {
+    const loginId = data.login_id.trim();
+    const email = data.email.trim();
+    const name = data.name.trim();
+    const nickname = data.nickname.trim();
 
     try {
       await fetchAuthApiJson("/api/v2/auth/signup", {
@@ -152,10 +92,10 @@ export default function SignupPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          login_id: nextLoginId,
-          password: nextPassword,
+          login_id: loginId,
+          password: data.password,
           name: name || null,
-          email: nextEmail || null,
+          email: email || null,
           nickname: nickname || null,
         }),
       });
@@ -166,8 +106,6 @@ export default function SignupPage() {
       } else {
         openSubmitDialog("회원가입을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       }
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -190,100 +128,102 @@ export default function SignupPage() {
           }
           title="회원가입"
         >
-          <form className="space-y-5" noValidate onSubmit={handleSubmit}>
+          <form className="space-y-5" noValidate onSubmit={handleSubmit(submitSignup)}>
             <AuthFormField
               autoComplete="username"
-              error={loginIdError}
+              error={errors.login_id?.message}
               id="login_id"
               label="아이디"
               maxLength={LOGIN_ID_MAX_LENGTH}
               minLength={LOGIN_ID_MIN_LENGTH}
-              name="login_id"
               placeholder="사용할 아이디를 입력하세요"
-              ref={loginIdInputRef}
               required
-              onChange={(event) => handleLoginIdChange(event.target.value)}
-              value={loginId}
               type="text"
+              {...register("login_id", {
+                validate: (value) => validateLoginId(value) ?? true,
+              })}
             />
 
             <AuthFormField
               autoComplete="new-password"
-              error={passwordError}
+              error={errors.password?.message}
               id="password"
               label="비밀번호"
               maxLength={PASSWORD_MAX_LENGTH}
               minLength={PASSWORD_MIN_LENGTH}
-              name="password"
-              onChange={(event) => handlePasswordChange(event.target.value)}
               placeholder="비밀번호를 입력하세요"
-              ref={passwordInputRef}
               required
               showPasswordToggle
               type="password"
-              value={password}
+              {...register("password", {
+                onChange: () => {
+                  if (getValues("password_confirm")) {
+                    void trigger("password_confirm");
+                  }
+                },
+                validate: (value) => validatePassword(value) ?? true,
+              })}
             />
 
             <PasswordRequirements password={password} />
 
             <AuthFormField
               autoComplete="new-password"
-              error={passwordConfirmError}
+              error={errors.password_confirm?.message}
               id="password_confirm"
               label="비밀번호 확인"
               maxLength={PASSWORD_MAX_LENGTH}
               minLength={PASSWORD_MIN_LENGTH}
-              name="password_confirm"
               placeholder="비밀번호를 다시 입력하세요"
-              ref={passwordConfirmInputRef}
               required
-              onChange={(event) => handlePasswordConfirmChange(event.target.value)}
               showPasswordToggle
-              value={passwordConfirm}
               type="password"
+              {...register("password_confirm", {
+                validate: (value) => value === getValues("password") || "비밀번호가 일치하지 않습니다.",
+              })}
             />
 
             <AuthFormField
               autoComplete="name"
               id="name"
               label="이름"
-              name="name"
               placeholder="이름 (선택)"
               type="text"
+              {...register("name")}
             />
 
             <AuthFormField
               autoComplete="nickname"
               id="nickname"
               label="닉네임"
-              name="nickname"
               placeholder="닉네임 (선택)"
               type="text"
+              {...register("nickname")}
             />
 
             <AuthFormField
               autoComplete="email"
-              error={emailError}
+              error={errors.email?.message}
               id="email"
               label="이메일"
               maxLength={EMAIL_MAX_LENGTH}
-              name="email"
               placeholder="이메일 (선택)"
-              ref={emailInputRef}
-              onChange={(event) => handleEmailChange(event.target.value)}
-              value={email}
               type="email"
+              {...register("email", {
+                validate: (value) => validateOptionalEmail(value) ?? true,
+              })}
             />
 
-            <label className="flex items-start gap-3 rounded-lg border px-4 py-3 text-sm text-[#4A4438]" style={{ borderColor: "rgba(42,66,50,0.12)" }}>
+            <label
+              className="flex items-start gap-3 rounded-lg border px-4 py-3 text-sm text-[#4A4438]"
+              style={{ borderColor: "rgba(42,66,50,0.12)" }}
+            >
               <input
-                checked={agreedToTerms}
                 className="mt-0.5 size-4 rounded border-[rgba(42,66,50,0.25)] text-[#2A4232] focus:ring-[#3D6B52]/20"
-                onChange={(event) => {
-                  setAgreedToTerms(event.target.checked);
-                  setTermsError("");
-                }}
                 type="checkbox"
+                {...register("agreed_to_terms", {
+                  validate: (value) => value || "서비스 이용약관 및 개인정보 처리방침에 동의해 주세요.",
+                })}
               />
               <span>
                 <Link
@@ -307,7 +247,9 @@ export default function SignupPage() {
               </span>
             </label>
 
-            {termsError ? <p className="text-xs text-[#9A3F38]">{termsError}</p> : null}
+            {errors.agreed_to_terms?.message ? (
+              <p className="text-xs text-[#9A3F38]">{errors.agreed_to_terms.message}</p>
+            ) : null}
 
             <AuthButton isLoading={isSubmitting} loadingText="가입 중..." type="submit">
               회원가입
@@ -327,7 +269,11 @@ export default function SignupPage() {
             const nextFocusTarget = submitDialogFocusTarget;
             setSubmitDialogMessage("");
             setSubmitDialogFocusTarget(null);
-            window.requestAnimationFrame(() => focusField(nextFocusTarget));
+            window.requestAnimationFrame(() => {
+              if (nextFocusTarget) {
+                setFocus(nextFocusTarget);
+              }
+            });
           }
         }}
         open={submitDialogOpen}
