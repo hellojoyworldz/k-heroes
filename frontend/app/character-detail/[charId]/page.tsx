@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { CharacterDetailPage } from "@/figma-make/src/app/components/CharacterDetailPage";
+import { CharacterDetailPage } from "@/components/character-detail/CharacterDetailPage";
 
 function normalizeCharId(charId: string) {
   return decodeURIComponent(charId);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Check } from "lucide-react";
-import { BrandLogo } from "./BrandLogo";
-import { storyPageBackground } from "./storyPageBackground";
+import { BrandLogo } from "@/components/layout/BrandLogo";
+import { storyPageBackground } from "@/components/layout/storyPageBackground";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 

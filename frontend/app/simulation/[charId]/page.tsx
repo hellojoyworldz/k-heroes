@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { SimulationPage } from "@/figma-make/src/app/components/SimulationPage";
+import { SimulationPage } from "@/components/simulation/SimulationPage";
 import { Suspense } from "react";
 
 function normalizeCharId(charId: string) {

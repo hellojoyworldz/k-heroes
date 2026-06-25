@@ -1,4 +1,4 @@
-import { CHARACTERS } from "@/figma-make/src/app/data/characters";
+import { CHARACTERS } from "@/lib/data/characters";
 import type { PlaySessionItem } from "@/lib/auth/types";
 
 const CHARACTER_NAME_ALIASES: Record<string, string> = {

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, Clock, BarChart2 } from 'lucide-react';
-import { CHARACTERS, type CharacterData } from '../data/characters';
-import { getScenariosForChar, type ScenarioMeta } from '../data/scenarios';
-import { BrandLogo } from './BrandLogo';
-import { storyPageBackground } from './storyPageBackground';
+import { CHARACTERS, type CharacterData } from '@/lib/data/characters';
+import { getScenariosForChar, type ScenarioMeta } from '@/lib/data/scenarios';
+import { BrandLogo } from '@/components/layout/BrandLogo';
+import { storyPageBackground } from '@/components/layout/storyPageBackground';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen, Users, GitBranch, BarChart2, Landmark, MapPin } from "lucide-react";
-import { useRevealOnView } from "../hooks/useRevealOnView";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 const STEPS = [
   {

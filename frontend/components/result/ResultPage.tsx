@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Share2, ChevronRight, MapPin } from "lucide-react";
-import { CHARACTERS } from "../data/characters";
-import { BrandLogo } from "./BrandLogo";
-import { storyPageBackground } from "./storyPageBackground";
+import { CHARACTERS } from "@/lib/data/characters";
+import { BrandLogo } from "@/components/layout/BrandLogo";
+import { storyPageBackground } from "@/components/layout/storyPageBackground";
 
 /* ─── 타입 ─── */
 interface ResultData {

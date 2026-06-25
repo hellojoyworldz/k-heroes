@@ -1,6 +1,6 @@
-import sejongImg from "../../imports/image-21.png";
-import yiSunsinImg from "../../imports/image-20.png";
-import yunbongilImg from "../../imports/image-23.png";
+import sejongImg from "@/public/images/image-21.png";
+import yiSunsinImg from "@/public/images/image-20.png";
+import yunbongilImg from "@/public/images/image-23.png";
 
 export interface Strength {
   name: string;

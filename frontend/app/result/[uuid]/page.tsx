@@ -2,8 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ResultPage, EndingResponse } from "@/figma-make/src/app/components/ResultPage";
-import { storyPageBackground } from "@/figma-make/src/app/components/storyPageBackground";
+import { ResultPage, EndingResponse } from "@/components/result/ResultPage";
+import { storyPageBackground } from "@/components/layout/storyPageBackground";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Database, ExternalLink, MapPinned, UserRound } from "lucide-react";
-import { useRevealOnView } from "../hooks/useRevealOnView";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 const DATASETS = [
   {

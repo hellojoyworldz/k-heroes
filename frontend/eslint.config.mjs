@@ -4,7 +4,7 @@ import tsParser from "@typescript-eslint/parser";
 
 const eslintConfig = defineConfig([
   js.configs.recommended,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "figma-make/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {

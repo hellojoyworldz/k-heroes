@@ -1,8 +1,8 @@
 "use client";
 
 import { Play, ChevronRight } from "lucide-react";
-import heroImg from "../../imports/image-16.png";
-import { useRevealOnView } from "../hooks/useRevealOnView";
+import heroImg from "@/public/images/image-16.png";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 const STATS = [
   { value: "47개", label: "역사 시나리오" },

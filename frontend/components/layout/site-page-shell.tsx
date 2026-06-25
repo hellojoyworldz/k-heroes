@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Footer } from "@/figma-make/src/app/components/Footer";
-import { NavBar } from "@/figma-make/src/app/components/NavBar";
+import { Footer } from "@/components/layout/Footer";
+import { NavBar } from "@/components/layout/NavBar";
 
 const sitePageBackground = {
   fontFamily: "'Noto Sans KR', sans-serif",

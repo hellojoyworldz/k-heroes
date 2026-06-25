@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { NavBar } from "@/figma-make/src/app/components/NavBar";
-import { HeroSection } from "@/figma-make/src/app/components/HeroSection";
-import { JourneySection } from "@/figma-make/src/app/components/JourneySection";
-import { CharacterSection } from "@/figma-make/src/app/components/CharacterSection";
-import { DataSection } from "@/figma-make/src/app/components/DataSection";
-import { Footer } from "@/figma-make/src/app/components/Footer";
+import { NavBar } from "@/components/layout/NavBar";
+import { HeroSection } from "@/components/home/HeroSection";
+import { JourneySection } from "@/components/home/JourneySection";
+import { CharacterSection } from "@/components/home/CharacterSection";
+import { DataSection } from "@/components/home/DataSection";
+import { Footer } from "@/components/layout/Footer";
 
 export default function Home() {
   const router = useRouter();

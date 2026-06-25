@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, ChevronRight, Search, X, ChevronLeft } from "lucide-react";
-import mapBg from "../../imports/image-15.png";
-import { CHARACTERS } from "../data/characters";
+import mapBg from "@/public/images/image-15.png";
+import { CHARACTERS } from "@/lib/data/characters";
 import { PagePagination } from "@/components/ui/page-pagination";
-import { BrandLogo } from "./BrandLogo";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 
 /* ──────────────────────────────────────────
    키워드 데이터

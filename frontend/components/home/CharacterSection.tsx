@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, RefreshCw, Sparkles } from "lucide-react";
-import { CHARACTER_LIST, type CharacterData } from "../data/characters";
-import { useRevealOnView } from "../hooks/useRevealOnView";
+import { CHARACTER_LIST, type CharacterData } from "@/lib/data/characters";
+import { useRevealOnView } from "@/hooks/useRevealOnView";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
