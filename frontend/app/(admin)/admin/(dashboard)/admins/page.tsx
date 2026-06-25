@@ -18,9 +18,9 @@ import {
   useUpdateAdminUser,
 } from "@/app/(admin)/_hooks/use-admin-admin-users";
 import { AdminApiError } from "@/app/(admin)/_lib/admin-api";
-import { AdminUserPanelForm } from "@/app/(admin)/admin/(dashboard)/admin-users/_components/admin-user-panel-form";
-import { AdminUserTable } from "@/app/(admin)/admin/(dashboard)/admin-users/_components/admin-user-table";
-import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
+import { AdminUserPanelForm } from "@/app/(admin)/admin/(dashboard)/admins/_components/admin-user-panel-form";
+import { AdminUserTable } from "@/app/(admin)/admin/(dashboard)/admins/_components/admin-user-table";
+import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admins/_types";
 
 type PanelMode = "create" | "edit" | null;
 

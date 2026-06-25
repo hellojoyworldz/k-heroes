@@ -74,7 +74,7 @@ function ResultInner() {
           {error || "결과를 표시할 수 없습니다."}
         </p>
         <button
-          onClick={() => router.push("/select")}
+          onClick={() => router.push("/map")}
           className="px-6 py-2.5 rounded-xl text-white font-bold transition-opacity"
           style={{ background: "linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)", fontSize: "0.85rem" }}
         >
@@ -91,7 +91,7 @@ function ResultInner() {
       charId={charId}
       ending={ending}
       onBack={() => router.push(`/simulation/${charId}`)}
-      onNextChar={() => router.push("/select")}
+      onNextChar={() => router.push("/map")}
     />
   );
 }

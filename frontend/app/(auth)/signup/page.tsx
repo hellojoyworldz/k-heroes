@@ -249,7 +249,7 @@ export default function SignupPage() {
               <span>
                 <Link
                   className="font-medium text-[#2A4232] underline-offset-4 hover:underline"
-                  href="/terms"
+                  href="/legal/terms"
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -258,7 +258,7 @@ export default function SignupPage() {
                 {" 및 "}
                 <Link
                   className="font-medium text-[#2A4232] underline-offset-4 hover:underline"
-                  href="/privacy"
+                  href="/legal/privacy"
                   rel="noopener noreferrer"
                   target="_blank"
                 >

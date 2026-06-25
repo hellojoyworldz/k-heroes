@@ -15,7 +15,7 @@ export default function CharacterDetailRoutePage() {
   return (
     <CharacterDetailPage
       charId={charId}
-      onBack={() => router.push("/select")}
+      onBack={() => router.push("/map")}
       onStartScenario={(scenarioIdx) =>
         router.push(`/simulation/${encodeURIComponent(charId)}?scenario=${scenarioIdx}`)
       }

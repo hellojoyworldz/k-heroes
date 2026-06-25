@@ -1,7 +1,7 @@
 import { AdminFormRow, AdminFormTable } from "@/app/(admin)/_components/admin-form-row";
 import { AdminInput } from "@/app/(admin)/_components/admin-input";
 import { AdminSelect } from "@/app/(admin)/_components/admin-select";
-import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
+import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admins/_types";
 
 type AdminUserPanelFormProps = {
   mode: "create" | "edit";

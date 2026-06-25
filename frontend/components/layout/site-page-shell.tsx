@@ -20,7 +20,7 @@ export function SitePageShell({ children }: SitePageShellProps) {
 
   return (
     <div className="min-h-screen" style={sitePageBackground}>
-      <NavBar onStart={() => router.push("/select")} />
+      <NavBar onStart={() => router.push("/map")} />
       <main className="pt-16">{children}</main>
       <Footer />
     </div>

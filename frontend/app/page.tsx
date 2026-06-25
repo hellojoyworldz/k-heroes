@@ -20,10 +20,10 @@ export default function Home() {
           "linear-gradient(rgba(244,239,228,0.2), rgba(244,239,228,0.2)), url('/story-background.png') center/cover fixed",
       }}
     >
-      <NavBar onStart={() => router.push("/select")} />
-      <HeroSection onStart={() => router.push("/select")} />
+      <NavBar onStart={() => router.push("/map")} />
+      <HeroSection onStart={() => router.push("/map")} />
       <JourneySection />
-      <CharacterSection onDetail={(id) => router.push(`/character-detail/${encodeURIComponent(id)}`)} />
+      <CharacterSection onDetail={(id) => router.push(`/character/${encodeURIComponent(id)}`)} />
       <DataSection />
       <Footer />
     </div>

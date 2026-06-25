@@ -10,7 +10,7 @@ type FooterLink = {
 const FOOTER_LINKS: Record<string, FooterLink[]> = {
   서비스: [
     { label: "서비스 소개", href: "#" },
-    { label: "지역 선택", href: "/select" },
+    { label: "지역 선택", href: "/map" },
     { label: "역사 아카이브", href: "#" },
     { label: "이용 가이드", href: "#" },
   ],
@@ -18,8 +18,8 @@ const FOOTER_LINKS: Record<string, FooterLink[]> = {
     { label: "교육기관 문의", href: "#" },
     { label: "공지사항", href: "#" },
     { label: "자주 묻는 질문", href: "#" },
-    { label: "이용약관", href: "/terms" },
-    { label: "개인정보처리방침", href: "/privacy" },
+    { label: "이용약관", href: "/legal/terms" },
+    { label: "개인정보처리방침", href: "/legal/privacy" },
   ],
   연계기관: [
     { label: "국립중앙박물관", href: "#" },

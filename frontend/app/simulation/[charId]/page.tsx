@@ -20,8 +20,8 @@ function SimulationInner() {
     <SimulationPage
       charId={charId}
       scenarioIdx={scenarioIdx}
-      onBack={() => router.push(`/character-detail/${charId}`)}
-      onComplete={(uuid) => router.push(`/result/${uuid}`)}
+      onBack={() => router.push(`/character/${charId}`)}
+      onComplete={(uuid) => router.push(`/ending/${uuid}`)}
     />
   );
 }

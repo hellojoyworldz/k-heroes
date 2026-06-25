@@ -7,7 +7,7 @@ import {
   type PaginatedResponse,
 } from "@/app/(admin)/_lib/admin-api";
 import { adminListQueryOptions } from "@/app/(admin)/_lib/admin-query-config";
-import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
+import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admins/_types";
 
 export const adminAdminUserKeys = {
   all: ["admin", "admin-users"] as const,

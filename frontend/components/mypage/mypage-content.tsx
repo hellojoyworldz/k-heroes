@@ -60,7 +60,7 @@ export function MypageContent() {
 
           <MypageSessionHistory sessions={sessions} />
 
-          <AuthButton className="sm:max-w-xs" onClick={() => router.push("/select")} type="button">
+          <AuthButton className="sm:max-w-xs" onClick={() => router.push("/map")} type="button">
             새 이야기 시작하기
           </AuthButton>
         </div>

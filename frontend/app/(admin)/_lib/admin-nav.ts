@@ -37,7 +37,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     label: "시스템",
-    items: [{ title: "어드민 회원", href: "/admin/admin-users", icon: UserCog }],
+    items: [{ title: "어드민 회원", href: "/admin/admins", icon: UserCog }],
   },
 ];
 

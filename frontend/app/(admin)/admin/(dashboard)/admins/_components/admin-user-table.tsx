@@ -5,7 +5,7 @@ import {
   AdminTableRow,
   type AdminTableColumn,
 } from "@/app/(admin)/_components/admin-data-table";
-import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admin-users/_types";
+import type { AdminUserListItem } from "@/app/(admin)/admin/(dashboard)/admins/_types";
 
 const columns: AdminTableColumn[] = [
   { key: "id", header: "ID", className: "w-16" },

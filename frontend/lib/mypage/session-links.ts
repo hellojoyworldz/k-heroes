@@ -41,7 +41,7 @@ export function getSessionResultHref(session: PlaySessionItem) {
   const charId = resolveCharacterId(session.character_name);
   if (!charId || session.choices_path.length === 0) return null;
 
-  return `/result/${encodeURIComponent(charId)}/${encodeChoicesPath(session.choices_path)}`;
+  return `/ending/${encodeURIComponent(charId)}/${encodeChoicesPath(session.choices_path)}`;
 }
 
 export function getSessionContinueHref(session: PlaySessionItem) {
