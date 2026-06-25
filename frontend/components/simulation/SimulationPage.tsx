@@ -234,8 +234,7 @@ function ScenarioCard({ data }: { data: StepData }) {
     >
       <style>{`
         @media (min-width: 768px) {
-          .kh-scenario-row { height: 196px !important; }
-          .kh-scenario-text { overflow: hidden; }
+          .kh-scenario-row { min-height: 196px; }
         }
       `}</style>
       <div className="kh-scenario-row flex flex-col md:flex-row">
@@ -478,7 +477,7 @@ function ChoiceCard({
       onClick={onSelect}
     >
       {/* 이미지 + 배지 */}
-      <div className="relative overflow-hidden" style={{ height: "155px" }}>
+      <div className="relative overflow-hidden" style={{ height: "200px" }}>
         <img
           src={choice.img}
           alt=""

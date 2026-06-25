@@ -96,9 +96,8 @@ def main() -> None:
                     turn_url = f"https://storage.googleapis.com/k-heroes_bucket/{urllib.parse.quote(gcs_name)}"
                     updates_count += 1
                 else:
-                    # GCS에 아직 없는 경우 fallback (NFC 폴더 + NFD 파일명 규칙 적용)
-                    fallback_name = f"scenarios/{char_nfc}/{char_nfd}_scenario_{sc_id}_turn_{turn_no}.png"
-                    turn_url = f"https://storage.googleapis.com/k-heroes_bucket/{urllib.parse.quote(fallback_name)}"
+                    # GCS에 아직 없는 경우 빈 문자열로 두어 프론트엔드가 인물 초상화로 정상 대체하도록 함
+                    turn_url = ""
                     fallback_count += 1
                 
                 turn["turn_image"] = turn_url
@@ -112,9 +111,8 @@ def main() -> None:
                         choice_url = f"https://storage.googleapis.com/k-heroes_bucket/{urllib.parse.quote(gcs_name)}"
                         updates_count += 1
                     else:
-                        # GCS에 아직 없는 경우 fallback (NFC 폴더 + NFD 파일명 규칙 적용)
-                        fallback_name = f"scenarios/{char_nfc}/{char_nfd}_scenario_{sc_id}_turn_{turn_no}_{choice_key}.png"
-                        choice_url = f"https://storage.googleapis.com/k-heroes_bucket/{urllib.parse.quote(fallback_name)}"
+                        # GCS에 아직 없는 경우 빈 문자열로 두어 프론트엔드가 인물 초상화로 정상 대체하도록 함
+                        choice_url = ""
                         fallback_count += 1
                     
                     choice_data["choice_image"] = choice_url
