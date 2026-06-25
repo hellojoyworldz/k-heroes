@@ -17,7 +17,7 @@ def get_csv_stats():
     - region_count: 유니크한 시/도(ctprvn_nm)의 개수
     - history_record_count: 실제 역사 기록의 전체 데이터 개수 (CSV 행 수)
     """
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     csv_path = os.path.join(base_dir, "data", "processed", "kf_area_total_merged.csv")
     
     total_records = 0

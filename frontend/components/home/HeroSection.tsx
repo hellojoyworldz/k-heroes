@@ -1,17 +1,44 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Play, ChevronRight } from "lucide-react";
 import heroImg from "@/public/images/image-16.png";
 import { useRevealOnView } from "@/hooks/useRevealOnView";
 
-const STATS = [
-  { value: "47개", label: "역사 시나리오" },
-  { value: "16개", label: "참여 지역" },
-  { value: "120+", label: "실제 역사 기록" },
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 export function HeroSection({ onStart }: { onStart?: () => void }) {
   const { ref, isVisible } = useRevealOnView<HTMLElement>();
+
+  const [stats, setStats] = useState({
+    scenario_count: 47,
+    region_count: 16,
+    history_record_count: 120,
+  });
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/v2/landing/stats`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch landing stats");
+        return res.json();
+      })
+      .then((data) => {
+        setStats({
+          scenario_count: data.scenario_count ?? 47,
+          region_count: data.region_count ?? 16,
+          history_record_count: data.history_record_count ?? 120,
+        });
+      })
+      .catch((err) => {
+        console.error("[STATS FETCH ERROR]", err);
+      });
+  }, []);
+
+  const statsItems = [
+    { value: `${stats.scenario_count}개`, label: "역사 시나리오" },
+    { value: `${stats.region_count}개`, label: "참여 지역" },
+    { value: `${stats.history_record_count.toLocaleString()}+`, label: "실제 역사 기록" },
+  ];
 
   const scrollToService = () => {
     document.getElementById("service")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -192,13 +219,13 @@ export function HeroSection({ onStart }: { onStart?: () => void }) {
             marginBottom: "40px",
           }}
         >
-          {STATS.map((stat, i) => (
+          {statsItems.map((stat, i) => (
             <div
-              key={stat.value}
+              key={stat.label}
               className="flex-1 flex flex-col items-center py-5 px-4"
               style={{
                 borderRight:
-                  i < STATS.length - 1 ? "1px solid rgba(42,66,50,0.1)" : "none",
+                  i < statsItems.length - 1 ? "1px solid rgba(42,66,50,0.1)" : "none",
               }}
             >
               <span
