@@ -22,6 +22,7 @@ import { AuthApiError, fetchAuthApiJson } from "@/lib/auth/auth-api";
 import { EMAIL_MAX_LENGTH, validateOptionalEmail } from "@/lib/auth/email-policy";
 import { LOGIN_ID_MAX_LENGTH, LOGIN_ID_MIN_LENGTH, validateLoginId } from "@/lib/auth/login-id-policy";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/auth/password-policy";
+import { useGuestOnlyRedirect } from "@/hooks/use-guest-only-redirect";
 import { site } from "@/lib/site";
 
 type SubmitDialogFocusTarget = "login_id" | "email" | null;
@@ -48,6 +49,7 @@ function getSignupErrorMessage(message: string) {
 
 export default function SignupPage() {
   const router = useRouter();
+  const { isCheckingAuth } = useGuestOnlyRedirect();
   const {
     formState: { errors, isSubmitting },
     getValues,
@@ -111,6 +113,10 @@ export default function SignupPage() {
 
   function handleGoogleSignup() {
     openSubmitDialog("구글 회원가입은 현재 화면에서 바로 사용할 수 없습니다.");
+  }
+
+  if (isCheckingAuth) {
+    return null;
   }
 
   return (

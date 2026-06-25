@@ -15,6 +15,7 @@ import { AuthApiError, fetchAuthApiJson } from "@/lib/auth/auth-api";
 import { LOGIN_ID_MAX_LENGTH, LOGIN_ID_MIN_LENGTH, validateLoginId } from "@/lib/auth/login-id-policy";
 import { PASSWORD_MAX_LENGTH } from "@/lib/auth/password-policy";
 import { authMeQueryKey, toUserProfile } from "@/hooks/use-auth-me";
+import { useGuestOnlyRedirect } from "@/hooks/use-guest-only-redirect";
 import type { UserProfile } from "@/lib/auth/types";
 
 type LoginFormValues = {
@@ -44,6 +45,7 @@ function LoginForm() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const signupSuccess = searchParams.get("signup") === "success";
+  const { isCheckingAuth } = useGuestOnlyRedirect();
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
@@ -92,6 +94,10 @@ function LoginForm() {
 
   function handleGoogleLogin() {
     setErrorMessage("구글 로그인은 API 연동 후 사용할 수 있습니다.");
+  }
+
+  if (isCheckingAuth) {
+    return null;
   }
 
   return (
