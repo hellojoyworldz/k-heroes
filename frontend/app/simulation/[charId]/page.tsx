@@ -13,8 +13,9 @@ function SimulationInner() {
   const params = useParams<{ charId: string }>();
   const searchParams = useSearchParams();
   const charId = normalizeCharId(params.charId);
-  const scenarioStr = searchParams.get("scenario") ?? "0";
-  const scenarioIdx = parseInt(scenarioStr, 10) || 0;
+  const scenarioStr = searchParams.get("scenario") ?? "1";
+  const scenarioParam = parseInt(scenarioStr, 10) || 1;
+  const scenarioIdx = Math.max(0, scenarioParam - 1);
 
   return (
     <SimulationPage

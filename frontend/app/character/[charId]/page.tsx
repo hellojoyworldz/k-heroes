@@ -17,7 +17,7 @@ export default function CharacterDetailRoutePage() {
       charId={charId}
       onBack={() => router.push("/map")}
       onStartScenario={(scenarioIdx) =>
-        router.push(`/simulation/${encodeURIComponent(charId)}?scenario=${scenarioIdx}`)
+        router.push(`/simulation/${encodeURIComponent(charId)}?scenario=${scenarioIdx + 1}`)
       }
     />
   );
