@@ -10,6 +10,7 @@ export interface ScenarioMeta {
   desc: string;
   themeIcon: string;
   stepCount: number;
+  imageUrl?: string;
 }
 
 export const SCENARIOS: ScenarioMeta[] = [

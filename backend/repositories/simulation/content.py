@@ -91,6 +91,7 @@ def _map_turn(turn: Turn) -> TurnItem:
 def _map_scenario(scenario: Scenario) -> ScenarioItem:
     turns = [_map_turn(turn) for turn in scenario.turns if _is_visible_turn(turn)]
     turns.sort(key=lambda t: t.sort_order)
+    first_turn_image = turns[0].turn_image if turns else ""
     return ScenarioItem(
         id=scenario.id,
         sort_order=scenario.sort_order,
@@ -99,6 +100,7 @@ def _map_scenario(scenario: Scenario) -> ScenarioItem:
         historical_facts=scenario.historical_facts,
         source_story_ids=scenario.source_story_ids or [],
         turns=turns,
+        image_url=first_turn_image,
     )
 
 

@@ -38,6 +38,7 @@ interface ApiScenario {
   description: string;
   historical_facts?: string;
   turns?: ApiScenarioTurn[];
+  image_url?: string;
 }
 
 interface ApiCharacterDetail {
@@ -193,6 +194,7 @@ function toScenarioMetas(data: ApiCharacterDetail, charId: string): ScenarioMeta
     desc: scenario.description,
     themeIcon: getScenarioIcon(data.category, index),
     stepCount: scenario.turns?.length ?? 0,
+    imageUrl: scenario.image_url,
   }));
 }
 
@@ -809,6 +811,18 @@ function ScenarioCard({
       }}
     >
       <div className="flex items-stretch">
+        {/* 시나리오 대표 이미지 썸네일 */}
+        {scenario.imageUrl && (
+          <div className="relative w-28 sm:w-32 flex-shrink-0 overflow-hidden" style={{ borderRight: '1px solid rgba(42,66,50,0.08)' }}>
+            <img
+              src={scenario.imageUrl}
+              alt={scenario.title}
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[rgba(253,250,244,0.15)] pointer-events-none" />
+          </div>
+        )}
+
         {/* 번호 컬럼 */}
         <div
           className="flex-shrink-0 flex flex-col items-center justify-start pt-5 px-4"

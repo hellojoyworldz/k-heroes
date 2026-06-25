@@ -47,6 +47,7 @@ class ScenarioItem(BaseModel):
     historical_facts: str
     source_story_ids: List[int] = []
     turns: List[TurnItem]
+    image_url: str = ""
 
 class StoryItem(BaseModel):
     id: int
