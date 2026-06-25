@@ -812,17 +812,33 @@ export function ResultPage({
             {ending.recommended_places.map((place) => {
               const cardContent = (
                 <>
-                  <div style={{ height: "140px", overflow: "hidden" }}>
-                    <img
-                      src={place.image_url || "https://images.unsplash.com/photo-1548115184-bc6544d06a58?w=600&q=80&fit=crop"}
-                      alt={place.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        filter: "sepia(0.18) saturate(0.85) brightness(0.92)",
-                      }}
-                    />
+                  <div style={{ height: "140px", overflow: "hidden", background: "#EAE5DA" }}>
+                    {place.image_url ? (
+                      <img
+                        src={place.image_url}
+                        alt={place.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          filter: "grayscale(1) brightness(0.92) contrast(1.05)",
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: "#EAE5DA" }}>
+                        <span
+                          style={{
+                            fontFamily: "'Noto Sans KR', sans-serif",
+                            fontSize: "0.75rem",
+                            color: "#8C8375",
+                            fontWeight: 500,
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          이미지 없음
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     <div className="flex items-start gap-1.5 mb-1">
