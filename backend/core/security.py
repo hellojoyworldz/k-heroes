@@ -9,6 +9,7 @@ from google.oauth2 import id_token as google_id_token
 
 JWT_ALGORITHM = "HS256"
 DEFAULT_JWT_EXPIRE_HOURS = 8
+DEFAULT_REMEMBER_ME_EXPIRE_DAYS = 30
 ADMIN_SESSION_COOKIE = "k_heroes_admin_session"
 USER_SESSION_COOKIE = "k_heroes_user_session"
 
@@ -19,6 +20,11 @@ def get_jwt_secret() -> str:
 
 def get_jwt_expire_hours() -> int:
     return int(os.environ.get("JWT_EXPIRE_HOURS", str(DEFAULT_JWT_EXPIRE_HOURS)))
+
+
+def get_remember_me_expire_hours() -> int:
+    expire_days = int(os.environ.get("REMEMBER_ME_EXPIRE_DAYS", str(DEFAULT_REMEMBER_ME_EXPIRE_DAYS)))
+    return expire_days * 24
 
 
 def get_google_client_id() -> str:
@@ -33,12 +39,18 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-def create_access_token(*, subject_id: int, role: str, token_kind: str = "admin") -> str:
+def create_access_token(
+    *,
+    subject_id: int,
+    role: str,
+    token_kind: str = "admin",
+    expire_hours: int | None = None,
+) -> str:
     secret = get_jwt_secret()
     if not secret:
         raise RuntimeError("JWT_SECRET is not configured")
 
-    expire = datetime.now(timezone.utc) + timedelta(hours=get_jwt_expire_hours())
+    expire = datetime.now(timezone.utc) + timedelta(hours=expire_hours or get_jwt_expire_hours())
     payload: Dict[str, Any] = {
         "sub": str(subject_id),
         "role": role,

@@ -1,32 +1,92 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthFormField } from "@/components/auth/auth-form-field";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { AuthFormCard, AuthFormLayout } from "@/components/layout/auth-form-layout";
+import { AuthApiError, fetchAuthApiJson } from "@/lib/auth/auth-api";
+import { LOGIN_ID_MAX_LENGTH, LOGIN_ID_MIN_LENGTH, validateLoginId } from "@/lib/auth/login-id-policy";
+import { PASSWORD_MAX_LENGTH } from "@/lib/auth/password-policy";
+import { authMeQueryKey, toUserProfile } from "@/hooks/use-auth-me";
+import type { UserProfile } from "@/lib/auth/types";
+
+type LoginFormValues = {
+  login_id: string;
+  password: string;
+  remember_me: boolean;
+};
+
+type LoginResponse = {
+  user: UserProfile;
+};
+
+function validateLoginPassword(password: string) {
+  if (!password) {
+    return "비밀번호를 입력해 주세요.";
+  }
+
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return "비밀번호는 128자 이하로 입력해 주세요.";
+  }
+
+  return null;
+}
 
 function LoginForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const signupSuccess = searchParams.get("signup") === "success";
+  const {
+    formState: { errors, isSubmitting },
+    handleSubmit,
+    register,
+  } = useForm<LoginFormValues>({
+    defaultValues: {
+      login_id: "",
+      password: "",
+      remember_me: false,
+    },
+    mode: "onChange",
+  });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const isLoggingIn = isSubmitting || isRedirecting;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitLogin(data: LoginFormValues) {
     setErrorMessage("");
-    setIsSubmitting(true);
+    setIsRedirecting(false);
 
     try {
-      // TODO: /api/v2/auth/session 연동
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setErrorMessage("로그인 API 연동 전입니다. UI만 준비된 상태입니다.");
-    } finally {
-      setIsSubmitting(false);
+      const response = await fetchAuthApiJson<LoginResponse>("/api/v2/auth/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          login_id: data.login_id.trim(),
+          password: data.password,
+          remember_me: data.remember_me,
+        }),
+      });
+      queryClient.setQueryData(authMeQueryKey, toUserProfile(response.user));
+      setIsRedirecting(true);
+      router.replace("/mypage");
+      router.refresh();
+    } catch (error) {
+      setIsRedirecting(false);
+      setErrorMessage(
+        error instanceof AuthApiError
+          ? error.message
+          : "로그인 요청 중 오류가 발생했습니다.",
+      );
     }
   }
 
@@ -54,32 +114,53 @@ function LoginForm() {
           </div>
         ) : null}
 
-        <form className="space-y-5" noValidate onSubmit={handleSubmit}>
+        <form className="space-y-5" noValidate onSubmit={handleSubmit(submitLogin)}>
           <AuthFormField
             autoComplete="username"
+            error={errors.login_id?.message}
             id="login_id"
             label="아이디"
-            name="login_id"
+            maxLength={LOGIN_ID_MAX_LENGTH}
+            minLength={LOGIN_ID_MIN_LENGTH}
             placeholder="아이디를 입력하세요"
             required
             type="text"
+            {...register("login_id", {
+              validate: (value) => validateLoginId(value) ?? true,
+            })}
           />
 
           <AuthFormField
             autoComplete="current-password"
-            showPasswordToggle
+            error={errors.password?.message}
             id="password"
             label="비밀번호"
-            minLength={8}
-            name="password"
+            maxLength={PASSWORD_MAX_LENGTH}
             placeholder="비밀번호를 입력하세요"
             required
+            showPasswordToggle
             type="password"
+            {...register("password", {
+              validate: (value) => validateLoginPassword(value) ?? true,
+            })}
           />
+
+          <label
+            className="flex items-center gap-2 text-sm text-[#4A4438]"
+            htmlFor="remember_me"
+          >
+            <input
+              className="size-4 rounded border-[rgba(42,66,50,0.25)] text-[#2A4232] focus:ring-[#3D6B52]/20"
+              id="remember_me"
+              type="checkbox"
+              {...register("remember_me")}
+            />
+            로그인 유지하기
+          </label>
 
           {errorMessage ? <AuthAlert message={errorMessage} /> : null}
 
-          <AuthButton isLoading={isSubmitting} loadingText="로그인 중..." type="submit">
+          <AuthButton isLoading={isLoggingIn} loadingText="로그인 중..." type="submit">
             로그인
           </AuthButton>
         </form>

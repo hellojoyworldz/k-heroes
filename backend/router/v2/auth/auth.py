@@ -8,6 +8,7 @@ from core.security import (
     USER_SESSION_COOKIE,
     create_access_token,
     get_jwt_expire_hours,
+    get_remember_me_expire_hours,
     verify_google_id_token,
 )
 from core.auth_policy import InvalidEmailError, InvalidLoginIdError
@@ -29,12 +30,13 @@ from router.v2.deps import get_current_user
 router = APIRouter(prefix="/api/v2/auth", tags=["Auth v2"])
 
 
-def issue_token(user: User) -> str:
+def issue_token(user: User, *, expire_hours: int | None = None) -> str:
     try:
         return create_access_token(
             subject_id=user.id,
             role=user.grade.value,
             token_kind="user",
+            expire_hours=expire_hours,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail="회원 인증이 설정되지 않았습니다.") from exc
@@ -118,12 +120,13 @@ def create_session(
 ):
     """회원 — 브라우저 세션 로그인."""
     user = authenticate_user(body, db)
-    access_token = issue_token(user)
+    expire_hours = get_remember_me_expire_hours() if body.remember_me else get_jwt_expire_hours()
+    access_token = issue_token(user, expire_hours=expire_hours)
     response.set_cookie(
         key=USER_SESSION_COOKIE,
         value=access_token,
         httponly=True,
-        max_age=get_jwt_expire_hours() * 60 * 60,
+        max_age=expire_hours * 60 * 60 if body.remember_me else None,
         path="/",
         samesite="lax",
         secure=os.environ.get("USER_COOKIE_SECURE", "false").lower() == "true",

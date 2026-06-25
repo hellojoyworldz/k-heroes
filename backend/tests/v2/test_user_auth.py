@@ -217,6 +217,7 @@ def test_session_cookie_login_and_logout(client, db_session):
     assert login_response.status_code == 200
     assert login_response.json()["user"]["login_id"] == TEST_LOGIN_ID
     assert login_response.cookies.get("k_heroes_user_session")
+    assert "Max-Age" not in login_response.headers["set-cookie"]
 
     me_response = client.get("/api/v2/auth/me")
     assert me_response.status_code == 200
@@ -225,6 +226,24 @@ def test_session_cookie_login_and_logout(client, db_session):
     logout_response = client.post("/api/v2/auth/session/logout")
     assert logout_response.status_code == 204
     assert not client.cookies.get("k_heroes_user_session")
+
+
+@pytest.mark.usefixtures("jwt_env")
+def test_session_cookie_login_remember_me_sets_persistent_cookie(client, db_session):
+    seed_user(db_session)
+
+    login_response = client.post(
+        "/api/v2/auth/session",
+        json={
+            "login_id": TEST_LOGIN_ID,
+            "password": TEST_PASSWORD,
+            "remember_me": True,
+        },
+    )
+
+    assert login_response.status_code == 200
+    assert login_response.cookies.get("k_heroes_user_session")
+    assert "Max-Age=2592000" in login_response.headers["set-cookie"]
 
 
 @pytest.mark.usefixtures("jwt_env")
