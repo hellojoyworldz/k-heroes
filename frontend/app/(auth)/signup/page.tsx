@@ -200,11 +200,15 @@ export default function SignupPage() {
 
             <AuthFormField
               autoComplete="nickname"
+              error={errors.nickname?.message}
               id="nickname"
               label="닉네임"
-              placeholder="닉네임 (선택)"
+              placeholder="닉네임을 입력하세요"
+              required
               type="text"
-              {...register("nickname")}
+              {...register("nickname", {
+                validate: (value) => value.trim() !== "" || "닉네임을 입력해 주세요.",
+              })}
             />
 
             <AuthFormField
