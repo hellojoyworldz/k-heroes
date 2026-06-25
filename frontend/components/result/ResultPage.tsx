@@ -809,65 +809,93 @@ export function ResultPage({
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {ending.recommended_places.map((place) => (
-              <div
-                key={place.name}
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  background: "#FDFAF4",
-                  border: "1px solid rgba(42,66,50,0.09)",
-                  boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
-                }}
-              >
-                <div style={{ height: "140px", overflow: "hidden" }}>
-                  <img
-                    src={place.image_url || "https://images.unsplash.com/photo-1548115184-bc6544d06a58?w=600&q=80&fit=crop"}
-                    alt={place.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      filter: "sepia(0.18) saturate(0.85) brightness(0.92)",
-                    }}
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start gap-1.5 mb-1">
-                    <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#C9933A" }} />
+            {ending.recommended_places.map((place) => {
+              const cardContent = (
+                <>
+                  <div style={{ height: "140px", overflow: "hidden" }}>
+                    <img
+                      src={place.image_url || "https://images.unsplash.com/photo-1548115184-bc6544d06a58?w=600&q=80&fit=crop"}
+                      alt={place.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        filter: "sepia(0.18) saturate(0.85) brightness(0.92)",
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#C9933A" }} />
+                      <p
+                        style={{
+                          fontFamily: "'Noto Sans KR', sans-serif",
+                          fontSize: "0.65rem",
+                          color: "#A89E8E",
+                        }}
+                      >
+                        {place.address}
+                      </p>
+                    </div>
+                    <p
+                      className="mb-1.5"
+                      style={{
+                        fontFamily: "'Noto Serif KR', serif",
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        color: "#1A1714",
+                      }}
+                    >
+                      {place.name}
+                    </p>
                     <p
                       style={{
                         fontFamily: "'Noto Sans KR', sans-serif",
-                        fontSize: "0.65rem",
-                        color: "#A89E8E",
+                        fontSize: "0.74rem",
+                        color: "#6A6055",
+                        lineHeight: 1.7,
                       }}
                     >
-                      {place.address}
+                      {place.description}
                     </p>
                   </div>
-                  <p
-                    className="mb-1.5"
+                </>
+              );
+
+              if (place.link) {
+                return (
+                  <a
+                    key={place.name}
+                    href={place.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                     style={{
-                      fontFamily: "'Noto Serif KR', serif",
-                      fontWeight: 700,
-                      fontSize: "0.9rem",
-                      color: "#1A1714",
+                      background: "#FDFAF4",
+                      border: "1px solid rgba(42,66,50,0.09)",
+                      boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+                      cursor: "pointer"
                     }}
                   >
-                    {place.name}
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      fontSize: "0.74rem",
-                      color: "#6A6055",
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    {place.description}
-                  </p>
+                    {cardContent}
+                  </a>
+                );
+              }
+
+              return (
+                <div
+                  key={place.name}
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: "#FDFAF4",
+                    border: "1px solid rgba(42,66,50,0.09)",
+                    boxShadow: "0 2px 16px rgba(42,66,50,0.06)",
+                  }}
+                >
+                  {cardContent}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
