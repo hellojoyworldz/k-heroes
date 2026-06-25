@@ -136,6 +136,21 @@ def test_signup_allows_digits_and_specials(client):
 
 
 @pytest.mark.usefixtures("jwt_env")
+def test_signup_rejects_invalid_email(client):
+    response = client.post(
+        "/api/v2/auth/signup",
+        json={
+            "login_id": "studenttwo",
+            "password": TEST_PASSWORD,
+            "email": "not-an-email",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "이메일 형식이 올바르지 않습니다."
+
+
+@pytest.mark.usefixtures("jwt_env")
 def test_login_rejects_short_login_id(client):
     response = client.post(
         "/api/v2/auth/login",

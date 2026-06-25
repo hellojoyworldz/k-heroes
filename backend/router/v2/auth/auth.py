@@ -10,7 +10,7 @@ from core.security import (
     get_jwt_expire_hours,
     verify_google_id_token,
 )
-from core.auth_policy import InvalidLoginIdError
+from core.auth_policy import InvalidEmailError, InvalidLoginIdError
 from db.database import get_db
 from db.models import User
 from models.auth.user import (
@@ -84,6 +84,8 @@ def signup(body: UserSignupRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
     except InvalidLoginIdError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except InvalidEmailError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except user_repository.UserDuplicateError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -181,6 +183,8 @@ def update_me(
         db.refresh(updated_user)
     except user_repository.UserDuplicateError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except InvalidEmailError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         message = str(exc)
         if message == "invalid current password":

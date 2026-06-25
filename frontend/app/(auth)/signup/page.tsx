@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthFormField } from "@/components/auth/auth-form-field";
@@ -18,12 +18,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AuthApiError, fetchAuthApiJson } from "@/lib/auth/auth-api";
+import { EMAIL_MAX_LENGTH, validateOptionalEmail } from "@/lib/auth/email-policy";
 import { LOGIN_ID_MAX_LENGTH, LOGIN_ID_MIN_LENGTH, validateLoginId } from "@/lib/auth/login-id-policy";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/auth/password-policy";
 import { site } from "@/lib/site";
 
+type SubmitDialogFocusTarget = "login_id" | "email" | null;
+
+function getSignupErrorFocusTarget(message: string): SubmitDialogFocusTarget {
+  if (message.includes("login_id")) return "login_id";
+  if (message.includes("email")) return "email";
+  return null;
+}
+
+function getSignupErrorMessage(message: string) {
+  return message.replaceAll("login_id", "아이디").replaceAll("email", "이메일");
+}
+
 export default function SignupPage() {
   const router = useRouter();
+  const loginIdInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsError, setTermsError] = useState("");
@@ -37,6 +54,7 @@ export default function SignupPage() {
   const [emailError, setEmailError] = useState("");
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [submitDialogMessage, setSubmitDialogMessage] = useState("");
+  const [submitDialogFocusTarget, setSubmitDialogFocusTarget] = useState<SubmitDialogFocusTarget>(null);
 
   function handleLoginIdChange(value: string) {
     setLoginId(value);
@@ -59,11 +77,23 @@ export default function SignupPage() {
 
   function handleEmailChange(value: string) {
     setEmail(value);
-    setEmailError("");
+    setEmailError(validateOptionalEmail(value) ?? "");
   }
 
-  function openSubmitDialog(message: string) {
+  function focusField(target: SubmitDialogFocusTarget) {
+    if (target === "login_id") {
+      loginIdInputRef.current?.focus();
+      return;
+    }
+
+    if (target === "email") {
+      emailInputRef.current?.focus();
+    }
+  }
+
+  function openSubmitDialog(message: string, focusTarget: SubmitDialogFocusTarget = null) {
     setSubmitDialogMessage(message);
+    setSubmitDialogFocusTarget(focusTarget);
     setSubmitDialogOpen(true);
   }
 
@@ -81,21 +111,31 @@ export default function SignupPage() {
     const nextLoginIdError = validateLoginId(nextLoginId);
     setLoginIdError(nextLoginIdError ?? "");
     if (nextLoginIdError) {
+      loginIdInputRef.current?.focus();
       return;
     }
 
     const nextPasswordError = validatePassword(nextPassword);
     setPasswordError(nextPasswordError ?? "");
     if (nextPasswordError) {
+      passwordInputRef.current?.focus();
       return;
     }
 
     if (nextPassword !== nextPasswordConfirm) {
       setPasswordConfirmError("비밀번호가 일치하지 않습니다.");
+      passwordConfirmInputRef.current?.focus();
       return;
     }
 
     setPasswordConfirmError("");
+
+    const nextEmailError = validateOptionalEmail(nextEmail);
+    setEmailError(nextEmailError ?? "");
+    if (nextEmailError) {
+      emailInputRef.current?.focus();
+      return;
+    }
 
     if (!agreedToTerms) {
       setTermsError("서비스 이용약관 및 개인정보 처리방침에 동의해 주세요.");
@@ -122,13 +162,7 @@ export default function SignupPage() {
       router.replace("/login?signup=success");
     } catch (error) {
       if (error instanceof AuthApiError) {
-        if (error.message.includes("login_id")) {
-          setLoginIdError(error.message);
-        } else if (error.message.includes("email")) {
-          setEmailError(error.message);
-        } else {
-          openSubmitDialog(error.message);
-        }
+        openSubmitDialog(getSignupErrorMessage(error.message), getSignupErrorFocusTarget(error.message));
       } else {
         openSubmitDialog("회원가입을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -166,6 +200,7 @@ export default function SignupPage() {
               minLength={LOGIN_ID_MIN_LENGTH}
               name="login_id"
               placeholder="사용할 아이디를 입력하세요"
+              ref={loginIdInputRef}
               required
               onChange={(event) => handleLoginIdChange(event.target.value)}
               value={loginId}
@@ -182,6 +217,7 @@ export default function SignupPage() {
               name="password"
               onChange={(event) => handlePasswordChange(event.target.value)}
               placeholder="비밀번호를 입력하세요"
+              ref={passwordInputRef}
               required
               showPasswordToggle
               type="password"
@@ -199,6 +235,7 @@ export default function SignupPage() {
               minLength={PASSWORD_MIN_LENGTH}
               name="password_confirm"
               placeholder="비밀번호를 다시 입력하세요"
+              ref={passwordConfirmInputRef}
               required
               onChange={(event) => handlePasswordConfirmChange(event.target.value)}
               showPasswordToggle
@@ -229,8 +266,10 @@ export default function SignupPage() {
               error={emailError}
               id="email"
               label="이메일"
+              maxLength={EMAIL_MAX_LENGTH}
               name="email"
               placeholder="이메일 (선택)"
+              ref={emailInputRef}
               onChange={(event) => handleEmailChange(event.target.value)}
               value={email}
               type="email"
@@ -285,7 +324,10 @@ export default function SignupPage() {
         onOpenChange={(nextOpen) => {
           setSubmitDialogOpen(nextOpen);
           if (!nextOpen) {
+            const nextFocusTarget = submitDialogFocusTarget;
             setSubmitDialogMessage("");
+            setSubmitDialogFocusTarget(null);
+            window.requestAnimationFrame(() => focusField(nextFocusTarget));
           }
         }}
         open={submitDialogOpen}

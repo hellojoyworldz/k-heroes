@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -12,18 +12,21 @@ type AuthFormFieldProps = {
   error?: string;
   showPasswordToggle?: boolean;
   required?: boolean;
-} & ComponentProps<"input">;
+} & ComponentPropsWithoutRef<"input">;
 
-export function AuthFormField({
-  className,
-  error,
-  hint,
-  id,
-  label,
-  showPasswordToggle = false,
-  required = false,
-  ...inputProps
-}: AuthFormFieldProps) {
+export const AuthFormField = forwardRef<HTMLInputElement, AuthFormFieldProps>(function AuthFormField(
+  {
+    className,
+    error,
+    hint,
+    id,
+    label,
+    showPasswordToggle = false,
+    required = false,
+    ...inputProps
+  },
+  ref,
+) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const isPasswordField = inputProps.type === "password";
   const inputType = showPasswordToggle && isPasswordField && isPasswordVisible ? "text" : inputProps.type;
@@ -45,6 +48,7 @@ export function AuthFormField({
             className,
           )}
           id={id}
+          ref={ref}
           required={required}
           style={{ borderColor: "rgba(42,66,50,0.18)" }}
           {...inputProps}
@@ -66,4 +70,4 @@ export function AuthFormField({
       {error ? <p className="text-xs text-[#9A3F38]">{error}</p> : null}
     </div>
   );
-}
+});

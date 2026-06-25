@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from core.auth_policy import InvalidLoginIdError, validate_login_id
+from core.auth_policy import InvalidLoginIdError, validate_login_id, validate_optional_email
 from core.security import hash_password, verify_password
 from db.models import AuthProvider, PlaySession, User, UserGrade
 from models.auth.user import (
@@ -66,16 +66,17 @@ def get_user_by_google_provider_user_id(db: Session, provider_user_id: str) -> O
 
 def create_local_user(db: Session, data: UserSignupRequest) -> User:
     login_id = validate_login_id(data.login_id)
+    email = validate_optional_email(data.email)
     _ensure_unique_login_id(db, login_id)
-    if data.email:
-        _ensure_unique_email(db, data.email)
+    if email:
+        _ensure_unique_email(db, email)
 
     user = User(
         auth_provider=AuthProvider.LOCAL,
         provider_user_id=None,
         login_id=login_id,
         name=data.name,
-        email=data.email,
+        email=email,
         password_hash=hash_password(data.password),
         nickname=data.nickname,
         grade=UserGrade.STUDENT,
@@ -170,7 +171,7 @@ def update_current_user(db: Session, user: User, data: UserUpdateRequest) -> Use
     if "nickname" in updates:
         user.nickname = _normalize_optional_text(updates.pop("nickname"))
     if "email" in updates:
-        new_email = _normalize_optional_text(updates.pop("email"))
+        new_email = validate_optional_email(updates.pop("email"))
         if new_email != user.email:
             if new_email:
                 existing_email_user = db.scalar(select(User).where(User.email == new_email, User.id != user.id))

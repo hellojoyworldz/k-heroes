@@ -1,5 +1,10 @@
+import re
+
+
 LOGIN_ID_MIN_LENGTH = 4
 LOGIN_ID_MAX_LENGTH = 50
+EMAIL_MAX_LENGTH = 255
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 def _is_lowercase_english_letter(character: str) -> bool:
@@ -18,8 +23,16 @@ class InvalidLoginIdError(ValueError):
     pass
 
 
+class InvalidEmailError(ValueError):
+    pass
+
+
 def normalize_login_id(login_id: str) -> str:
     return login_id.strip()
+
+
+def normalize_email(email: str) -> str:
+    return email.strip()
 
 
 def validate_login_id(login_id: str) -> str:
@@ -36,5 +49,22 @@ def validate_login_id(login_id: str) -> str:
 
     if len(normalized) < LOGIN_ID_MIN_LENGTH or len(normalized) > LOGIN_ID_MAX_LENGTH:
         raise InvalidLoginIdError("아이디는 4자 이상 50자 이하로 입력해 주세요.")
+
+    return normalized
+
+
+def validate_optional_email(email: str | None) -> str | None:
+    if email is None:
+        return None
+
+    normalized = normalize_email(email)
+    if not normalized:
+        return None
+
+    if len(normalized) > EMAIL_MAX_LENGTH:
+        raise InvalidEmailError("이메일은 255자 이하로 입력해 주세요.")
+
+    if not EMAIL_PATTERN.fullmatch(normalized):
+        raise InvalidEmailError("이메일 형식이 올바르지 않습니다.")
 
     return normalized
