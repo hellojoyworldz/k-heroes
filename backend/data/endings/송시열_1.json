@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열은 주자의 학문을 철저히 수호한 인물로 이 장소는 그의 학문적 삶을 이해하기에 적합합니다."
+                "desc": "송시열은 주자의 학문을 철저히 수호한 인물로 이 장소는 그의 학문적 삶을 이해하기에 적합합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "예송 논쟁의 중심에 서있던 서인의 주요 인물인 송시열을 기념하는 장소입니다."
+                "desc": "예송 논쟁의 중심에 서있던 서인의 주요 인물인 송시열을 기념하는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 주자학과 율곡학에 대한 절대적 신념을 엿볼 수 있는 곳입니다."
+                "desc": "송시열의 주자학과 율곡학에 대한 절대적 신념을 엿볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "17세기의 예학 확립과 관련된 예송 논쟁의 중요성을 이해할 수 있는 장소입니다."
+                "desc": "17세기의 예학 확립과 관련된 예송 논쟁의 중요성을 이해할 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열이 주자학의 정통을 지키기 위해 노력했던 역사적 배경을 살펴볼 수 있는 곳입니다."
+                "desc": "송시열이 주자학의 정통을 지키기 위해 노력했던 역사적 배경을 살펴볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "예학에 관련하여 송시열의 선택과 그 영향력을 이해할 수 있는 역사적 장소입니다."
+                "desc": "예학에 관련하여 송시열의 선택과 그 영향력을 이해할 수 있는 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 생애와 주자학을 깊이 이해할 수 있는 곳으로, 그의 학문적 업적을 기리는 장소입니다."
+                "desc": "송시열의 생애와 주자학을 깊이 이해할 수 있는 곳으로, 그의 학문적 업적을 기리는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 예학적 논쟁과 그가 마주했던 역사적 현장을 재조명할 수 있는 곳입니다."
+                "desc": "송시열의 예학적 논쟁과 그가 마주했던 역사적 현장을 재조명할 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 학문적 신념과 정치적 활동을 이해할 수 있는 장소입니다."
+                "desc": "송시열의 학문적 신념과 정치적 활동을 이해할 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "예송논쟁을 통해 당시 조선 사회의 정치적 갈등과 예학의 중요성을 되새길 수 있는 장소입니다."
+                "desc": "예송논쟁을 통해 당시 조선 사회의 정치적 갈등과 예학의 중요성을 되새길 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 생애와 주자학 연구를 기념하는 장소로, 그의 철학과 업적을 배우기에 적합한 곳입니다."
+                "desc": "송시열의 생애와 주자학 연구를 기념하는 장소로, 그의 철학과 업적을 배우기에 적합한 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "예학 논쟁의 중심이었던 예송논쟁과 관련된 역사적 배경을 이해하기에 알맞은 장소입니다."
+                "desc": "예학 논쟁의 중심이었던 예송논쟁과 관련된 역사적 배경을 이해하기에 알맞은 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열의 주자학적 신념과 예학 논쟁이 꽃 피웠던 장소입니다."
+                "desc": "송시열의 주자학적 신념과 예학 논쟁이 꽃 피웠던 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열과 남인 사이의 치열한 예학 논쟁 중심지로, 예송의 역사를 느낄 수 있습니다."
+                "desc": "송시열과 남인 사이의 치열한 예학 논쟁 중심지로, 예송의 역사를 느낄 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "주자학과 율곡학의 정통을 세운 우암 송시열",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "송시열은 주자학을 확고히 다지며 율곡이 제시한 학문적 기초를 발전시켰던 인물로 여주에 위치한 이곳이 그와 관련이 깊습니다."
+                "desc": "송시열은 주자학을 확고히 다지며 율곡이 제시한 학문적 기초를 발전시켰던 인물로 여주에 위치한 이곳이 그와 관련이 깊습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/22/24025/6596/c/24025-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2590"
             },
             {
                 "place_id": 2,
                 "name": "예학으로 도와 의를 세우고자 한 예송논쟁",
                 "address": "경기도 여주시 하동 200-1",
-                "desc": "예송논쟁은 조선시대 예법의 해석 차이로 인해 벌어진 논쟁으로, 송시열도 이 논쟁의 주인공 중 하나로, 이곳과 관련이 있습니다."
+                "desc": "예송논쟁은 조선시대 예법의 해석 차이로 인해 벌어진 논쟁으로, 송시열도 이 논쟁의 주인공 중 하나로, 이곳과 관련이 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/45/24060/10212/c/24060-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2591"
             }
         ],
         "image_url": ""

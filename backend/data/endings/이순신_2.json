@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이순신 장군이 명량해전에서 거둔 대승을 기념하는 비석으로, 그 현장을 직접 경험하고 배울 수 있는 곳입니다."
+                "desc": "이순신 장군이 명량해전에서 거둔 대승을 기념하는 비석으로, 그 현장을 직접 경험하고 배울 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "현충사",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 장군의 업적을 기리는 장소로, 그의 불굴의 정신과 전략을 되새길 수 있는 역사적 장소입니다."
+                "desc": "이순신 장군의 업적을 기리는 장소로, 그의 불굴의 정신과 전략을 되새길 수 있는 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/125/29569/12975/c/현충사-사진-1-thumb.jpg",
+                "link": "https://ncms.nculture.org/story-of-our-hometown/story/901"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이순신 장군이 명량대첩에서 거둔 승리를 기념하는 비석입니다."
+                "desc": "이순신 장군이 명량대첩에서 거둔 승리를 기념하는 비석입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 장군의 공적을 인정받아 수여된 공신 교서가 있는 장소입니다."
+                "desc": "이순신 장군의 공적을 인정받아 수여된 공신 교서가 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 3,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이순신 장군의 명량해전 승리를 기념하기 위해 세워진 비석입니다."
+                "desc": "이순신 장군의 명량해전 승리를 기념하기 위해 세워진 비석입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 4,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 장군의 공로를 치하하기 위한 선무공신교서를 볼 수 있는 장소입니다."
+                "desc": "이순신 장군의 공로를 치하하기 위한 선무공신교서를 볼 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 3,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이순신 장군의 명량해전에서의 승리를 기념하는 비석이 세워져, 당시 전투의 역사를 되새길 수 있는 장소입니다."
+                "desc": "이순신 장군의 명량해전에서의 승리를 기념하는 비석이 세워져, 당시 전투의 역사를 되새길 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 4,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "임진왜란 당시 큰 공을 세운 이순신 장군의 공로를 치하하는 교서가 보관된 곳으로, 역사적 맥락을 이해할 수 있습니다."
+                "desc": "임진왜란 당시 큰 공을 세운 이순신 장군의 공로를 치하하는 교서가 보관된 곳으로, 역사적 맥락을 이해할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이순신 장군의 명량대첩 승리를 기념하는 비석으로, 역사적 배경을 직접 느낄 수 있습니다."
+                "desc": "이순신 장군의 명량대첩 승리를 기념하는 비석으로, 역사적 배경을 직접 느낄 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "현충사",
                 "address": "충청남도 아산시 염치읍",
-                "desc": "이순신 장군의 업적을 기리는 곳으로, 그의 삶과 지혜를 기념하는 곳입니다."
+                "desc": "이순신 장군의 업적을 기리는 곳으로, 그의 삶과 지혜를 기념하는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/125/29569/12975/c/현충사-사진-1-thumb.jpg",
+                "link": "https://ncms.nculture.org/story-of-our-hometown/story/901"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "명량대첩의 실제 장소로, 이순신 장군의 전략적 승리를 기념하는 비석이 세워져 있습니다."
+                "desc": "명량대첩의 실제 장소로, 이순신 장군의 전략적 승리를 기념하는 비석이 세워져 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "현충사길 48",
-                "desc": "이순신 장군의 업적을 기리기 위해 내린 공문의 소장처로, 그의 역사적 의미를 배우기 적합한 장소입니다."
+                "desc": "이순신 장군의 업적을 기리기 위해 내린 공문의 소장처로, 그의 역사적 의미를 배우기 적합한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "명량대첩의 승리를 기념하기 위해 세워진 비석으로, 이순신 장군의 업적을 기립니다."
+                "desc": "명량대첩의 승리를 기념하기 위해 세워진 비석으로, 이순신 장군의 업적을 기립니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "현충사길 48",
-                "desc": "이순신 장군의 공로를 치하하기 위해 내려진 선무공신교서가 보관된 곳입니다."
+                "desc": "이순신 장군의 공로를 치하하기 위해 내려진 선무공신교서가 보관된 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "명량해전의 승리를 기리는 전남 해남 명량대첩비",
                 "address": "전라남도 해남군 문내면 동외리 955-6",
-                "desc": "이곳은 이순신 장군의 명량대첩 승리를 기념하는 비석으로, 그의 업적을 되새기는 장소입니다."
+                "desc": "이곳은 이순신 장군의 명량대첩 승리를 기념하는 비석으로, 그의 업적을 되새기는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/110/72493/65608/c/%EB%AA%85%EB%9F%89%EB%8C%80%EC%B2%A9%EB%B9%84-%EC%B6%A9%EB%AC%B4%EC%82%AC_%EB%AC%B8%ED%99%94%EC%9E%AC%EC%B2%AD_%EC%A0%9C4%EC%9C%A0%ED%98%95-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6303"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍",
-                "desc": "이순신 장군의 임진왜란 공로를 기념하며 그에게 수여된 교서를 소장한 곳입니다."
+                "desc": "이순신 장군의 임진왜란 공로를 기념하며 그에게 수여된 교서를 소장한 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""

@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "해방 이후 귀국한 이승만이 머물면서 남한 단독 정부 수립을 위한 정치적 기반을 마련한 장소입니다."
+                "desc": "해방 이후 귀국한 이승만이 머물면서 남한 단독 정부 수립을 위한 정치적 기반을 마련한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령 시절 사용된 별장으로, 당시 대한민국 정부 수립의 여정을 돌아볼 수 있는 역사적 장소입니다."
+                "desc": "이승만 대통령 시절 사용된 별장으로, 당시 대한민국 정부 수립의 여정을 돌아볼 수 있는 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이승만 전 대통령이 2년간 머문 곳으로, 그가 정치적 입지를 다졌던 중요한 장소입니다."
+                "desc": "이승만 전 대통령이 2년간 머문 곳으로, 그가 정치적 입지를 다졌던 중요한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만의 대통령 시절의 휴양지로, 그의 개인적 생활과 측면을 엿볼 수 있는 곳입니다."
+                "desc": "이승만의 대통령 시절의 휴양지로, 그의 개인적 생활과 측면을 엿볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이승만 전 대통령이 해방 후 머무르며 정치적 입지를 다졌던 중요한 장소입니다."
+                "desc": "이승만 전 대통령이 해방 후 머무르며 정치적 입지를 다졌던 중요한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령의 휴양지로, 해방 후 남한 임시 정부 수립 활동의 중심지 중 하나입니다."
+                "desc": "이승만 대통령의 휴양지로, 해방 후 남한 임시 정부 수립 활동의 중심지 중 하나입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이곳은 해방 이후 이승만이 정치적 입지를 다지고 대한민국 건국의 초석을 놓은 곳입니다."
+                "desc": "이곳은 해방 이후 이승만이 정치적 입지를 다지고 대한민국 건국의 초석을 놓은 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만이 국가 지도자로서의 삶을 계획했던 별장으로, 그의 휴식과 고뇌의 장소로 알려져 있습니다."
+                "desc": "이승만이 국가 지도자로서의 삶을 계획했던 별장으로, 그의 휴식과 고뇌의 장소로 알려져 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이곳은 해방을 맞아 이승만이 거처하며 정치 활동을 전개했던 장소로, 당시 이승만의 정치적 방향성을 결정하는 데 큰 의미가 있었습니다."
+                "desc": "이곳은 해방을 맞아 이승만이 거처하며 정치 활동을 전개했던 장소로, 당시 이승만의 정치적 방향성을 결정하는 데 큰 의미가 있었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이곳은 이승만 대통령 시절 국가 운영의 피로를 풀며 전략적 사고를 가다듬던 공간으로 알려져 있습니다."
+                "desc": "이곳은 이승만 대통령 시절 국가 운영의 피로를 풀며 전략적 사고를 가다듬던 공간으로 알려져 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이승만 전 대통령이 해방 후 고국에 돌아와 머문 곳으로, 그가 대한민국 정부 수립을 위해 활동하던 중심지입니다."
+                "desc": "이승만 전 대통령이 해방 후 고국에 돌아와 머문 곳으로, 그가 대한민국 정부 수립을 위해 활동하던 중심지입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령이 대한민국의 초대 대통령으로서 휴양지로 사용했던 곳으로, 그의 시대를 상징하는 장소입니다."
+                "desc": "이승만 대통령이 대한민국의 초대 대통령으로서 휴양지로 사용했던 곳으로, 그의 시대를 상징하는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이승만이 해방 후 정국의 주도권을 잡기 위해 머물렀던 장소로, 그의 정치적 입지를 다졌던 곳입니다."
+                "desc": "이승만이 해방 후 정국의 주도권을 잡기 위해 머물렀던 장소로, 그의 정치적 입지를 다졌던 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "파도와 모래 울음소리 들리는, 고성 청간정",
                 "address": "강원도 고성군 토성면 청간리 90",
-                "desc": "청간정은 전통적인 경관을 배경으로 많은 문인들이 방문했던 곳으로, 당시 문화적 풍경을 경험할 수 있습니다."
+                "desc": "청간정은 전통적인 경관을 배경으로 많은 문인들이 방문했던 곳으로, 당시 문화적 풍경을 경험할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/204/16658/18218/c/16658-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2449"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "해방정국 정치1번가, 돈암장",
                 "address": "대한민국 서울특별시 성북구 동소문로3길 84",
-                "desc": "이승만 전 대통령이 머물렀던 장소로, 해방정국에서의 정치적 활동의 중심지였습니다."
+                "desc": "이승만 전 대통령이 머물렀던 장소로, 해방정국에서의 정치적 활동의 중심지였습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/66/14491/2290/c/14491-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2830"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령의 휴양지로, 그가 한반도 미래를 구상하던 장소였습니다."
+                "desc": "이승만 대통령의 휴양지로, 그가 한반도 미래를 구상하던 장소였습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""

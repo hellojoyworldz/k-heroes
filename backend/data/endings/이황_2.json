@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "도산서당의 건립을 통해 이황의 학문과 교육 이념이 이어진 곳으로, 영남 유학의 중심지로 자리잡았습니다."
+                "desc": "도산서당의 건립을 통해 이황의 학문과 교육 이념이 이어진 곳으로, 영남 유학의 중심지로 자리잡았습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계의 교육이념, 위기지학",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "퇴계 이황이 제시한 철학 교육의 기초가 되는 곳으로, 치밀한 성리학 교육의 현장이었습니다."
+                "desc": "퇴계 이황이 제시한 철학 교육의 기초가 되는 곳으로, 치밀한 성리학 교육의 현장이었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23437/6308/c/23437-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2497"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 후학 양성을 위해 세운 도산서당을 중심으로 발달한 서원으로, 그의 교육이념이 깃든 곳입니다."
+                "desc": "이황이 후학 양성을 위해 세운 도산서당을 중심으로 발달한 서원으로, 그의 교육이념이 깃든 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계의 교육이념, 위기지학",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "도산서원에서 이황이 강조한 교육철학과 성리학적 가르침을 생생히 느낄 수 있는 공간으로, 그의 사상적 유산을 체험할 수 있습니다."
+                "desc": "도산서원에서 이황이 강조한 교육철학과 성리학적 가르침을 생생히 느낄 수 있는 공간으로, 그의 사상적 유산을 체험할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23437/6308/c/23437-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2497"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 도산서당을 모체로 설립한 곳으로, 그의 교육철학을 잘 보여주는 서원입니다."
+                "desc": "이황이 도산서당을 모체로 설립한 곳으로, 그의 교육철학을 잘 보여주는 서원입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "퇴계의 제자들에 의해 건립된 이곳은 퇴계 이황의 흔적과 도학의 정신을 느낄 수 있는 장소입니다."
+                "desc": "퇴계의 제자들에 의해 건립된 이곳은 퇴계 이황의 흔적과 도학의 정신을 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 도덕적 교육을 펼친 도산서당의 연장선상에 있는 도산서원은 그의 사상이 깃든 교육의 중심지입니다."
+                "desc": "이황이 도덕적 교육을 펼친 도산서당의 연장선상에 있는 도산서원은 그의 사상이 깃든 교육의 중심지입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "이곳은 퇴계 이황이 즐겨 찾던 장소 중 하나로, 그와 제자들이 남긴 많은 시문이 고산정을 무대로 만들어졌습니다."
+                "desc": "이곳은 퇴계 이황이 즐겨 찾던 장소 중 하나로, 그와 제자들이 남긴 많은 시문이 고산정을 무대로 만들어졌습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 도산서당을 세워 후학 양성에 주력했던 장소이며, 그의 교육 철학을 재확인할 수 있는 중요한 유적지입니다."
+                "desc": "이황이 도산서당을 세워 후학 양성에 주력했던 장소이며, 그의 교육 철학을 재확인할 수 있는 중요한 유적지입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "퇴계 이황과 그의 제자들이 교류하며 남긴 시가 풍부한 이곳은 이황 철학과 교육의 깊이를 이해할 수 있습니다."
+                "desc": "퇴계 이황과 그의 제자들이 교류하며 남긴 시가 풍부한 이곳은 이황 철학과 교육의 깊이를 이해할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황의 교육 철학과 도덕적 가르침이 숨쉬는 도산서원은 그의 삶과 사상을 깊이 이해할 수 있는 장소입니다."
+                "desc": "이황의 교육 철학과 도덕적 가르침이 숨쉬는 도산서원은 그의 삶과 사상을 깊이 이해할 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "고산정은 이황과 제자들이 자주 찾던 곳으로, 그의 철학적 성찰과 교육 이념을 느낄 수 있는 곳입니다."
+                "desc": "고산정은 이황과 제자들이 자주 찾던 곳으로, 그의 철학적 성찰과 교육 이념을 느낄 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 도산서당을 기반으로 설립한 도산서원은 그의 교육철학을 이어받은 곳으로, 유학의 성지로 여겨졌다."
+                "desc": "이황이 도산서당을 기반으로 설립한 도산서원은 그의 교육철학을 이어받은 곳으로, 유학의 성지로 여겨졌다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계의 교육이념, 위기지학",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 성리학을 바탕으로 서원교육의 기틀을 세운 도산서원은 그의 교육 철학을 잘 보여준다."
+                "desc": "이황이 성리학을 바탕으로 서원교육의 기틀을 세운 도산서원은 그의 교육 철학을 잘 보여준다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23437/6308/c/23437-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2497"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이곳은 이황이 도산서당을 세워 후학을 양성한 서원이며, 그의 교육 철학의 산실입니다."
+                "desc": "이곳은 이황이 도산서당을 세워 후학을 양성한 서원이며, 그의 교육 철학의 산실입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계의 교육이념, 위기지학",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이곳은 퇴계 이황의 교육 철학이 담긴 장소로서, 퇴계의 성리학 사상을 이해할 수 있는 공간입니다."
+                "desc": "이곳은 퇴계 이황의 교육 철학이 담긴 장소로서, 퇴계의 성리학 사상을 이해할 수 있는 공간입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23437/6308/c/23437-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2497"
             }
         ],
         "image_url": ""

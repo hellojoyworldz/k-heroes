@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "부산 정치파동 당시 임시수도였으며, 국회가 위치했던 장소."
+                "desc": "부산 정치파동 당시 임시수도였으며, 국회가 위치했던 장소.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "청도 만화정",
                 "address": "경상북도 청도군 금천면 선암로 474",
-                "desc": "이곳은 조화로운 정치를 꿈꾸던 이전의 이상과 대비되는 역사적 교훈을 제공하는 장소입니다."
+                "desc": "이곳은 조화로운 정치를 꿈꾸던 이전의 이상과 대비되는 역사적 교훈을 제공하는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/151/16370/3067/c/16370-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2287"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "부산 정치파동 당시 이승만 정부의 무대였던 장소로, 이제는 대한민국 정부의 역사적 피란 경험을 되새김질할 수 있는 곳입니다."
+                "desc": "부산 정치파동 당시 이승만 정부의 무대였던 장소로, 이제는 대한민국 정부의 역사적 피란 경험을 되새김질할 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "서울 담담정",
                 "address": "서울특별시 마포구 마포동",
-                "desc": "이승만 대통령이 잠시 거처로 사용했던 장소로, 역사의 현장을 깊이 체험할 수 있는 의미 있는 장소입니다."
+                "desc": "이승만 대통령이 잠시 거처로 사용했던 장소로, 역사의 현장을 깊이 체험할 수 있는 의미 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/196/16647/18243/c/16647-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2286"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "부산 정치파동 당시 임시 수도로 사용된 장소로, 이승만 정부의 청사로 활용되었습니다."
+                "desc": "부산 정치파동 당시 임시 수도로 사용된 장소로, 이승만 정부의 청사로 활용되었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "파도와 모래 울음소리 들리는, 고성 청간정",
                 "address": "강원도 고성군 토성면 청간리 90",
-                "desc": "정적 소탕 배경이 된 강원도 북부 지역의 절경으로, 부산 정치파동과 관련된 역사적 맥락을 제공합니다."
+                "desc": "정적 소탕 배경이 된 강원도 북부 지역의 절경으로, 부산 정치파동과 관련된 역사적 맥락을 제공합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/204/16658/18218/c/16658-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2449"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "부산 정치파동이 일어난 장소로, 이승만 정부의 비상계엄 및 정치적 변동의 중심지였습니다."
+                "desc": "부산 정치파동이 일어난 장소로, 이승만 정부의 비상계엄 및 정치적 변동의 중심지였습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령의 다양한 정치적 고뇌와 결정을 경험했던 장소입니다."
+                "desc": "이승만 대통령의 다양한 정치적 고뇌와 결정을 경험했던 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "임시 수도 부산에서 이승만 정부가 이루어진 역사적 사건의 배경이 되었습니다."
+                "desc": "임시 수도 부산에서 이승만 정부가 이루어진 역사적 사건의 배경이 되었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "고성 청간정",
                 "address": "강원도 고성군 토성면 청간리 90",
-                "desc": "고성 청간정은 역사 속 예술가들이 방문하며 당시 사회를 반영한 장소로, 역사적 화합의 중요성을 상기시킵니다."
+                "desc": "고성 청간정은 역사 속 예술가들이 방문하며 당시 사회를 반영한 장소로, 역사적 화합의 중요성을 상기시킵니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/204/16658/18218/c/16658-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2449"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "이승만 정부가 한국전쟁 기간 임시 수도로 삼았던 곳으로, 정치적 위기 동안 사용된 역사적 장소입니다."
+                "desc": "이승만 정부가 한국전쟁 기간 임시 수도로 삼았던 곳으로, 정치적 위기 동안 사용된 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령이 휴양지로 사용한 곳으로, 당시 권력의 흔적을 느낄 수 있는 장소입니다."
+                "desc": "이승만 대통령이 휴양지로 사용한 곳으로, 당시 권력의 흔적을 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "부산 정치파동 당시 임시수도 역할을 수행하며 중요한 정치적 사건이 발생한 장소입니다."
+                "desc": "부산 정치파동 당시 임시수도 역할을 수행하며 중요한 정치적 사건이 발생한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 2,
                 "name": "대통령의 휴양지, 제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이승만 대통령이 집권했던 시절의 흔적을 간직한 중요한 장소로, 그의 정치적 행보를 재조명해볼 수 있는 곳입니다."
+                "desc": "이승만 대통령이 집권했던 시절의 흔적을 간직한 중요한 장소로, 그의 정치적 행보를 재조명해볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 2,
                 "name": "부산 임시수도 정부청사",
                 "address": "부산광역시 서구 부민동 2가",
-                "desc": "이 장소는 이승만 정부가 한국 전쟁 기간 동안 임시 수도로 사용했던 곳으로, 정치적 변동의 중심이었습니다."
+                "desc": "이 장소는 이승만 정부가 한국 전쟁 기간 동안 임시 수도로 사용했던 곳으로, 정치적 변동의 중심이었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/30/27473/27473_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2865"
             },
             {
                 "place_id": 1,
                 "name": "제주 이승만 별장",
                 "address": "제주특별자치도 제주시 구좌읍 비자림로 1456",
-                "desc": "이 장소는 이승만 대통령 시절 구성된 대통령 전용 별장으로, 당시 정치적 선택의 배경을 이해하는 데 도움이 됩니다."
+                "desc": "이 장소는 이승만 대통령 시절 구성된 대통령 전용 별장으로, 당시 정치적 선택의 배경을 이해하는 데 도움이 됩니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/98/14634/20026/c/14634-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2840"
             }
         ],
         "image_url": ""

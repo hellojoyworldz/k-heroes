@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균의 생애와 문학적 업적을 기리는 장소로, 『홍길동전』의 역사적 배경을 이해할 수 있는 곳입니다."
+                "desc": "허균의 생애와 문학적 업적을 기리는 장소로, 『홍길동전』의 역사적 배경을 이해할 수 있는 곳입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 2,
                 "name": "동생 허균이 모아 간행한 누이 허난설헌의 작품들, 난설헌시집",
                 "address": "강원도 강릉시 율곡로 3139번길 24",
-                "desc": "허균이 그의 누이인 허난설헌의 작품을 모아 간행한 시집으로, 가족의 예술적 영향력을 엿볼 수 있는 장소입니다."
+                "desc": "허균이 그의 누이인 허난설헌의 작품을 모아 간행한 시집으로, 가족의 예술적 영향력을 엿볼 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/199/72332/65270/c/난설헌시집-목판초간본_문화재청_제1유형-(1)-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6250"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균의 작품 '홍길동전'의 저자 허균을 기리기 위한 장소로, 그의 문학적 업적을 살펴볼 수 있습니다."
+                "desc": "허균의 작품 '홍길동전'의 저자 허균을 기리기 위한 장소로, 그의 문학적 업적을 살펴볼 수 있습니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 5,
                 "name": "이방운의 그림에 보이는, 청풍 한벽루",
                 "address": "충청북도 제천시 청풍면 청풍호로 2048",
-                "desc": "조선시대의 문학적 배경과 허균이 활동하던 시대의 문화를 이해하는데 도움을 주는 조선시대의 누각입니다."
+                "desc": "조선시대의 문학적 배경과 허균이 활동하던 시대의 문화를 이해하는데 도움을 주는 조선시대의 누각입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/pavilion/story/2279"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균이 탄압 속에서도 집필했던 홍길동전을 기념하는 곳으로, 그의 작품 세계를 느낄 수 있습니다."
+                "desc": "허균이 탄압 속에서도 집필했던 홍길동전을 기념하는 곳으로, 그의 작품 세계를 느낄 수 있습니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 5,
                 "name": "이방운의 그림에 보이는, 청풍 한벽루",
                 "address": "충청북도 제천시 청풍면 청풍호로 2048",
-                "desc": "조선 시대 누각으로, 역사 속에서 허균이 살았던 시대의 건축 양식과 문화적 배경을 엿볼 수 있습니다."
+                "desc": "조선 시대 누각으로, 역사 속에서 허균이 살았던 시대의 건축 양식과 문화적 배경을 엿볼 수 있습니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/pavilion/story/2279"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균의 출생지이며, 그의 대표 작품인 『홍길동전』을 감상할 수 있는 장소입니다."
+                "desc": "허균의 출생지이며, 그의 대표 작품인 『홍길동전』을 감상할 수 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 2,
                 "name": "동생 허균이 모아 간행한 누이 허난설헌의 작품들, 난설헌시집",
                 "address": "강원도 강릉시 율곡로 3139번길 24",
-                "desc": "허균의 혁신 정신을 공유한 누이 허난설헌의 작품을 볼 수 있는 곳입니다."
+                "desc": "허균의 혁신 정신을 공유한 누이 허난설헌의 작품을 볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/199/72332/65270/c/난설헌시집-목판초간본_문화재청_제1유형-(1)-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6250"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균이 『홍길동전』을 통해 사회적 메시지를 전달한 장소입니다."
+                "desc": "허균이 『홍길동전』을 통해 사회적 메시지를 전달한 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 2,
                 "name": "동생 허균이 모아 간행한 누이 허난설헌의 작품들, 난설헌시집",
                 "address": "강원도 강릉시 율곡로 3139번길 24",
-                "desc": "허균의 문학적 배경을 형성한 가족의 영향을 볼 수 있는 곳입니다."
+                "desc": "허균의 문학적 배경을 형성한 가족의 영향을 볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/199/72332/65270/c/난설헌시집-목판초간본_문화재청_제1유형-(1)-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6250"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균은 조선 시대 최초의 한글 소설인 『홍길동전』을 통해 신분 차별을 타파하고자 했던 인물입니다."
+                "desc": "허균은 조선 시대 최초의 한글 소설인 『홍길동전』을 통해 신분 차별을 타파하고자 했던 인물입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 2,
                 "name": "허균이 편찬한 은둔과 한가함에 대한 기록, 한정록",
                 "address": "관악로 1",
-                "desc": "『한정록』은 허균이 은거 중에 기록한 작품으로, 그의 철학적 사상과 은둔의 의미를 이해할 수 있는 곳입니다."
+                "desc": "『한정록』은 허균이 은거 중에 기록한 작품으로, 그의 철학적 사상과 은둔의 의미를 이해할 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/86/72470/65552/c/허균의-한정록_허균허난설헌기념관_제4유형-(1)-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5264"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균이 『홍길동전』을 집필한 고장이자 그의 정신적 유산이 보관되어 있는 장소입니다."
+                "desc": "허균이 『홍길동전』을 집필한 고장이자 그의 정신적 유산이 보관되어 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 5,
                 "name": "이방운의 그림에 보이는, 청풍 한벽루",
                 "address": "충청북도 제천시 청풍면 청풍호로 2048",
-                "desc": "청풍 한벽루는 허균과 같은 시대의 문화적 유산을 느낄 수 있는 역사적 장소입니다."
+                "desc": "청풍 한벽루는 허균과 같은 시대의 문화적 유산을 느낄 수 있는 역사적 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/pavilion/story/2279"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 2,
                 "name": "최초의 한글 소설 「홍길동전」의 허균",
                 "address": "강원도 강릉시 초당동 476-5",
-                "desc": "허균이 '홍길동전'을 집필하며 펼친 사회 변혁의 꿈을 기리는 장소입니다."
+                "desc": "허균이 '홍길동전'을 집필하며 펼친 사회 변혁의 꿈을 기리는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/5291"
             },
             {
                 "place_id": 4,
                 "name": "동생 허균이 모아 간행한 누이 허난설헌의 작품들, 난설헌시집",
                 "address": "강원도 강릉시 율곡로 3139번길 24",
-                "desc": "허균이 누이 허난설헌의 작품을 모아 간행한 목판본을 전시한 곳입니다."
+                "desc": "허균이 누이 허난설헌의 작품을 모아 간행한 목판본을 전시한 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/199/72332/65270/c/난설헌시집-목판초간본_문화재청_제1유형-(1)-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/6250"
             }
         ],
         "image_url": ""

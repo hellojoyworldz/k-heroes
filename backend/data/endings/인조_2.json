@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "남한산성은 인조가 병자호란 때 45일간 항전했던 곳으로, 당시의 역사를 생생히 느낄 수 있는 장소입니다."
+                "desc": "남한산성은 인조가 병자호란 때 45일간 항전했던 곳으로, 당시의 역사를 생생히 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 당시 인조가 피난했던 장소로, 역사적 사건이 얽힌 지리적 연관성을 보여주는 곳입니다."
+                "desc": "이괄의 난 당시 인조가 피난했던 장소로, 역사적 사건이 얽힌 지리적 연관성을 보여주는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "48일간 버틴 요새 남한산성",
                 "address": "경기도 광주시 남한산성면 산성리 산1",
-                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다."
+                "desc": "인조가 45일 동안 항전했던 남한산성은 병자호란의 주요 역사 현장입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/16/11975/19356/c/11975-thumb.jpg",
+                "link": "https://ncms.nculture.org/castle-road/story/2117"
             },
             {
                 "place_id": 2,
                 "name": "피난 온 인조를 도와준 충청남도 공주시의 조왕동",
                 "address": "충남 공주시 우성면 동곡리 321-5",
-                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다."
+                "desc": "이괄의 난 때 인조를 도왔던 마을로, 당대의 위기와 극복을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/122/73051/69741/c/%EC%B6%A9%EB%82%A8-%EA%B3%B5%EC%A3%BC%EC%8B%9C_%EC%A1%B0%EC%99%95%EB%8F%99_%EC%A1%B0%EC%84%A0%EC%9D%B8%EC%A1%B0%EC%9E%84%EA%B8%88-%EA%B3%B5%EC%A3%BC-%ED%8C%8C%EC%B2%9C-%EA%B8%B0%EB%",
+                "link": "https://ncms.nculture.org/origin-of-place-names/story/6622"
             }
         ],
         "image_url": ""

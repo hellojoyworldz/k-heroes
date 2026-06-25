@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기 당시 교육의 중심으로서, 당시 이광수 같은 인물들이 일본의 교육 정책에 협력하여 활동하던 장소들을 상기시킵니다."
+                "desc": "일제강점기 당시 교육의 중심으로서, 당시 이광수 같은 인물들이 일본의 교육 정책에 협력하여 활동하던 장소들을 상기시킵니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
                 "address": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
-                "desc": "문학적 유산을 통해 역사의 중요함을 일깨우는 장소로, 이광수와는 대비되는 문학적 업적을 가진 인물의 생가를 방문할 수 있습니다."
+                "desc": "문학적 유산을 통해 역사의 중요함을 일깨우는 장소로, 이광수와는 대비되는 문학적 업적을 가진 인물의 생가를 방문할 수 있습니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기에 조선 최고의 사범학교 중 하나였던 대구사범학교는 조선 인재들이 모여든 곳으로, 이광수 같은 인물의 행적을 반성적으로 바라볼 수 있는 역사적 장소입니다."
+                "desc": "일제강점기에 조선 최고의 사범학교 중 하나였던 대구사범학교는 조선 인재들이 모여든 곳으로, 이광수 같은 인물의 행적을 반성적으로 바라볼 수 있는 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "충북 괴산군 홍명희 생가",
                 "address": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
-                "desc": "홍명희는 한국 근대 문학 형성에 대단히 큰 영향을 미친 인물로, 그가 살았던 생가는 당시 문단의 흐름과 친일문학의 그림자를 돌아보게 해 줍니다."
+                "desc": "홍명희는 한국 근대 문학 형성에 대단히 큰 영향을 미친 인물로, 그가 살았던 생가는 당시 문단의 흐름과 친일문학의 그림자를 돌아보게 해 줍니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기 시기의 교육 정책과 조선인의 자치권 제한을 상징하는 대구사범학교는 이광수의 친일 행적과 맞물려 중요한 역사적 배경이 됩니다."
+                "desc": "일제강점기 시기의 교육 정책과 조선인의 자치권 제한을 상징하는 대구사범학교는 이광수의 친일 행적과 맞물려 중요한 역사적 배경이 됩니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "대구의 명물, 납작만두",
                 "address": "대구광역시 달서구 공원순환로 201 대구문화예술회관 제2예련관 2층",
-                "desc": "대구의 향토음식 납작만두는 당시의 힘든 시기에 민족의 삶을 기억하게 하는 음식으로, 시대 상황을 이해하는 데 도움이 됩니다."
+                "desc": "대구의 향토음식 납작만두는 당시의 힘든 시기에 민족의 삶을 기억하게 하는 음식으로, 시대 상황을 이해하는 데 도움이 됩니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/147/29237/8942/c/29237-thumb.jpg",
+                "link": "https://ncms.nculture.org/korean-war/story/4231"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기 조선의 교육 현장을 엿볼 수 있는 장소로, 당시의 교육정책이 어떻게 식민지 지배에 이용되었는지를 되짚어볼 수 있는 공간입니다."
+                "desc": "일제강점기 조선의 교육 현장을 엿볼 수 있는 장소로, 당시의 교육정책이 어떻게 식민지 지배에 이용되었는지를 되짚어볼 수 있는 공간입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "순 조선의 것'을 담은, 소설가 홍명희",
                 "address": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
-                "desc": "이광수와 마찬가지로 조선 문화를 각인시키고자 노력한 작가의 생가로, 조선과 근대 문학의 발전을 느낄 수 있는 장소입니다."
+                "desc": "이광수와 마찬가지로 조선 문화를 각인시키고자 노력한 작가의 생가로, 조선과 근대 문학의 발전을 느낄 수 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/4616"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기 당시 인재가 모인 사범학교로, 정책의 중심에 있던 이광수와 관련이 있습니다."
+                "desc": "일제강점기 당시 인재가 모인 사범학교로, 정책의 중심에 있던 이광수와 관련이 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
                 "address": "충청북도 괴산군 괴산읍",
-                "desc": "홍명희는 이광수와 함께 한국 근대 문학에 큰 영향을 미친 인물로, 문인계의 역사를 볼 수 있는 장소입니다."
+                "desc": "홍명희는 이광수와 함께 한국 근대 문학에 큰 영향을 미친 인물로, 문인계의 역사를 볼 수 있는 장소입니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "이광수와 같은 지식인들이 활동했던 곳으로 당시 조선 문인들과 교육인들의 모임 장소였습니다."
+                "desc": "이광수와 같은 지식인들이 활동했던 곳으로 당시 조선 문인들과 교육인들의 모임 장소였습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "충북 괴산군 괴산읍 임꺽정로 16 홍명희생가",
                 "address": "순 조선의 것'을 담은 소설가 홍명희의 고향",
-                "desc": "이광수와 같은 시기에 활동한 소설가의 생가로서, 당시 문인들의 삶과 고민을 엿볼 수 있는 장소입니다."
+                "desc": "이광수와 같은 시기에 활동한 소설가의 생가로서, 당시 문인들의 삶과 고민을 엿볼 수 있는 장소입니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "교육의 질, 교사의 질 ? 구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "일제강점기 동안 많은 조선 청년들이 일본의 교육 정책에 따라 학업을 이어갔던 상징적인 장소로, 당시 문인들의 고뇌와 선택을 떠올리게 합니다."
+                "desc": "일제강점기 동안 많은 조선 청년들이 일본의 교육 정책에 따라 학업을 이어갔던 상징적인 장소로, 당시 문인들의 고뇌와 선택을 떠올리게 합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 4,
                 "name": "대구의 명물, 납작만두",
                 "address": "대구광역시 달서구 공원순환로 201 대구문화예술회관 제2예련관 2층",
-                "desc": "6·25전쟁 시기 대구에서 만들어졌던 향토음식, 당시 격변의 시대 속에 살아남기 위한 대구 사람들의 삶의 지혜를 볼 수 있습니다."
+                "desc": "6·25전쟁 시기 대구에서 만들어졌던 향토음식, 당시 격변의 시대 속에 살아남기 위한 대구 사람들의 삶의 지혜를 볼 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/147/29237/8942/c/29237-thumb.jpg",
+                "link": "https://ncms.nculture.org/korean-war/story/4231"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "구 대구사범학교 본관과 강당",
                 "address": "대구광역시 중구 달구벌대로 2178",
-                "desc": "교육기관으로서 일제강점기 시기 한국 청년들에게 일본식 교육을 주입하려 했던 상징적 장소입니다."
+                "desc": "교육기관으로서 일제강점기 시기 한국 청년들에게 일본식 교육을 주입하려 했던 상징적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/153/12747/21107/c/12747-thumb.jpg",
+                "link": "https://ncms.nculture.org/legacy/story/2918"
             },
             {
                 "place_id": 2,
                 "name": "홍명희생가",
                 "address": "충북 괴산군 괴산읍 임꺽정로 16",
-                "desc": "홍명희는 순수 조선의 문화를 추구한 작가로, 이광수의 선택과 대비되는 민족 의식을 보여 줍니다."
+                "desc": "홍명희는 순수 조선의 문화를 추구한 작가로, 이광수의 선택과 대비되는 민족 의식을 보여 줍니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""

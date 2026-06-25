@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "이곳은 민족적 절개를 지키려 노력한 이들의 이야기를 상기시키며, 이광수의 내적 갈등을 비유적으로 드러냅니다."
+                "desc": "이곳은 민족적 절개를 지키려 노력한 이들의 이야기를 상기시키며, 이광수의 내적 갈등을 비유적으로 드러냅니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "명창 김초향의 발자취",
                 "address": "대구 달서구 공원순환로 201 제2예련관 2층",
-                "desc": "일제강점기에도 민족의 소리를 지키고자 노력한 예술가들은, 이광수의 문학적 선택과 대비되는 사례를 제공합니다."
+                "desc": "일제강점기에도 민족의 소리를 지키고자 노력한 예술가들은, 이광수의 문학적 선택과 대비되는 사례를 제공합니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "전신민이 낙향해 홀로 절개를 지킨 곳으로, 이광수의 절개를 상징적으로 연상시킵니다."
+                "desc": "전신민이 낙향해 홀로 절개를 지킨 곳으로, 이광수의 절개를 상징적으로 연상시킵니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "식민지 현실의 노동자들을 그린 여성소설가 박화성",
                 "address": "전라남도 목포시 남농로 95",
-                "desc": "일제강점기 문학에서 민족과 현실을 이야기한 협업 작가 박화성과 이광수의 활동이 묘사된 곳입니다."
+                "desc": "일제강점기 문학에서 민족과 현실을 이야기한 협업 작가 박화성과 이광수의 활동이 묘사된 곳입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/1062"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "일제강점기 민족의 소리를 지킨 맏언니, 명창 김초향",
                 "address": "대구 달서구 공원순환로 201 제2예련관 2층",
-                "desc": "김초향은 소리로 민족혼을 일깨운 인물로, 이광수의 시대적 맥락과 연결됩니다."
+                "desc": "김초향은 소리로 민족혼을 일깨운 인물로, 이광수의 시대적 맥락과 연결됩니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/4630"
             },
             {
                 "place_id": 2,
                 "name": "소나기'의 작가 황순원",
                 "address": "경기 양평군 서종면 소나기마을길 24",
-                "desc": "이광수의 권유를 거절한 황순원은 노선을 달리하면서도 같은 문단에서 활동한 인연이 있습니다."
+                "desc": "이광수의 권유를 거절한 황순원은 노선을 달리하면서도 같은 문단에서 활동한 인연이 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/3ds/95/84450/84450_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/local-artist/story/1049"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "이광수의 지조를 지키고자 했던 정신과 어울리는 장소로, 홀로 은거하며 절개를 지킨 선대의 정신을 상기시킵니다."
+                "desc": "이광수의 지조를 지키고자 했던 정신과 어울리는 장소로, 홀로 은거하며 절개를 지킨 선대의 정신을 상기시킵니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "소나기'의 작가 황순원",
                 "address": "경기 양평군 서종면 소나기마을길 24",
-                "desc": "이광수가 작품 활동을 권유했던 황순원과 그의 작품 세계를 엿볼 수 있는 문학촌으로 역사적 연관성을 확인할 수 있습니다."
+                "desc": "이광수가 작품 활동을 권유했던 황순원과 그의 작품 세계를 엿볼 수 있는 문학촌으로 역사적 연관성을 확인할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/3ds/95/84450/84450_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/local-artist/story/1049"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "독수정은 이광수와 같은 역사적 인물처럼 그들의 절개와 신념적인 면모를 비유적으로 보여줄 수 있는 장소입니다."
+                "desc": "독수정은 이광수와 같은 역사적 인물처럼 그들의 절개와 신념적인 면모를 비유적으로 보여줄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "소나기'의 작가 황순원",
                 "address": "경기 양평군 서종면 소나기마을길 24",
-                "desc": "이광수와 문학적 교류가 있었던 황순원의 작품 배경지로, 당시 문인들이 대중과 소통하려는 노력의 산실을 엿볼 수 있습니다."
+                "desc": "이광수와 문학적 교류가 있었던 황순원의 작품 배경지로, 당시 문인들이 대중과 소통하려는 노력의 산실을 엿볼 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/3ds/95/84450/84450_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/local-artist/story/1049"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "독수정은 절개와 지조를 상징하는 곳으로, 이광수의 옥중 투쟁과 관련된 정신적 상징이 됩니다."
+                "desc": "독수정은 절개와 지조를 상징하는 곳으로, 이광수의 옥중 투쟁과 관련된 정신적 상징이 됩니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "식민지 현실의 노동자들을 그린 여성소설가 박화성",
                 "address": "전라남도 목포시 남농로 95",
-                "desc": "박화성은 이광수의 추천으로 문단에 데뷔한 작가로, 이광수의 역사적 영향력을 더욱 살펴볼 수 있는 장소입니다."
+                "desc": "박화성은 이광수의 추천으로 문단에 데뷔한 작가로, 이광수의 역사적 영향력을 더욱 살펴볼 수 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/1062"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "이곳은 홀로 자신의 소신을 지켰던 인물을 기념하며, 이광수의 문학과 사상의 갈등을 상기시킵니다."
+                "desc": "이곳은 홀로 자신의 소신을 지켰던 인물을 기념하며, 이광수의 문학과 사상의 갈등을 상기시킵니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "소나기'의 작가 황순원",
                 "address": "경기 양평군 서종면 소나기마을길 24",
-                "desc": "황순원 문학촌은 순수한 문학과 현실의 갈등 속에서 창작의 길을 걸었던 문인들의 고민을 느낄 수 있게 합니다."
+                "desc": "황순원 문학촌은 순수한 문학과 현실의 갈등 속에서 창작의 길을 걸었던 문인들의 고민을 느낄 수 있게 합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/3ds/95/84450/84450_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/local-artist/story/1049"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "홀로 절개를 지키는, 담양 독수정",
                 "address": "전라남도 담양군 남면 연천리 산91",
-                "desc": "이광수의 민족적 정체성과 저항의 의식을 상징적으로 이해할 수 있는 장소입니다."
+                "desc": "이광수의 민족적 정체성과 저항의 의식을 상징적으로 이해할 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/219/15765/17294/c/15765-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2362"
             },
             {
                 "place_id": 2,
                 "name": "식민지 현실의 노동자들을 그린 여성소설가 박화성",
                 "address": "전라남도 목포시 남농로 95",
-                "desc": "이광수와 같은 시대에 활동하며 일제 강점기의 아픔을 문학으로 표현한 작가 박화성의 흔적을 느낄 수 있는 곳입니다."
+                "desc": "이광수와 같은 시대에 활동하며 일제 강점기의 아픔을 문학으로 표현한 작가 박화성의 흔적을 느낄 수 있는 곳입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/local-artist/story/1062"
             }
         ],
         "image_url": ""

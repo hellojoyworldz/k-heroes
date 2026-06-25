@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "유성룡의 고택으로, 이순신과 함께 전쟁 전략을 논의했던 장소로 역사적 연관이 큽니다."
+                "desc": "유성룡의 고택으로, 이순신과 함께 전쟁 전략을 논의했던 장소로 역사적 연관이 큽니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 현충사길 48",
-                "desc": "이순신 장군의 업적을 기념하기 위해 선무공신교서가 소장된 장소로, 한산도 대첩의 승리를 기념할 수 있습니다."
+                "desc": "이순신 장군의 업적을 기념하기 위해 선무공신교서가 소장된 장소로, 한산도 대첩의 승리를 기념할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "이 장소는 이순신의 도움을 받아 업적을 남긴 유성룡의 종택입니다. 두 인물의 깊은 연결을 상징합니다."
+                "desc": "이 장소는 이순신의 도움을 받아 업적을 남긴 유성룡의 종택입니다. 두 인물의 깊은 연결을 상징합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "현충사길 48",
-                "desc": "이순신 장군의 업적을 기리기 위해 만들어진 선무공신교서가 소장된 현충사는 그의 위대한 승리와 헌신을 되새기는 장소입니다."
+                "desc": "이순신 장군의 업적을 기리기 위해 만들어진 선무공신교서가 소장된 현충사는 그의 위대한 승리와 헌신을 되새기는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "이순신과 함께 임진왜란 당시 큰 역할을 했던 유성룡의 종택. 전쟁의 전략적 조언에 기여한 의미 있는 장소입니다."
+                "desc": "이순신과 함께 임진왜란 당시 큰 역할을 했던 유성룡의 종택. 전쟁의 전략적 조언에 기여한 의미 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "현충사길 48",
                 "address": "충청남도 아산시 염치읍",
-                "desc": "이순신 장군의 업적을 기리는 중요한 역사적 기념관입니다. 그의 생애와 전투의 흔적을 엿볼 수 있습니다."
+                "desc": "이순신 장군의 업적을 기리는 중요한 역사적 기념관입니다. 그의 생애와 전투의 흔적을 엿볼 수 있습니다.",
+                "image_url": "",
+                "link": ""
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "현충사",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 선무공신교서가 소장된 곳으로, 그의 업적을 기리는 장소입니다."
+                "desc": "이순신 선무공신교서가 소장된 곳으로, 그의 업적을 기리는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/125/29569/12975/c/현충사-사진-1-thumb.jpg",
+                "link": "https://ncms.nculture.org/story-of-our-hometown/story/901"
             },
             {
                 "place_id": 2,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "이순신의 동료이자 병참을 책임졌던 유성룡의 종가가 위치한 곳입니다."
+                "desc": "이순신의 동료이자 병참을 책임졌던 유성룡의 종가가 위치한 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "유성룡은 이순신과 함께 임진왜란 당시 조선의 위기를 극복하는 데 협력한 인물로, 충효당은 그의 정신을 기리는 중요한 장소입니다."
+                "desc": "유성룡은 이순신과 함께 임진왜란 당시 조선의 위기를 극복하는 데 협력한 인물로, 충효당은 그의 정신을 기리는 중요한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 장군의 업적을 기리는 교서가 소장된 현충사는 임진왜란 시기 그의 위대한 승리에 대한 증거를 제공합니다."
+                "desc": "이순신 장군의 업적을 기리는 교서가 소장된 현충사는 임진왜란 시기 그의 위대한 승리에 대한 증거를 제공합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "이순신 장군의 승리를 뒷받침한 유성룡이 머물렀던 장소로, 역사의 중요한 배경을 제공합니다."
+                "desc": "이순신 장군의 승리를 뒷받침한 유성룡이 머물렀던 장소로, 역사의 중요한 배경을 제공합니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "현충사길 48",
-                "desc": "이순신 장군의 업적이 기록된 교서가 보관된 장소로, 그의 공로를 기립니다."
+                "desc": "이순신 장군의 업적이 기록된 교서가 보관된 장소로, 그의 공로를 기립니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "임진왜란 당시 유성룡의 지혜와 이순신과의 협력은 전쟁의 승리에 큰 기여를 했음을 보여줍니다."
+                "desc": "임진왜란 당시 유성룡의 지혜와 이순신과의 협력은 전쟁의 승리에 큰 기여를 했음을 보여줍니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "1등 공신으로 책훈하는 이순신 선무공신교서",
                 "address": "충청남도 아산시 염치읍 현충사길 48",
-                "desc": "이순신 장군이 임진왜란에서 보여준 공로를 기리는 장소로, 그의 전략적 업적을 되새길 수 있습니다."
+                "desc": "이순신 장군이 임진왜란에서 보여준 공로를 기리는 장소로, 그의 전략적 업적을 되새길 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/145/72529/65684/c/이순신-선무공신교서_문화재청_제1유형-thumb.jpg",
+                "link": "https://ncms.nculture.org/archival/story/5165"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "유성룡의 종가, 안동하회마을 충효당",
                 "address": "경상북도 안동시 풍천면 종가길 69(하회리)",
-                "desc": "유성룡은 이순신의 충성스런 동료이자 조언자였으며, 임진왜란 중 조선군에게 전략적 지원을 제공한 인물입니다."
+                "desc": "유성룡은 이순신의 충성스런 동료이자 조언자였으며, 임진왜란 중 조선군에게 전략적 지원을 제공한 인물입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/146/85841/93920/c/%ED%95%98%ED%9A%8C%EB%A7%88%EC%9D%84-%EC%B6%A9%ED%9A%A8%EB%8B%B9-%286%29_rev-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2276"
             },
             {
                 "place_id": 2,
                 "name": "현충사",
                 "address": "현충사길 48",
-                "desc": "이순신 장군의 업적을 기리는 기념관으로, 그의 전술과 공훈을 이해하는데 도움이 되는 장소입니다."
+                "desc": "이순신 장군의 업적을 기리는 기념관으로, 그의 전술과 공훈을 이해하는데 도움이 되는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/125/29569/12975/c/현충사-사진-1-thumb.jpg",
+                "link": "https://ncms.nculture.org/story-of-our-hometown/story/901"
             }
         ],
         "image_url": ""

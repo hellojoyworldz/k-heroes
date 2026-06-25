@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "이곳은 송시열과 윤증 사이의 갈등이 기념된 장소로, 서인의 분열을 상징합니다."
+                "desc": "이곳은 송시열과 윤증 사이의 갈등이 기념된 장소로, 서인의 분열을 상징합니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열의 글씨로 유명한 해운정은 조선 시대 학문의 중심이었던 그를 기념하는 명소입니다."
+                "desc": "송시열의 글씨로 유명한 해운정은 조선 시대 학문의 중심이었던 그를 기념하는 명소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "노론과 소론의 형성 및 송시열과 윤증의 갈등의 배경을 제공하는 역사적 장소입니다."
+                "desc": "노론과 소론의 형성 및 송시열과 윤증의 갈등의 배경을 제공하는 역사적 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열의 필체에서 느껴지는 그의 정치적, 학문적 영향력을 생생하게 만날 수 있는 곳입니다."
+                "desc": "송시열의 필체에서 느껴지는 그의 정치적, 학문적 영향력을 생생하게 만날 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "송시열과 윤증의 갈등이 노론과 소론의 붕당으로 나뉜 역사를 조명하는 장소입니다."
+                "desc": "송시열과 윤증의 갈등이 노론과 소론의 붕당으로 나뉜 역사를 조명하는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열의 글씨가 담긴 편액이 있는 모습으로 그의 예술적 재능을 엿볼 수 있는 장소입니다."
+                "desc": "송시열의 글씨가 담긴 편액이 있는 모습으로 그의 예술적 재능을 엿볼 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "이곳은 송시열과 윤증이 결별의 이유가 되었던 사건들이 일어난 장소로, 서인 분열의 역사적 배경을 이해하는 데 중요한 곳입니다."
+                "desc": "이곳은 송시열과 윤증이 결별의 이유가 되었던 사건들이 일어난 장소로, 서인 분열의 역사적 배경을 이해하는 데 중요한 곳입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열의 글씨를 볼 수 있는 해운정은 그가 남긴 유산과 예술적 감각을 느낄 수 있는 장소입니다."
+                "desc": "송시열의 글씨를 볼 수 있는 해운정은 그가 남긴 유산과 예술적 감각을 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "송시열과 윤증의 갈등이 사제 관계에서 어떻게 형성되었는지를 알 수 있는 장소입니다."
+                "desc": "송시열과 윤증의 갈등이 사제 관계에서 어떻게 형성되었는지를 알 수 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "우암 송시열의 글씨로 쌍둥이 편액을 작성한 해운정으로, 그의 문화적 영향력을 느낄 수 있는 장소입니다."
+                "desc": "우암 송시열의 글씨로 쌍둥이 편액을 작성한 해운정으로, 그의 문화적 영향력을 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "송시열과 윤증의 갈등이 노소 붕당으로 분열되는 과정을 다룹니다."
+                "desc": "송시열과 윤증의 갈등이 노소 붕당으로 분열되는 과정을 다룹니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열의 글씨가 남아 있는 강릉 해운정은 그의 학문적 영향력을 보여줍니다."
+                "desc": "송시열의 글씨가 남아 있는 강릉 해운정은 그의 학문적 영향력을 보여줍니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "우암 송시열의 쌍둥이 편액, 강릉 해운정",
                 "address": "강원도 강릉시 운정동 256",
-                "desc": "송시열이 쓴 편액이 있는 장소로, 그의 학문적 영향력을 느낄 수 있는 곳입니다."
+                "desc": "송시열이 쓴 편액이 있는 장소로, 그의 학문적 영향력을 느낄 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/221/27379/27379_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2330"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "송시열과 윤증의 갈등이 발생했던 장소로, 그들이 남긴 역사적 흔적을 되새길 수 있는 곳입니다."
+                "desc": "송시열과 윤증의 갈등이 발생했던 장소로, 그들이 남긴 역사적 흔적을 되새길 수 있는 곳입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "서로에게 권면하는 친구 간의 도리 붕우책선",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "윤선거가 친구 송시열에게 남긴 마지막 편지의 장소로, 송시열과 윤증의 갈등의 출발점이 됩니다."
+                "desc": "윤선거가 친구 송시열에게 남긴 마지막 편지의 장소로, 송시열과 윤증의 갈등의 출발점이 됩니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2624"
             },
             {
                 "place_id": 2,
                 "name": "우암 송시열과 명재 윤증의 갈등과 노소 붕당",
                 "address": "충청남도 논산시 광석면 오강리 227",
-                "desc": "송시열과 윤증의 갈등이 노론과 소론의 붕당 분열로 이어진 역사적 사건의 장소입니다."
+                "desc": "송시열과 윤증의 갈등이 노론과 소론의 붕당 분열로 이어진 역사적 사건의 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/confucianism/story/2694"
             }
         ],
         "image_url": ""

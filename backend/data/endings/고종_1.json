@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "경복궁 팔우정",
                 "address": "서울특별시 종로구 세종로",
-                "desc": "고종의 서재로 사용된 장소로, 고종의 개인적 고민과 결단이 이루어진 곳 중 하나입니다."
+                "desc": "고종의 서재로 사용된 장소로, 고종의 개인적 고민과 결단이 이루어진 곳 중 하나입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 2,
                 "name": "산남의진 추모비",
                 "address": "경상북도 영천시 자양면 용산리",
-                "desc": "을사의병 및 의병 활동을 지원했던 고종의 노력과 관련이 있는 장소입니다."
+                "desc": "을사의병 및 의병 활동을 지원했던 고종의 노력과 관련이 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/4084"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로구 세종로 경복궁",
-                "desc": "이곳은 고종이 책을 읽고 사신들을 접견하던 장소로, 그의 정치적 고민과 결단의 흔적이 남아있습니다."
+                "desc": "이곳은 고종이 책을 읽고 사신들을 접견하던 장소로, 그의 정치적 고민과 결단의 흔적이 남아있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 2,
                 "name": "고종황제의 측근으로 제천의병과 관련이 있는 심상훈",
                 "address": "충북 제천시 의림대로 125",
-                "desc": "고종의 의병 활동 지원 사실을 기억하며, 그의 결단이 의병 전개에 미친 영향을 돌아볼 수 있는 장소입니다."
+                "desc": "고종의 의병 활동 지원 사실을 기억하며, 그의 결단이 의병 전개에 미친 영향을 돌아볼 수 있는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/3929"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로구 세종로 경복궁 내",
-                "desc": "고종이 외국 사신을 접견하고 독서를 하던 곳으로, 그의 개인적 저항을 상징하는 공간입니다."
+                "desc": "고종이 외국 사신을 접견하고 독서를 하던 곳으로, 그의 개인적 저항을 상징하는 공간입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 2,
                 "name": "고종황제의 밀지를 받은 산남의진 추모비",
                 "address": "경상북도 영천시 자양면 용산리 산78-4",
-                "desc": "을사늑약 체결 직후 의병 조직인 산남의진과 관련된 장소로, 고종의 저항 의지를 기념합니다."
+                "desc": "을사늑약 체결 직후 의병 조직인 산남의진과 관련된 장소로, 고종의 저항 의지를 기념합니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/4084"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로구 세종로",
-                "desc": "여기서 고종은 책을 열람하고 외국 사신을 접견하며 나라의 미래를 고민했습니다."
+                "desc": "여기서 고종은 책을 열람하고 외국 사신을 접견하며 나라의 미래를 고민했습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 4,
                 "name": "고종황제의 밀지를 받은 산남의진 추모비",
                 "address": "경상북도 영천시 자양면 용산리",
-                "desc": "고종의 의병 지원에 대한 흔적을 찾을 수 있는 곳으로, 을사의병 활동을 기립니다."
+                "desc": "고종의 의병 지원에 대한 흔적을 찾을 수 있는 곳으로, 을사의병 활동을 기립니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/4084"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로구 경복궁 내",
-                "desc": "고종 황제가 외교와 관련된 여러 회의와 논의를 가졌던 곳으로, 당시의 상황을 엿볼 수 있는 장소입니다."
+                "desc": "고종 황제가 외교와 관련된 여러 회의와 논의를 가졌던 곳으로, 당시의 상황을 엿볼 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 2,
                 "name": "산남의진 추모비",
                 "address": "경상북도 영천시 자양면 용산리 산78-4",
-                "desc": "고종의 비밀 지원을 받은 의병들이 활약했던 산남의진과 관련된 장소로, 의병 운동의 역사를 느낄 수 있습니다."
+                "desc": "고종의 비밀 지원을 받은 의병들이 활약했던 산남의진과 관련된 장소로, 의병 운동의 역사를 느낄 수 있습니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/4084"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로1.2.3.4가동",
-                "desc": "고종이 외국 사신을 만나고, 서양 문물을 수용하며 개혁의 구상을 했던 역사적 공간입니다."
+                "desc": "고종이 외국 사신을 만나고, 서양 문물을 수용하며 개혁의 구상을 했던 역사적 공간입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 4,
                 "name": "고종황제의 측근으로 제천의병과 관련이 있는 심상훈",
                 "address": "충북 제천시 의림대로 125(시민회관 3층)",
-                "desc": "고종의 최측근 심상훈은 을사의병에 관여하여 의병 투쟁을 지원했습니다."
+                "desc": "고종의 최측근 심상훈은 을사의병에 관여하여 의병 투쟁을 지원했습니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/3929"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "경복궁 팔우정",
                 "address": "서울특별시 종로구 세종로",
-                "desc": "고종의 서재 역할을 했던 정자로, 외교 사신과의 회동 회의가 자주 열렸던 곳입니다."
+                "desc": "고종의 서재 역할을 했던 정자로, 외교 사신과의 회동 회의가 자주 열렸던 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             },
             {
                 "place_id": 2,
                 "name": "산남의진 추모비",
                 "address": "경상북도 영천시 자양면 용산리",
-                "desc": "1905년 을사늑약 체결 이후 형성된 의병들의 투쟁 정신과 관련 있는 곳으로, 의병 지원의 역사를 기립니다."
+                "desc": "1905년 을사늑약 체결 이후 형성된 의병들의 투쟁 정신과 관련 있는 곳으로, 의병 지원의 역사를 기립니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/4084"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "고종황제의 측근으로 제천의병과 관련이 있는 심상훈",
                 "address": "충북 제천시 의림대로 125(시민회관 3층)",
-                "desc": "고종황제의 측근인 심상훈과 관련된 곳으로, 심상훈이 의병에 관여했던 역사를 기리는 장소입니다."
+                "desc": "고종황제의 측근인 심상훈과 관련된 곳으로, 심상훈이 의병에 관여했던 역사를 기리는 장소입니다.",
+                "image_url": "",
+                "link": "https://ncms.nculture.org/righteous-army/story/3929"
             },
             {
                 "place_id": 2,
                 "name": "고종의 북카페, 경복궁 팔우정",
                 "address": "서울특별시 종로1.2.3.4가동",
-                "desc": "고종이 외국 사신을 접견하고 책을 읽던 서재로, 그가 문화와 외교를 통해 나라를 세우고자 했던 의지를 볼 수 있는 곳입니다."
+                "desc": "고종이 외국 사신을 접견하고 책을 읽던 서재로, 그가 문화와 외교를 통해 나라를 세우고자 했던 의지를 볼 수 있는 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/51/18121/3918/c/18121-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2295"
             }
         ],
         "image_url": ""

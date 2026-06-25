@@ -25,13 +25,17 @@
                 "place_id": 1,
                 "name": "도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 자신의 학문적 성과를 후학에게 전수한 곳으로, 사칠논변의 학문적 결실을 확인할 수 있는 장소입니다."
+                "desc": "이황이 자신의 학문적 성과를 후학에게 전수한 곳으로, 사칠논변의 학문적 결실을 확인할 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "이황의 제자들이 자주 방문하며 학문과 사상을 나눈 장소로, 이황의 영향력을 느낄 수 있는 명소입니다."
+                "desc": "이황의 제자들이 자주 방문하며 학문과 사상을 나눈 장소로, 이황의 영향력을 느낄 수 있는 명소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -62,13 +66,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 성리학을 깊이 연구하고 제자들에게 가르친 곳입니다."
+                "desc": "이황이 성리학을 깊이 연구하고 제자들에게 가르친 곳입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 고제 이덕홍을 기리는, 영주 군자정",
                 "address": "경상북도 영주시 평은면 천상로500번길 133-21",
-                "desc": "이황의 가르침을 받았던 이덕홍을 기념하는 정자로, 이황의 학문적 영향을 보여줍니다."
+                "desc": "이황의 가르침을 받았던 이덕홍을 기념하는 정자로, 이황의 학문적 영향을 보여줍니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/17/17603/3700/c/17603-thumb.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2275"
             }
         ],
         "image_url": ""
@@ -99,13 +107,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황의 학문이 꽃을 피우고 후학들에게 전파되었던 도산서당은 사칠논변의 중심지라 할 수 있습니다."
+                "desc": "이황의 학문이 꽃을 피우고 후학들에게 전파되었던 도산서당은 사칠논변의 중심지라 할 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "고산정은 퇴계 이황의 제자들이 함께하며 학문적 교류의 장소로 활용되었습니다."
+                "desc": "고산정은 퇴계 이황의 제자들이 함께하며 학문적 교류의 장소로 활용되었습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -136,13 +148,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 성리학을 연구하며 가르침을 주었던 도산서원은 퇴계학파의 근간이 된 장소입니다."
+                "desc": "이황이 성리학을 연구하며 가르침을 주었던 도산서원은 퇴계학파의 근간이 된 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "고산정은 이황의 학문 활동과 깊은 연관이 있는 문화유산으로, 그가 남긴 인문학적 발자취를 따라가기 좋은 장소입니다."
+                "desc": "고산정은 이황의 학문 활동과 깊은 연관이 있는 문화유산으로, 그가 남긴 인문학적 발자취를 따라가기 좋은 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -173,13 +189,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 말년을 보내며 학문을 가르쳤던 도산서원은 그의 철학적 유산과 업적을 느낄 수 있는 장소입니다."
+                "desc": "이황이 말년을 보내며 학문을 가르쳤던 도산서원은 그의 철학적 유산과 업적을 느낄 수 있는 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "이황의 제자가 세운 고산정은 그가 즐겨 찾던 장소로, 그의 학문과 사상을 이해하는 데 도움을 줍니다."
+                "desc": "이황의 제자가 세운 고산정은 그가 즐겨 찾던 장소로, 그의 학문과 사상을 이해하는 데 도움을 줍니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -210,13 +230,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 학문적 여정을 계속할 수 있었던 도산서원은 그가 후학들에게 성리학을 전파했던 중요한 장소입니다."
+                "desc": "이황이 학문적 여정을 계속할 수 있었던 도산서원은 그가 후학들에게 성리학을 전파했던 중요한 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "고산정은 이황의 제자들이 자주 왕래하며 학문을 논의했던 역사적 장소입니다."
+                "desc": "고산정은 이황의 제자들이 자주 왕래하며 학문을 논의했던 역사적 장소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -247,13 +271,17 @@
                 "place_id": 1,
                 "name": "도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 학문을 연구하고 제자들을 가르치던 도산서원은 그의 철학과 사상이 자리 잡은 중심지입니다."
+                "desc": "이황이 학문을 연구하고 제자들을 가르치던 도산서원은 그의 철학과 사상이 자리 잡은 중심지입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "고산정은 이황과 그의 제자들이 자주 방문했던 곳으로, 그의 사상적 흔적을 느낄 수 있는 명소입니다."
+                "desc": "고산정은 이황과 그의 제자들이 자주 방문했던 곳으로, 그의 사상적 흔적을 느낄 수 있는 명소입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
@@ -284,13 +312,17 @@
                 "place_id": 1,
                 "name": "이황의 도산서당을 모체로 한 도산서원",
                 "address": "경상북도 안동시 도산면 토계리 680",
-                "desc": "이황이 관직을 떠나면서 자신의 사상을 가르치고 전파하던 도산서원은 퇴계학파의 중심지입니다."
+                "desc": "이황이 관직을 떠나면서 자신의 사상을 가르치고 전파하던 도산서원은 퇴계학파의 중심지입니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/multimedia_assets/190/23423/6294/c/23423-thumb.jpg",
+                "link": "https://ncms.nculture.org/confucianism/story/2495"
             },
             {
                 "place_id": 2,
                 "name": "퇴계 이황의 숨결이 느껴지는, 안동 고산정",
                 "address": "경상북도 안동시 도산면 가송길 177-42",
-                "desc": "이곳은 이황이 학문과 자연을 조화시키면서 많은 시간을 보낸 곳으로, 그의 사상적 발자취를 느낄 수 있습니다."
+                "desc": "이곳은 이황이 학문과 자연을 조화시키면서 많은 시간을 보낸 곳으로, 그의 사상적 발자취를 느낄 수 있습니다.",
+                "image_url": "https://minio.nculture.org/amsweb-opt/pdfs/239/27431/27431_thumbnail.jpg",
+                "link": "https://ncms.nculture.org/pavilion/story/2338"
             }
         ],
         "image_url": ""
