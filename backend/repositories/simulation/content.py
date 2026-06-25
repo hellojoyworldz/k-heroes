@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Character, CharacterCategory, Choice, Ending, Scenario, Turn
+from db.models import Character, CharacterCategory, Choice, Ending, PlaySession, Scenario, Turn
 from models.character.character import (
     CharacterCard,
     ChoiceItem,
@@ -300,6 +300,23 @@ def map_recommended_places(raw: list) -> List[RecommendedPlace]:
         )
         for item in (raw or [])
     ]
+
+
+def build_choices_history(scenario: ScenarioItem, choices_path: List[str]) -> List[bool]:
+    history: List[bool] = []
+    for idx, turn in enumerate(scenario.turns):
+        if idx >= len(choices_path):
+            break
+        user_choice_key = choices_path[idx]
+        user_choice = turn.choices.get(user_choice_key)
+        if not user_choice:
+            user_choice = next(iter(turn.choices.values()), None)
+        history.append(user_choice.is_historical if user_choice else False)
+    return history
+
+
+def resolve_play_session_choices_history(session: PlaySession) -> List[bool]:
+    return list(session.choices_history or [])
 
 
 def compute_play_results(

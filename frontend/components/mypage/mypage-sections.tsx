@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, Mail, Shield, UserRound } from "lucide-react";
+import { CalendarDays, ChevronRight, Mail, RotateCcw, Shield, UserRound } from "lucide-react";
 import { ChoicePathSteps } from "@/components/mypage/choice-path-steps";
 import { MypageCollapsibleSection } from "@/components/mypage/mypage-collapsible-section";
 import {
@@ -15,7 +15,8 @@ import {
   type PlaySessionItem,
   type UserProfile,
 } from "@/lib/auth/types";
-import { getSessionAction } from "@/lib/mypage/session-links";
+import { getSessionActions, type SessionLinkAction } from "@/lib/mypage/session-links";
+import { cn } from "@/lib/utils/cn";
 
 const SESSION_PAGE_SIZE = 5;
 
@@ -200,8 +201,12 @@ export function MypageSessionHistory({
       ) : (
         <>
           <ul className="mt-5 space-y-3">
-            {sessions.map((session) => (
-              <SessionHistoryCard key={session.id} session={session} />
+            {sessions.map((session, index) => (
+              <SessionHistoryCard
+                key={session.id}
+                session={session}
+                sessionNumber={total - currentPage * SESSION_PAGE_SIZE - index}
+              />
             ))}
           </ul>
 
@@ -218,75 +223,153 @@ export function MypageSessionHistory({
   );
 }
 
-function SessionHistoryCard({ session }: { session: PlaySessionItem }) {
-  const action = getSessionAction(session);
+function formatScenarioTitle(session: PlaySessionItem) {
+  if (session.scenario_sort_order == null) {
+    return session.scenario_title;
+  }
+
+  const prefix = String(session.scenario_sort_order + 1).padStart(2, "0");
+  return `${prefix} · ${session.scenario_title}`;
+}
+
+function isScenarioUnavailable(session: PlaySessionItem) {
+  return session.scenario_sort_order == null;
+}
+
+function SessionActionButtons({ actions }: { actions: SessionLinkAction[] }) {
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="flex w-full flex-col gap-2 sm:w-[10.5rem]">
+      {actions.map((action) => (
+        <Link
+          key={action.label}
+          className={cn(
+            "inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition active:scale-[0.98]",
+            action.variant === "primary"
+              ? "text-white shadow-[0_2px_10px_rgba(30,51,40,0.2)] hover:opacity-95"
+              : "border border-[rgba(42,66,50,0.14)] bg-white/80 text-[#2A4232] hover:bg-[rgba(42,66,50,0.05)]",
+          )}
+          href={action.href}
+          style={
+            action.variant === "primary"
+              ? { background: "linear-gradient(135deg, #1E3328 0%, #3D6B52 100%)" }
+              : undefined
+          }
+        >
+          <span className="truncate">{action.label}</span>
+          {action.label === "다시 하기" ? (
+            <RotateCcw aria-hidden className="size-3.5 shrink-0 opacity-80" />
+          ) : null}
+          {action.label === "결과 보기" ? (
+            <ChevronRight aria-hidden className="size-3.5 shrink-0 opacity-90" />
+          ) : null}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function SessionHistoryCard({
+  session,
+  sessionNumber,
+}: {
+  session: PlaySessionItem;
+  sessionNumber: number;
+}) {
+  const unavailable = isScenarioUnavailable(session);
+  const actions = unavailable ? [] : getSessionActions(session);
 
   return (
     <li
-      className="rounded-xl border px-4 py-4 transition hover:bg-[rgba(42,66,50,0.03)]"
+      className="relative overflow-hidden rounded-xl border"
       style={{ borderColor: "rgba(42,66,50,0.1)" }}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div
+        className={`px-4 py-4 transition ${unavailable ? "pointer-events-none select-none" : "hover:bg-[rgba(42,66,50,0.03)]"}`}
+        style={unavailable ? { filter: "grayscale(0.35)", opacity: 0.55 } : undefined}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+              style={{
+                background: "rgba(42,66,50,0.08)",
+                color: "#3D6B52",
+              }}
+            >
+              #{sessionNumber}
+            </span>
             <p className="font-medium text-[#2A4232]">{session.character_name}</p>
-            <SessionStatusBadge status={session.status} />
+            <SessionStatusBadge />
           </div>
-          <p className="mt-1 text-sm text-[#4A4438]">{session.scenario_title}</p>
+          <p className="mt-1 text-sm text-[#4A4438]">{formatScenarioTitle(session)}</p>
           <p className="mt-2 text-xs text-[#8A847C]">
             {session.completed_at
               ? `완료 · ${formatDateTime(session.completed_at)}`
-              : `진행 중 · ${formatDateTime(session.created_at)}`}
+              : formatDateTime(session.created_at)}
           </p>
 
           {session.choices_path.length > 0 ? (
             <div className="mt-3">
-              <p className="mb-2 text-xs font-medium text-[#6B6458]">선택 경로</p>
-              <ChoicePathSteps choices={session.choices_path} status={session.status} />
+              <p className="mb-2 text-xs font-medium text-[#6B6458]">
+                선택 경로 · {session.choices_path.map((choice) => choice.toUpperCase()).join("-")}
+              </p>
+              <ChoicePathSteps
+                choices={session.choices_path}
+                choicesHistory={session.choices_history}
+                status="completed"
+              />
             </div>
           ) : null}
         </div>
 
         <div className="flex flex-col items-start gap-3 sm:items-end sm:text-right">
-          {session.status === "completed" ? (
-            <div>
-              <p className="text-lg font-semibold text-[#2A4232]">{session.history_score}점</p>
-              <p className="text-xs text-[#8A847C]">역사 이해도</p>
-            </div>
-          ) : (
-            <span className="text-xs text-[#8A847C]">
-              STEP {session.choices_path.length}까지 진행
-            </span>
-          )}
+          <div>
+            <p className="text-lg font-semibold text-[#2A4232]">{session.history_score}점</p>
+            <p className="text-xs text-[#8A847C]">역사 이해도</p>
+          </div>
 
-          {action ? (
-            <Link
-              className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium text-[#2A4232] transition hover:bg-[rgba(42,66,50,0.06)]"
-              href={action.href}
-              style={{ borderColor: "rgba(42,66,50,0.18)" }}
-            >
-              {action.label}
-              <ChevronRight aria-hidden className="size-4" />
-            </Link>
-          ) : null}
+          <SessionActionButtons actions={actions} />
+        </div>
         </div>
       </div>
+
+      {unavailable ? (
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-xl"
+          style={{
+            background:
+              "repeating-linear-gradient(-45deg, rgba(42,66,50,0.04) 0, rgba(42,66,50,0.04) 8px, rgba(253,250,244,0.55) 8px, rgba(253,250,244,0.55) 16px)",
+          }}
+        >
+          <span
+            className="rounded-lg border px-4 py-2 text-sm font-semibold tracking-[0.12em] text-[#6B6458] shadow-sm"
+            style={{
+              borderColor: "rgba(42,66,50,0.18)",
+              background: "rgba(253,250,244,0.94)",
+              fontFamily: "'Noto Sans KR', sans-serif",
+            }}
+          >
+            삭제된 시나리오
+          </span>
+        </div>
+      ) : null}
     </li>
   );
 }
 
-function SessionStatusBadge({ status }: { status: string }) {
-  const isCompleted = status === "completed";
-
+function SessionStatusBadge() {
   return (
     <span
       className="rounded-full px-2 py-0.5 text-[11px] font-medium"
       style={{
-        background: isCompleted ? "rgba(61,107,82,0.12)" : "rgba(201,147,26,0.14)",
-        color: isCompleted ? "#3D6B52" : "#9A6B12",
+        background: "rgba(61,107,82,0.12)",
+        color: "#3D6B52",
       }}
     >
-      {isCompleted ? "완료" : "진행 중"}
+      완료
     </span>
   );
 }

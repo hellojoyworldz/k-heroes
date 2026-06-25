@@ -1,64 +1,38 @@
-import { CHARACTERS } from "@/lib/data/characters";
 import type { PlaySessionItem } from "@/lib/auth/types";
 
-const CHARACTER_NAME_ALIASES: Record<string, string> = {
-  윤봉길: "yunbongil",
-  "윤봉길 의사": "yunbongil",
-  이순신: "yi_sunsin",
-  "이순신 장군": "yi_sunsin",
-  세종대왕: "sejong",
+export type SessionLinkAction = {
+  href: string;
+  label: string;
+  variant: "primary" | "secondary";
 };
 
-export function encodeChoicesPath(choices: string[]) {
-  const [step1 = "A", step2 = "B", step3 = "A"] = choices
-    .slice(0, 3)
-    .map((choice) => choice.toUpperCase());
-
-  return `${step1}-${step2}-${step3}`;
-}
-
-export function resolveCharacterId(characterName: string) {
-  const normalized = characterName.trim();
-  if (!normalized) return null;
-
-  const alias = CHARACTER_NAME_ALIASES[normalized];
-  if (alias) return alias;
-
-  const matched = Object.values(CHARACTERS).find((character) => {
-    const shortName = character.name.replace(/\s*(의사|장군)/, "");
-    return (
-      normalized === character.name ||
-      normalized === shortName ||
-      character.name.includes(normalized) ||
-      normalized.includes(shortName)
-    );
-  });
-
-  return matched?.id ?? null;
-}
-
 export function getSessionResultHref(session: PlaySessionItem) {
-  const charId = resolveCharacterId(session.character_name);
-  if (!charId || session.choices_path.length === 0) return null;
-
-  return `/ending/${encodeURIComponent(charId)}/${encodeChoicesPath(session.choices_path)}`;
+  if (!session.id) return null;
+  return `/ending/${encodeURIComponent(session.id)}`;
 }
 
-export function getSessionContinueHref(session: PlaySessionItem) {
-  const charId = resolveCharacterId(session.character_name);
-  if (!charId) return null;
+export function getSessionReplayHref(session: PlaySessionItem) {
+  if (session.scenario_sort_order == null) return null;
 
-  return `/simulation/${encodeURIComponent(charId)}`;
+  const characterName = session.character_name.trim();
+  if (!characterName) return null;
+
+  const scenarioNo = session.scenario_sort_order + 1;
+  return `/simulation/${encodeURIComponent(characterName)}?scenario=${scenarioNo}`;
 }
 
-export function getSessionAction(session: PlaySessionItem) {
-  if (session.status === "completed") {
-    const href = getSessionResultHref(session);
-    return href
-      ? { href, label: "결과 다시 보기" as const }
-      : null;
+export function getSessionActions(session: PlaySessionItem): SessionLinkAction[] {
+  const actions: SessionLinkAction[] = [];
+
+  const resultHref = getSessionResultHref(session);
+  if (resultHref) {
+    actions.push({ href: resultHref, label: "결과 보기", variant: "primary" });
   }
 
-  const href = getSessionContinueHref(session);
-  return href ? { href, label: "이어하기" as const } : null;
+  const replayHref = getSessionReplayHref(session);
+  if (replayHref) {
+    actions.push({ href: replayHref, label: "다시 하기", variant: "secondary" });
+  }
+
+  return actions;
 }

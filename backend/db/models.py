@@ -265,6 +265,7 @@ class PlaySession(Base):
     )
     status: Mapped[str] = mapped_column(String(20), default="completed")
     choices_path: Mapped[list] = mapped_column(JSON, default=list)
+    choices_history: Mapped[list] = mapped_column(JSON, default=list)
     history_score: Mapped[int] = mapped_column(Integer, default=0)
     final_stats: Mapped[dict] = mapped_column(JSON, default=dict)
     character_name: Mapped[str] = mapped_column(String(100), default="")

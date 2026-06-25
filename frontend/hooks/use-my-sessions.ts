@@ -13,8 +13,10 @@ export type MySessionsParams = {
   scenarioTitle?: string;
 };
 
+export const authSessionsQueryKeyPrefix = ["auth", "sessions"] as const;
+
 export function mySessionsQueryKey(params: MySessionsParams) {
-  return ["auth", "sessions", params] as const;
+  return [...authSessionsQueryKeyPrefix, params] as const;
 }
 
 function buildSessionsQueryString(params: MySessionsParams) {

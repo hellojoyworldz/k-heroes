@@ -19,9 +19,11 @@ export type PlaySessionItem = {
   ending_id: number | null;
   character_name: string;
   scenario_title: string;
+  scenario_sort_order: number | null;
   status: string;
   history_score: number;
   choices_path: string[];
+  choices_history: boolean[];
   created_at: string;
   completed_at: string | null;
 };

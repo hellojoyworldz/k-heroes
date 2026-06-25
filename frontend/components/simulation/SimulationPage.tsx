@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronDown, ChevronUp, ChevronRight, Check } from "lucide-react";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 import { storyPageBackground } from "@/components/layout/storyPageBackground";
+import { authSessionsQueryKeyPrefix } from "@/hooks/use-my-sessions";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -599,6 +601,7 @@ export function SimulationPage({
   onBack: () => void;
   onComplete: (uuid: string) => void;
 }) {
+  const queryClient = useQueryClient();
   const [resolvedCharName, setResolvedCharName] = useState<string | null>(null);
   const [scenarioId, setScenarioId] = useState<number | null>(null);
   const [characterCard, setCharacterCard] = useState<any | null>(null);
@@ -649,6 +652,7 @@ export function SimulationPage({
         const startRes = await fetch(`${API_BASE_URL}/api/v2/simulation/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ character_name: detail.name, scenario_id: scenario.id }),
         });
         if (!startRes.ok) throw new Error("시뮬레이션 시작 실패");
@@ -661,6 +665,7 @@ export function SimulationPage({
         const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             character_name: detail.name,
             scenario_id: scenario.id,
@@ -702,6 +707,7 @@ export function SimulationPage({
         const endRes = await fetch(`${API_BASE_URL}/api/v2/simulation/ending`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             character_name: resolvedCharName,
             scenario_id: scenarioId,
@@ -711,12 +717,14 @@ export function SimulationPage({
         });
         if (!endRes.ok) throw new Error("엔딩 생성 실패");
         const endingData = await endRes.json();
+        await queryClient.invalidateQueries({ queryKey: authSessionsQueryKeyPrefix });
         onComplete(endingData.uuid);
       } else {
         // Load next turn
         const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             character_name: resolvedCharName,
             scenario_id: scenarioId,
@@ -756,6 +764,7 @@ export function SimulationPage({
       const turnRes = await fetch(`${API_BASE_URL}/api/v2/simulation/turn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           character_name: resolvedCharName,
           scenario_id: scenarioId,

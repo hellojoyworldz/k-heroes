@@ -61,9 +61,11 @@ class UserPlaySessionItem(BaseModel):
     ending_id: Optional[int] = None
     character_name: str
     scenario_title: str
+    scenario_sort_order: Optional[int] = None
     status: str
     history_score: int
     choices_path: list[str]
+    choices_history: list[bool] = []
     created_at: datetime
     completed_at: Optional[datetime] = None
 
@@ -103,10 +105,12 @@ class AdminPlaySessionItem(BaseModel):
     scenario_id: Optional[int] = None
     ending_id: Optional[int] = None
     scenario_title: str
+    scenario_sort_order: Optional[int] = None
     character_name: str
     status: str
     history_score: int
     choices_path: list[str]
+    choices_history: list[bool] = []
     created_at: datetime
     completed_at: Optional[datetime] = None
     completed_date: Optional[str] = None

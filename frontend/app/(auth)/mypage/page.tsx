@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
 import { SitePageShell } from "@/components/layout/site-page-shell";
 import {
@@ -23,7 +22,6 @@ import {
 import { useAuthMe } from "@/hooks/use-auth-me";
 import { useMySessions } from "@/hooks/use-my-sessions";
 import { useLogout } from "@/hooks/use-logout";
-
 const SESSION_PAGE_SIZE = 5;
 
 export default function MypagePage() {
@@ -44,6 +42,8 @@ export default function MypagePage() {
     },
     Boolean(authMeQuery.data),
   );
+
+  const sessionsData = sessionsQuery.data;
 
   useEffect(() => {
     if (!authMeQuery.isLoading && authMeQuery.data === null) {
@@ -71,7 +71,6 @@ export default function MypagePage() {
   }
 
   const user = authMeQuery.data;
-  const sessionsData = sessionsQuery.data;
 
   function handleSearch() {
     setPage(0);
@@ -106,25 +105,11 @@ export default function MypagePage() {
               마이페이지
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-[#6B6458] sm:text-base">
-              나의 계정 정보와 시뮬레이션 기록을 확인하고, 이어서 진행 중인 이야기를 다시 시작할 수 있습니다.
+              나의 계정 정보와 완료한 시뮬레이션 기록을 확인할 수 있습니다.
             </p>
           </header>
 
           <div className="space-y-6">
-            <div className="flex justify-end">
-              <AuthButton
-                isLoading={isLoggingOut}
-                loadingText="로그아웃 중..."
-                onClick={handleLogout}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <LogOut aria-hidden="true" className="size-4" />
-                로그아웃
-              </AuthButton>
-            </div>
-
             <MypageProfileCard
               averageHistoryScore={sessionsData?.summary.average_history_score ?? null}
               completedCount={sessionsData?.summary.completed_count ?? 0}
@@ -154,9 +139,21 @@ export default function MypagePage() {
               values={filters}
             />
 
-            <AuthButton className="sm:max-w-xs" onClick={() => router.push("/map")} type="button">
-              새 이야기 시작하기
-            </AuthButton>
+            <div className="flex gap-3">
+              <AuthButton className="min-w-0 flex-1" onClick={() => router.push("/map")} type="button">
+                새 이야기 시작하기
+              </AuthButton>
+              <AuthButton
+                className="min-w-0 flex-1"
+                isLoading={isLoggingOut}
+                loadingText="로그아웃 중..."
+                onClick={handleLogout}
+                type="button"
+                variant="secondary"
+              >
+                로그아웃
+              </AuthButton>
+            </div>
           </div>
         </div>
       </SitePageShell>

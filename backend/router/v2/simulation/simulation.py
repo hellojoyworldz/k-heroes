@@ -5,13 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from db.models import Ending, PlaySession, Scenario, User, Turn
+from db.models import Ending, PlaySession, Scenario, User
 from repositories.simulation.content import (
     CharacterNotFoundError,
     EndingNotFoundError,
     ScenarioNotFoundError,
+    build_choices_history,
     build_ending_markdown,
     compute_play_results,
+    resolve_play_session_choices_history,
     get_character_card,
     get_ending_by_path,
     get_scenario_item,
@@ -163,6 +165,8 @@ async def generate_ending(
 
     scenario_row = db.get(Scenario, ending.scenario_id)
 
+    choices_history = build_choices_history(scenario, payload.choices_path)
+
     result_id = str(uuid.uuid4())
     play_session = PlaySession(
         id=result_id,
@@ -171,6 +175,7 @@ async def generate_ending(
         ending_id=ending.id,
         status="completed",
         choices_path=payload.choices_path,
+        choices_history=choices_history,
         history_score=history_score,
         final_stats=current_stats,
         character_name=payload.character_name,
@@ -179,18 +184,6 @@ async def generate_ending(
     )
     db.add(play_session)
     db.commit()
-
-    choices_history = []
-    for idx, turn in enumerate(scenario.turns):
-        if idx < len(payload.choices_path):
-            user_choice_key = payload.choices_path[idx]
-            user_choice = turn.choices.get(user_choice_key)
-            if not user_choice:
-                user_choice = next(iter(turn.choices.values()), None)
-            if user_choice:
-                choices_history.append(user_choice.is_historical)
-            else:
-                choices_history.append(False)
 
     return EndingResponse(
         result_code="-".join(payload.choices_path),
@@ -233,17 +226,7 @@ def _play_session_to_response(session: PlaySession, ending: Ending) -> EndingRes
         ending_image=ending.image_url or "",
     )
 
-    choices_history = []
-    if session.scenario and session.choices_path:
-        turns = sorted(session.scenario.turns, key=lambda t: t.sort_order)
-        for idx, turn in enumerate(turns):
-            if idx < len(session.choices_path):
-                user_choice_key = session.choices_path[idx]
-                user_choice = next((c for c in turn.choices if c.choice_key == user_choice_key), None)
-                if user_choice:
-                    choices_history.append(user_choice.is_historical)
-                else:
-                    choices_history.append(False)
+    choices_history = resolve_play_session_choices_history(session)
 
     return EndingResponse(
         result_code="-".join(session.choices_path or []),
@@ -272,9 +255,7 @@ async def get_simulation_result_api(uuid: str, db: Session = Depends(get_db)):
         .where(PlaySession.id == uuid)
         .options(
             selectinload(PlaySession.ending),
-            selectinload(PlaySession.scenario)
-            .selectinload(Scenario.turns)
-            .selectinload(Turn.choices)
+            selectinload(PlaySession.scenario),
         )
     )
     if not session:

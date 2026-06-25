@@ -1,13 +1,13 @@
-import { RESULT_STEP_ICONS, getResultStepIcons } from "@/lib/mypage/result-step-icons";
-
 type ChoicePathStepsProps = {
   choices: string[];
+  choicesHistory?: boolean[];
   status: string;
 };
 
-export function ChoicePathSteps({ choices, status }: ChoicePathStepsProps) {
+export function ChoicePathSteps({ choices, choicesHistory, status }: ChoicePathStepsProps) {
   const steps = choices.slice(0, 3).map((choice) => choice.toUpperCase());
-  const stepIcons = status === "completed" ? getResultStepIcons(choices) : null;
+  const stepIcons =
+    status === "completed" && choicesHistory && choicesHistory.length > 0 ? choicesHistory : null;
 
   if (steps.length === 0) return null;
 

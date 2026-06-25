@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from core.auth_policy import InvalidLoginIdError, validate_login_id, validate_optional_email
 from core.security import hash_password, verify_password
 from db.models import AuthProvider, PlaySession, User, UserGrade
+from repositories.simulation.content import resolve_play_session_choices_history
 from models.auth.user import (
     AdminPlaySessionItem,
     UserLoginRequest,
@@ -27,6 +28,45 @@ class UserDuplicateError(Exception):
         self.field_name = field_name
         self.value = value
         super().__init__(f"이미 사용 중인 {field_name}입니다. ({value})")
+
+
+def _to_user_play_session_item(session: PlaySession) -> UserPlaySessionItem:
+    return UserPlaySessionItem(
+        id=session.id,
+        scenario_id=session.scenario_id,
+        ending_id=session.ending_id,
+        character_name=session.character_name,
+        scenario_title=session.scenario_title,
+        scenario_sort_order=session.scenario.sort_order if session.scenario else None,
+        status=session.status,
+        history_score=session.history_score,
+        choices_path=session.choices_path or [],
+        choices_history=resolve_play_session_choices_history(session),
+        created_at=session.created_at,
+        completed_at=session.completed_at,
+    )
+
+
+def _to_admin_play_session_item(session: PlaySession) -> AdminPlaySessionItem:
+    return AdminPlaySessionItem(
+        id=session.id,
+        user_id=session.user.id if session.user else None,
+        user_login_id=session.user.login_id if session.user else None,
+        user_name=session.user.name if session.user else None,
+        user_grade=session.user.grade if session.user else None,
+        scenario_id=session.scenario_id,
+        ending_id=session.ending_id,
+        scenario_title=session.scenario_title,
+        scenario_sort_order=session.scenario.sort_order if session.scenario else None,
+        character_name=session.character_name,
+        status=session.status,
+        history_score=session.history_score,
+        choices_path=session.choices_path or [],
+        choices_history=resolve_play_session_choices_history(session),
+        created_at=session.created_at,
+        completed_at=session.completed_at,
+        completed_date=session.completed_at.date().isoformat() if session.completed_at else None,
+    )
 
 
 def _get_user_or_raise(db: Session, user_id: int) -> User:
@@ -215,13 +255,14 @@ def list_completed_play_sessions(
 
     sessions = db.scalars(
         select(PlaySession)
+        .options(selectinload(PlaySession.scenario))
         .where(*conditions)
         .order_by(PlaySession.completed_at.desc().nullslast(), PlaySession.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
     return (
-        [UserPlaySessionItem.model_validate(session) for session in sessions],
+        [_to_user_play_session_item(session) for session in sessions],
         total,
         float(average_history_score) if average_history_score is not None else None,
     )
@@ -265,7 +306,7 @@ def list_play_sessions_for_admin(
 
     sessions = db.scalars(
         select(PlaySession)
-        .options(selectinload(PlaySession.user))
+        .options(selectinload(PlaySession.user), selectinload(PlaySession.scenario))
         .join(User, PlaySession.user_id == User.id, isouter=True)
         .where(*conditions)
         .order_by(PlaySession.completed_at.desc().nullslast(), PlaySession.created_at.desc())
@@ -273,24 +314,5 @@ def list_play_sessions_for_admin(
         .limit(page_size)
     ).all()
 
-    items = [
-        AdminPlaySessionItem(
-            id=session.id,
-            user_id=session.user.id if session.user else None,
-            user_login_id=session.user.login_id if session.user else None,
-            user_name=session.user.name if session.user else None,
-            user_grade=session.user.grade if session.user else None,
-            scenario_id=session.scenario_id,
-            ending_id=session.ending_id,
-            scenario_title=session.scenario_title,
-            character_name=session.character_name,
-            status=session.status,
-            history_score=session.history_score,
-            choices_path=session.choices_path or [],
-            created_at=session.created_at,
-            completed_at=session.completed_at,
-            completed_date=session.completed_at.date().isoformat() if session.completed_at else None,
-        )
-        for session in sessions
-    ]
+    items = [_to_admin_play_session_item(session) for session in sessions]
     return items, total

@@ -2,8 +2,7 @@ import pytest
 from sqlalchemy import select
 
 from core.security import hash_password
-from db.models import PlaySession
-from db.models import AuthProvider, User, UserGrade
+from db.models import AuthProvider, PlaySession, Scenario, User, UserGrade
 from tests.helpers import get_scenario
 
 
@@ -118,7 +117,12 @@ def test_generate_ending_and_get_result(client, db_session, yi_scenario_id):
     assert session is not None
     assert session.character_name == "이순신"
     assert session.choices_path == ["A", "A", "A"]
+    assert session.choices_history == ending_data["choices_history"]
     assert session.ending_id is not None
+
+    scenario = db_session.get(Scenario, session.scenario_id)
+    assert scenario is not None
+    assert scenario.sort_order is not None
 
     result_response = client.get(f"/api/v2/simulation/result/{ending_data['uuid']}")
     assert result_response.status_code == 200
@@ -158,6 +162,7 @@ def test_generate_ending_links_logged_in_user_and_lists_sessions(client, db_sess
     assert len(sessions["items"]) == 1
     assert sessions["items"][0]["id"] == ending_data["uuid"]
     assert sessions["items"][0]["scenario_id"] == yi_scenario_id
+    assert sessions["items"][0]["choices_history"] == ending_data["choices_history"]
 
 
 def test_generate_ending_not_found(client, yi_scenario_id):
