@@ -315,13 +315,13 @@ function ScenarioCard({ data }: { data: StepData }) {
 
         {/* 데스크탑: 이미지 우측 */}
         <div
-          className="hidden md:block flex-shrink-0 relative overflow-hidden"
-          style={{ width: "42%", height: "100%" }}
+          className="hidden md:block flex-shrink-0 relative overflow-hidden self-stretch"
+          style={{ width: "42%" }}
         >
           <img
             src={data.img}
             alt={data.title}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             style={{ filter: "sepia(0.22) saturate(0.82) brightness(0.9)" }}
           />
           <div
