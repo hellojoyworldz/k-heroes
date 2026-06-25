@@ -2,65 +2,404 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { AuthAlert } from "@/components/auth/auth-alert";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthFormField } from "@/components/auth/auth-form-field";
 import { PasswordRequirements } from "@/components/auth/password-requirements";
 import { SitePageShell } from "@/components/layout/site-page-shell";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { authMeQueryKey, toUserProfile, useAuthMe } from "@/hooks/use-auth-me";
+import { AuthApiError, fetchAuthApiJson } from "@/lib/auth/auth-api";
+import { EMAIL_MAX_LENGTH, validateOptionalEmail } from "@/lib/auth/email-policy";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/auth/password-policy";
-import { mockUserProfile } from "@/lib/mypage/mock-data";
+import type { UserProfile } from "@/lib/auth/types";
+
+type AccountSettingsFormValues = {
+  name: string;
+  email: string;
+  nickname: string;
+  current_password: string;
+  new_password: string;
+  new_password_confirm: string;
+};
+
+function wantsPasswordChange(values: AccountSettingsFormValues) {
+  return (
+    values.current_password.length > 0 ||
+    values.new_password.length > 0 ||
+    values.new_password_confirm.length > 0
+  );
+}
+
+type AccountSettingsFormProps = {
+  user: UserProfile;
+};
+
+function AccountSettingsForm({ user }: AccountSettingsFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const isLocalAccount = user.auth_provider === "local";
+
+  const {
+    formState: { errors, isSubmitting },
+    getValues,
+    handleSubmit,
+    register,
+    reset,
+    trigger,
+    watch,
+  } = useForm<AccountSettingsFormValues>({
+    defaultValues: {
+      name: user.name ?? "",
+      email: user.email ?? "",
+      nickname: user.nickname ?? "",
+      current_password: "",
+      new_password: "",
+      new_password_confirm: "",
+    },
+    mode: "onChange",
+  });
+
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorDialogMessage, setErrorDialogMessage] = useState("");
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const formValues = watch();
+  const newPassword = formValues.new_password;
+
+  function openErrorDialog(message: string) {
+    setErrorDialogMessage(message);
+    setErrorDialogOpen(true);
+  }
+
+  async function submitSettings(data: AccountSettingsFormValues) {
+    setErrorDialogOpen(false);
+    setErrorDialogMessage("");
+    setSuccessDialogOpen(false);
+
+    const name = data.name.trim();
+    const email = data.email.trim();
+    const nickname = data.nickname.trim();
+    const shouldChangePassword = isLocalAccount && wantsPasswordChange(data);
+
+    try {
+      const payload: {
+        name: string | null;
+        email: string | null;
+        nickname: string | null;
+        current_password?: string;
+        new_password?: string;
+      } = {
+        name: name || null,
+        email: email || null,
+        nickname: nickname || null,
+      };
+
+      if (shouldChangePassword) {
+        payload.current_password = data.current_password.trim();
+        payload.new_password = data.new_password;
+      }
+
+      const response = await fetchAuthApiJson<UserProfile>("/api/v2/auth/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      queryClient.setQueryData(authMeQueryKey, toUserProfile(response));
+      reset({
+        name: response.name ?? "",
+        email: response.email ?? "",
+        nickname: response.nickname ?? "",
+        current_password: "",
+        new_password: "",
+        new_password_confirm: "",
+      });
+      setSuccessDialogOpen(true);
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        openErrorDialog(error.message);
+      } else {
+        openErrorDialog("계정 정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    }
+  }
+
+  return (
+    <>
+      <form
+      className="space-y-8 rounded-2xl border p-6 sm:p-8"
+      noValidate
+      onSubmit={handleSubmit(submitSettings)}
+      style={{
+        background: "rgba(253,250,244,0.94)",
+        borderColor: "rgba(42,66,50,0.12)",
+      }}
+    >
+      <section className="space-y-5">
+        <div>
+          <h2
+            className="text-lg font-semibold text-[#1A1714]"
+            style={{ fontFamily: "'Noto Serif KR', serif" }}
+          >
+            기본 정보
+          </h2>
+          <p className="mt-1 text-xs text-[#8A847C]">
+            <span className="text-[#9A3F38]">*</span> 표시는 필수 입력 항목입니다. 아이디는 변경할 수 없습니다.
+          </p>
+        </div>
+
+        <AuthFormField
+          autoComplete="username"
+          defaultValue={user.login_id ?? ""}
+          disabled
+          id="login_id"
+          label="아이디"
+          name="login_id"
+          type="text"
+        />
+
+        <AuthFormField
+          autoComplete="nickname"
+          error={errors.nickname?.message}
+          id="nickname"
+          label="닉네임"
+          maxLength={100}
+          placeholder="닉네임을 입력하세요"
+          type="text"
+          {...register("nickname", {
+            validate: (value) => value.trim() !== "" || "닉네임을 입력해 주세요.",
+          })}
+          required
+        />
+
+        <AuthFormField
+          autoComplete="name"
+          error={errors.name?.message}
+          id="name"
+          label="이름"
+          maxLength={100}
+          placeholder="이름 (선택)"
+          type="text"
+          {...register("name")}
+        />
+
+        <AuthFormField
+          autoComplete="email"
+          error={errors.email?.message}
+          id="email"
+          label="이메일"
+          maxLength={EMAIL_MAX_LENGTH}
+          placeholder="이메일 (선택)"
+          type="email"
+          {...register("email", {
+            validate: (value) => validateOptionalEmail(value) ?? true,
+          })}
+        />
+      </section>
+
+      {isLocalAccount ? (
+        <section className="space-y-5 border-t pt-8" style={{ borderColor: "rgba(42,66,50,0.08)" }}>
+          <div>
+            <h2
+              className="text-lg font-semibold text-[#1A1714]"
+              style={{ fontFamily: "'Noto Serif KR', serif" }}
+            >
+              비밀번호 변경
+            </h2>
+            <p className="mt-1 text-xs text-[#8A847C]">
+              변경하지 않으려면 비밀번호 항목을 비워 두세요.
+            </p>
+          </div>
+
+          <AuthFormField
+            autoComplete="current-password"
+            error={errors.current_password?.message}
+            id="current_password"
+            label="현재 비밀번호"
+            maxLength={PASSWORD_MAX_LENGTH}
+            placeholder="현재 비밀번호"
+            showPasswordToggle
+            type="password"
+            {...register("current_password", {
+              onChange: () => {
+                if (getValues("new_password") || getValues("new_password_confirm")) {
+                  void trigger(["current_password", "new_password", "new_password_confirm"]);
+                }
+              },
+              validate: (value) => {
+                if (!wantsPasswordChange(getValues())) {
+                  return true;
+                }
+                return value.trim() !== "" || "현재 비밀번호를 입력해 주세요.";
+              },
+            })}
+            required
+          />
+
+          <AuthFormField
+            autoComplete="new-password"
+            error={errors.new_password?.message}
+            id="new_password"
+            label="새 비밀번호"
+            maxLength={PASSWORD_MAX_LENGTH}
+            minLength={PASSWORD_MIN_LENGTH}
+            placeholder="새 비밀번호"
+            showPasswordToggle
+            type="password"
+            {...register("new_password", {
+              onChange: () => {
+                if (getValues("new_password_confirm")) {
+                  void trigger("new_password_confirm");
+                }
+                void trigger(["current_password", "new_password_confirm"]);
+              },
+              validate: (value) => {
+                if (!wantsPasswordChange(getValues())) {
+                  return true;
+                }
+                return validatePassword(value) ?? true;
+              },
+            })}
+            required
+          />
+
+          {newPassword ? <PasswordRequirements password={newPassword} /> : null}
+
+          <AuthFormField
+            autoComplete="new-password"
+            error={errors.new_password_confirm?.message}
+            id="new_password_confirm"
+            label="새 비밀번호 확인"
+            maxLength={PASSWORD_MAX_LENGTH}
+            minLength={PASSWORD_MIN_LENGTH}
+            placeholder="새 비밀번호 확인"
+            showPasswordToggle
+            type="password"
+            {...register("new_password_confirm", {
+              onChange: () => {
+                void trigger(["current_password", "new_password"]);
+              },
+              validate: (value) => {
+                if (!wantsPasswordChange(getValues())) {
+                  return true;
+                }
+                return value === getValues("new_password") || "새 비밀번호 확인이 일치하지 않습니다.";
+              },
+            })}
+            required
+          />
+        </section>
+      ) : (
+        <p
+          className="rounded-lg border px-4 py-3 text-sm text-[#6B6458]"
+          style={{ borderColor: "rgba(42,66,50,0.12)", background: "rgba(42,66,50,0.03)" }}
+        >
+          Google 계정은 비밀번호를 이 화면에서 변경할 수 없습니다.
+        </p>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <AuthButton isLoading={isSubmitting} loadingText="저장 중..." type="submit">
+          변경 사항 저장
+        </AuthButton>
+        <AuthButton onClick={() => router.push("/mypage")} type="button" variant="secondary">
+          취소
+        </AuthButton>
+      </div>
+    </form>
+
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        setErrorDialogOpen(nextOpen);
+        if (!nextOpen) {
+          setErrorDialogMessage("");
+        }
+      }}
+      open={errorDialogOpen}
+    >
+      <DialogContent className="border-[rgba(42,66,50,0.12)] bg-[#FDFAF4] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[#1A1714]" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+            저장 실패
+          </DialogTitle>
+          <DialogDescription className="text-left text-sm leading-relaxed text-[#6B6458]">
+            {errorDialogMessage}
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <AuthButton className="w-full" onClick={() => setErrorDialogOpen(false)} type="button">
+            확인
+          </AuthButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+      <DialogContent className="border-[rgba(42,66,50,0.12)] bg-[#FDFAF4] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-[#1A1714]" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+            저장 완료
+          </DialogTitle>
+          <DialogDescription className="text-left text-sm leading-relaxed text-[#6B6458]">
+            계정 정보가 저장되었습니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <AuthButton className="w-full" onClick={() => setSuccessDialogOpen(false)} type="button">
+            확인
+          </AuthButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
+  );
+}
 
 export default function AccountSettingsPage() {
   const router = useRouter();
-  // TODO: /api/v2/auth/me 연동
-  const user = mockUserProfile;
-  const isLocalAccount = user.auth_provider === "local";
+  const authMeQuery = useAuthMe();
+  const user = authMeQuery.data;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    const formData = new FormData(event.currentTarget);
-    const currentPassword = String(formData.get("current_password") ?? "").trim();
-    const password = String(formData.get("new_password") ?? "");
-    const passwordConfirm = String(formData.get("new_password_confirm") ?? "");
-
-    const wantsPasswordChange = password.length > 0 || passwordConfirm.length > 0 || currentPassword.length > 0;
-
-    if (isLocalAccount && wantsPasswordChange) {
-      if (!currentPassword) {
-        setErrorMessage("현재 비밀번호를 입력해 주세요.");
-        return;
-      }
-
-      const passwordError = validatePassword(password);
-      if (passwordError) {
-        setErrorMessage(passwordError);
-        return;
-      }
-
-      if (password !== passwordConfirm) {
-        setErrorMessage("새 비밀번호 확인이 일치하지 않습니다.");
-        return;
-      }
+  useEffect(() => {
+    if (!authMeQuery.isLoading && authMeQuery.data === null && !authMeQuery.isError) {
+      router.replace("/login");
     }
+  }, [authMeQuery.data, authMeQuery.isError, authMeQuery.isLoading, router]);
 
-    setIsSubmitting(true);
+  if (authMeQuery.isLoading) {
+    return null;
+  }
 
-    try {
-      // TODO: /api/v2/auth/me PATCH 연동
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setErrorMessage("계정 정보 변경 API 연동 전입니다. UI만 준비된 상태입니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
+  if (authMeQuery.isError) {
+    return (
+      <SitePageShell>
+        <div className="mx-auto max-w-2xl px-6 py-10 sm:py-14">
+          <div
+            className="rounded-xl border px-4 py-10 text-center text-sm text-[#6B6458]"
+            style={{ borderColor: "rgba(42,66,50,0.12)", background: "rgba(253,250,244,0.8)" }}
+          >
+            회원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </div>
+        </div>
+      </SitePageShell>
+    );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
@@ -80,143 +419,11 @@ export default function AccountSettingsPage() {
             계정 정보 변경
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-[#6B6458]">
-            이름, 이메일, 닉네임과 비밀번호를 수정할 수 있습니다.
+            닉네임, 이름, 이메일과 비밀번호를 수정할 수 있습니다.
           </p>
         </header>
 
-        <form
-          className="space-y-8 rounded-2xl border p-6 sm:p-8"
-          onSubmit={handleSubmit}
-          style={{
-            background: "rgba(253,250,244,0.94)",
-            borderColor: "rgba(42,66,50,0.12)",
-          }}
-        >
-          <section className="space-y-5">
-            <div>
-              <h2
-                className="text-lg font-semibold text-[#1A1714]"
-                style={{ fontFamily: "'Noto Serif KR', serif" }}
-              >
-                기본 정보
-              </h2>
-              <p className="mt-1 text-xs text-[#8A847C]">아이디는 변경할 수 없습니다.</p>
-            </div>
-
-            <AuthFormField
-              autoComplete="username"
-              defaultValue={user.login_id ?? ""}
-              disabled
-              id="login_id"
-              label="아이디"
-              name="login_id"
-              type="text"
-            />
-
-            <AuthFormField
-              autoComplete="name"
-              defaultValue={user.name ?? ""}
-              id="name"
-              label="이름"
-              maxLength={100}
-              name="name"
-              placeholder="이름을 입력하세요"
-              type="text"
-            />
-
-            <AuthFormField
-              autoComplete="email"
-              defaultValue={user.email ?? ""}
-              id="email"
-              label="이메일"
-              maxLength={255}
-              name="email"
-              placeholder="이메일을 입력하세요"
-              type="email"
-            />
-
-            <AuthFormField
-              autoComplete="nickname"
-              defaultValue={user.nickname ?? ""}
-              id="nickname"
-              label="닉네임"
-              maxLength={100}
-              name="nickname"
-              placeholder="닉네임을 입력하세요"
-              type="text"
-            />
-          </section>
-
-          {isLocalAccount ? (
-            <section className="space-y-5 border-t pt-8" style={{ borderColor: "rgba(42,66,50,0.08)" }}>
-              <div>
-                <h2
-                  className="text-lg font-semibold text-[#1A1714]"
-                  style={{ fontFamily: "'Noto Serif KR', serif" }}
-                >
-                  비밀번호 변경
-                </h2>
-                <p className="mt-1 text-xs text-[#8A847C]">
-                  변경하지 않으려면 비밀번호 항목을 비워 두세요.
-                </p>
-              </div>
-
-              <AuthFormField
-                autoComplete="current-password"
-                id="current_password"
-                label="현재 비밀번호"
-                name="current_password"
-                placeholder="현재 비밀번호"
-                type="password"
-              />
-
-              <AuthFormField
-                autoComplete="new-password"
-                id="new_password"
-                label="새 비밀번호"
-                maxLength={PASSWORD_MAX_LENGTH}
-                minLength={PASSWORD_MIN_LENGTH}
-                name="new_password"
-                onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="새 비밀번호"
-                type="password"
-                value={newPassword}
-              />
-
-              {newPassword ? <PasswordRequirements password={newPassword} /> : null}
-
-              <AuthFormField
-                autoComplete="new-password"
-                id="new_password_confirm"
-                label="새 비밀번호 확인"
-                maxLength={PASSWORD_MAX_LENGTH}
-                minLength={PASSWORD_MIN_LENGTH}
-                name="new_password_confirm"
-                placeholder="새 비밀번호 확인"
-                type="password"
-              />
-            </section>
-          ) : (
-            <p
-              className="rounded-lg border px-4 py-3 text-sm text-[#6B6458]"
-              style={{ borderColor: "rgba(42,66,50,0.12)", background: "rgba(42,66,50,0.03)" }}
-            >
-              Google 계정은 비밀번호를 이 화면에서 변경할 수 없습니다.
-            </p>
-          )}
-
-          {errorMessage ? <AuthAlert message={errorMessage} /> : null}
-          {successMessage ? <AuthAlert message={successMessage} variant="info" /> : null}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <AuthButton isLoading={isSubmitting} loadingText="저장 중..." type="submit">
-              변경 사항 저장
-            </AuthButton>
-            <AuthButton onClick={() => router.push("/mypage")} type="button" variant="secondary">
-              취소
-            </AuthButton>
-          </div>
-        </form>
+        <AccountSettingsForm user={user} />
       </div>
     </SitePageShell>
   );

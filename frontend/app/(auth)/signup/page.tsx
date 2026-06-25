@@ -135,6 +135,10 @@ export default function SignupPage() {
           title="회원가입"
         >
           <form className="space-y-5" noValidate onSubmit={handleSubmit(submitSignup)}>
+            <p className="text-xs text-[#8A847C]">
+              <span className="text-[#9A3F38]">*</span> 표시는 필수 입력 항목입니다.
+            </p>
+
             <AuthFormField
               autoComplete="username"
               error={errors.login_id?.message}
@@ -190,15 +194,6 @@ export default function SignupPage() {
             />
 
             <AuthFormField
-              autoComplete="name"
-              id="name"
-              label="이름"
-              placeholder="이름 (선택)"
-              type="text"
-              {...register("name")}
-            />
-
-            <AuthFormField
               autoComplete="nickname"
               error={errors.nickname?.message}
               id="nickname"
@@ -209,6 +204,15 @@ export default function SignupPage() {
               {...register("nickname", {
                 validate: (value) => value.trim() !== "" || "닉네임을 입력해 주세요.",
               })}
+            />
+
+            <AuthFormField
+              autoComplete="name"
+              id="name"
+              label="이름"
+              placeholder="이름 (선택)"
+              type="text"
+              {...register("name")}
             />
 
             <AuthFormField
@@ -254,6 +258,7 @@ export default function SignupPage() {
                   개인정보 처리방침
                 </Link>
                 에 동의합니다.
+                <span className="ml-0.5 text-[#9A3F38]">*</span>
               </span>
             </label>
 

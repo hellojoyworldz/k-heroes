@@ -96,9 +96,9 @@ type MypageAccountInfoProps = {
 export function MypageAccountInfo({ user, footer }: MypageAccountInfoProps) {
   const rows = [
     { icon: UserRound, label: "아이디", value: user.login_id || "-" },
+    { icon: Shield, label: "닉네임", value: user.nickname || "미등록" },
     { icon: UserRound, label: "이름", value: user.name || "미등록" },
     { icon: Mail, label: "이메일", value: user.email || "미등록" },
-    { icon: Shield, label: "닉네임", value: user.nickname || "미등록" },
     { icon: CalendarDays, label: "최근 업데이트", value: formatDateTime(user.updated_at) },
   ];
 
